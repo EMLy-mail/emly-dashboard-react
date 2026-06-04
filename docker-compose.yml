@@ -1,0 +1,11 @@
+services:
+  dashboard:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - API_BASE_URL=${API_BASE_URL}
+      - API_KEY=${API_KEY}
+      - ADMIN_KEY=${ADMIN_KEY}
+      - DASHBOARD_KEY=${DASHBOARD_KEY}
