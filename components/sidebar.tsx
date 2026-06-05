@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
-import { Bug, Users, LogOut, Sun, Moon } from "lucide-react";
+import { Bug, Users, PackageOpen, LogOut, Sun, Moon } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import type { AuthUser } from "@/lib/api";
 const navItems = [
   { href: "/bug-reports", label: "Bug Reports", icon: Bug },
   { href: "/users", label: "Users", icon: Users },
+  { href: "/updates", label: "Updates", icon: PackageOpen },
 ];
 
 export function Sidebar({ user }: { user: AuthUser }) {

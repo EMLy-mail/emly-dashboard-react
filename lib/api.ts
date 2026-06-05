@@ -78,6 +78,7 @@ type ApiOptions = {
   sessionToken?: string;
   requiresAdmin?: boolean;
   requiresApi?: boolean;
+  baseUrl?: string;
 };
 
 async function apiFetch<T>(
@@ -101,11 +102,12 @@ async function apiFetch<T>(
   if (env.dashboardKey) {
     headers["X-Dashboard-Key"] = env.dashboardKey;
   }
-  if (!headers["Content-Type"] && init.method !== "PATCH") {
+  if (!headers["Content-Type"] && init.method !== "PATCH" && !(init.body instanceof FormData)) {
     headers["Content-Type"] = "application/json";
   }
 
-  const res = await fetch(`${env.apiBaseUrl}${path}`, {
+  const base = opts.baseUrl ?? (env.apiBaseUrl + "/v1/api");
+  const res = await fetch(`${base}${path}`, {
     ...init,
     headers,
   });
@@ -240,5 +242,112 @@ export async function resetUserPassword(id: string, password: string) {
     `/admin/users/${id}/reset-password`,
     { method: "POST", body: JSON.stringify({ password }) },
     { requiresAdmin: true, requiresApi: false },
+  );
+}
+
+// ── Updates ────────────────────────────────────────────────────────────────
+
+export type ReleaseChannel = "stable" | "beta" | "archived";
+export type ReleaseSeverity = "none" | "security" | "bugfix" | "feature";
+
+export interface DetailedNote {
+  severityType: ReleaseSeverity;
+  description: Record<string, string>;
+}
+
+export interface UpdateManifest {
+  stableVersion: string;
+  betaVersion?: string;
+  stableDownload: string;
+  betaDownload?: string;
+  isCritical: boolean;
+  minRequiredVersion?: string;
+  sha256Checksums: Record<string, string>;
+  releaseNotes: Record<string, string>;
+  detailedReleaseNotes?: Record<string, DetailedNote>;
+}
+
+export interface Release {
+  version: string;
+  channel: ReleaseChannel;
+  download_filename: string;
+  sha256_checksum: string;
+  short_note: string;
+  severity_type: ReleaseSeverity;
+  description_en: string | null;
+  description_it: string | null;
+  is_critical: boolean;
+  min_required_version: string | null;
+  released_at: string;
+  created_at: string;
+}
+
+function updatesBase(): string {
+  return env.apiBaseUrl + "/v2";
+}
+
+export async function getUpdateManifest() {
+  return apiFetch<UpdateManifest>(
+    "/updates/manifest",
+    {},
+    { requiresApi: false, baseUrl: updatesBase() },
+  );
+}
+
+export async function getReleases(channel?: ReleaseChannel) {
+  const qs = channel ? `?channel=${channel}` : "";
+  return apiFetch<Release[]>(
+    `/updates/releases${qs}`,
+    {},
+    { requiresAdmin: true, requiresApi: false, baseUrl: updatesBase() },
+  );
+}
+
+export async function createRelease(data: {
+  file: File;
+  version: string;
+  short_note?: string;
+  channel?: ReleaseChannel;
+  severity_type?: ReleaseSeverity;
+  description_en?: string | null;
+  description_it?: string | null;
+  is_critical?: boolean;
+  min_required_version?: string | null;
+}) {
+  const form = new FormData();
+  form.append("file", data.file);
+  form.append("version", data.version);
+  if (data.channel) form.append("channel", data.channel);
+  if (data.short_note) form.append("short_note", data.short_note);
+  if (data.severity_type) form.append("severity_type", data.severity_type);
+  if (data.description_en) form.append("description_en", data.description_en);
+  if (data.description_it) form.append("description_it", data.description_it);
+  form.append("is_critical", data.is_critical ? "true" : "false");
+  if (data.min_required_version) form.append("min_required_version", data.min_required_version);
+
+  return apiFetch<{ version: string; channel: ReleaseChannel; download_filename: string; sha256_checksum: string }>(
+    "/updates/releases",
+    { method: "POST", body: form },
+    { requiresAdmin: true, requiresApi: false, baseUrl: updatesBase() },
+  );
+}
+
+export async function deleteRelease(version: string) {
+  return apiFetch<{ deleted: boolean }>(
+    `/updates/releases/${encodeURIComponent(version)}`,
+    { method: "DELETE" },
+    { requiresAdmin: true, requiresApi: false, baseUrl: updatesBase() },
+  );
+}
+
+export async function promoteRelease(version: string, channel: ReleaseChannel) {
+  return apiFetch<{ version: string; channel: ReleaseChannel }>(
+    `/updates/releases/${encodeURIComponent(version)}/channel`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ channel }),
+    },
+    { requiresAdmin: true, requiresApi: false, baseUrl: updatesBase() },
   );
 }
