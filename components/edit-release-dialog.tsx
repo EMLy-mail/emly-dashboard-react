@@ -37,22 +37,23 @@ export function EditReleaseDialog({ release, open, onOpenChange }: EditReleaseDi
   const boundAction = updateReleaseAction.bind(null, release.version);
   const [state, formAction, isPending] = useActionState(boundAction, initialState);
 
-  useEffect(() => {
-    if (open) {
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (nextOpen) {
       setChannel(release.channel);
       setSeverityType(release.severity_type);
     }
-  }, [open, release.channel, release.severity_type]);
+    onOpenChange(nextOpen);
+  };
 
   useEffect(() => {
     if (state.success) {
       onOpenChange(false);
       toast.success(`Release ${release.version} updated`);
     }
-  }, [state.success]);
+  }, [state.success, onOpenChange, release.version]);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Edit Release {release.version}</DialogTitle>
