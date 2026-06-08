@@ -340,6 +340,29 @@ export async function deleteRelease(version: string) {
   );
 }
 
+export async function updateRelease(
+  version: string,
+  data: {
+    short_note?: string;
+    channel?: ReleaseChannel;
+    severity_type?: ReleaseSeverity;
+    description_en?: string | null;
+    description_it?: string | null;
+    is_critical?: boolean;
+    min_required_version?: string | null;
+  },
+) {
+  return apiFetch<Release>(
+    `/updates/releases/${encodeURIComponent(version)}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    },
+    { requiresAdmin: true, requiresApi: false, baseUrl: updatesBase() },
+  );
+}
+
 export async function promoteRelease(version: string, channel: ReleaseChannel) {
   return apiFetch<{ version: string; channel: ReleaseChannel }>(
     `/updates/releases/${encodeURIComponent(version)}/channel`,

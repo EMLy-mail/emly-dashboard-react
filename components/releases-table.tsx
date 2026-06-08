@@ -31,7 +31,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MoreHorizontal, ArrowUpCircle, Archive, AlertTriangle, Trash2 } from "lucide-react";
+import { MoreHorizontal, ArrowUpCircle, Archive, AlertTriangle, Trash2, Pencil } from "lucide-react";
+import { EditReleaseDialog } from "@/components/edit-release-dialog";
 
 function ChannelBadge({ channel }: { channel: ReleaseChannel }) {
   if (channel === "stable") return <Badge>stable</Badge>;
@@ -48,6 +49,7 @@ function SeverityBadge({ severity }: { severity: string }) {
 
 export function ReleasesTable({ releases }: { releases: Release[] }) {
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [editTarget, setEditTarget] = useState<Release | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function handlePromote(version: string, channel: ReleaseChannel) {
@@ -130,6 +132,11 @@ export function ReleasesTable({ releases }: { releases: Release[] }) {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => setEditTarget(release)}>
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
                       {release.channel !== "stable" && (
                         <DropdownMenuItem onClick={() => handlePromote(release.version, "stable")}>
                           <ArrowUpCircle className="mr-2 h-4 w-4" />
@@ -165,6 +172,14 @@ export function ReleasesTable({ releases }: { releases: Release[] }) {
           </TableBody>
         </Table>
       </div>
+
+      {editTarget && (
+        <EditReleaseDialog
+          release={editTarget}
+          open={!!editTarget}
+          onOpenChange={(open) => { if (!open) setEditTarget(null); }}
+        />
+      )}
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
         <AlertDialogContent>
