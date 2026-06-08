@@ -261,6 +261,7 @@ export interface UpdateManifest {
   stableDownload: string;
   betaDownload?: string;
   isCritical: boolean;
+  criticalVersion?: string;
   minRequiredVersion?: string;
   sha256Checksums: Record<string, string>;
   releaseNotes: Record<string, string>;
@@ -277,6 +278,7 @@ export interface Release {
   description_en: string | null;
   description_it: string | null;
   is_critical: boolean;
+  critical_version: string | null;
   min_required_version: string | null;
   released_at: string;
   created_at: string;
@@ -312,6 +314,7 @@ export async function createRelease(data: {
   description_en?: string | null;
   description_it?: string | null;
   is_critical?: boolean;
+  critical_version?: string | null;
   min_required_version?: string | null;
 }) {
   const form = new FormData();
@@ -323,6 +326,7 @@ export async function createRelease(data: {
   if (data.description_en) form.append("description_en", data.description_en);
   if (data.description_it) form.append("description_it", data.description_it);
   form.append("is_critical", data.is_critical ? "true" : "false");
+  if (data.critical_version) form.append("critical_version", data.critical_version);
   if (data.min_required_version) form.append("min_required_version", data.min_required_version);
 
   return apiFetch<{ version: string; channel: ReleaseChannel; download_filename: string; sha256_checksum: string }>(
@@ -349,6 +353,7 @@ export async function updateRelease(
     description_en?: string | null;
     description_it?: string | null;
     is_critical?: boolean;
+    critical_version?: string | null;
     min_required_version?: string | null;
   },
 ) {

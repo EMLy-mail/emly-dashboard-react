@@ -29,7 +29,10 @@ export function CreateReleaseDialog() {
   const [open, setOpen] = useState(false);
   const [channel, setChannel] = useState("archived");
   const [severityType, setSeverityType] = useState("none");
+  const [isCritical, setIsCritical] = useState(false);
   const [state, formAction, isPending] = useActionState(createReleaseAction, initialState);
+
+  const isArchived = channel === "archived";
 
   useEffect(() => {
     if (state.success) {
@@ -144,9 +147,15 @@ export function CreateReleaseDialog() {
               id="rel-critical"
               name="is_critical"
               value="true"
-              className="h-4 w-4 rounded border-border accent-primary"
+              checked={!isArchived && isCritical}
+              onChange={(e) => setIsCritical(e.target.checked)}
+              disabled={isArchived}
+              className="h-4 w-4 rounded border-border accent-primary disabled:cursor-not-allowed disabled:opacity-50"
             />
-            <Label htmlFor="rel-critical" className="cursor-pointer font-normal">
+            <Label
+              htmlFor="rel-critical"
+              className={`font-normal ${isArchived ? "cursor-not-allowed text-muted-foreground" : "cursor-pointer"}`}
+            >
               Critical update (clients must update immediately)
             </Label>
           </div>

@@ -7,10 +7,8 @@ import {
   deleteRelease,
   promoteRelease,
   ApiError,
-  getReleases,
   type ReleaseChannel,
   type ReleaseSeverity,
-  type Release,
 } from "@/lib/api";
 import { getCurrentUser } from "@/lib/auth";
 
@@ -39,17 +37,10 @@ export async function createReleaseAction(
   if (!file || file.size === 0) return { error: "Installer file is required" };
 
   try {
-    // Check if there's already a release in the same channel
-    let existingReleases: Release[] = [];
-    try {
-      existingReleases = await getReleases(channel);
-    } catch (e) {
-      // If fetching releases fails, we can still attempt to create the release
-      console.error("Failed to fetch existing releases:", e);
-    } 
-    console.log("Existing releases in channel:", existingReleases);
-
-    const res = await createRelease({
+    // The backend atomically clears the critical flag from other releases when
+    // is_critical is true, and auto-archives any release already in the target
+    // stable/beta slot — so no manual reconciliation is needed here.
+    await createRelease({
       file,
       version,
       short_note,
@@ -58,14 +49,9 @@ export async function createReleaseAction(
       description_en,
       description_it,
       is_critical,
+      critical_version: is_critical ? version : null,
       min_required_version,
     });
-    console.log(res.channel === existingReleases.find(r => r.channel === res.channel)?.channel);
-    if(res.channel === existingReleases.find(r => r.channel === res.channel)?.channel) {
-      // If there's an existing release in the same channel, we need to promote the old release to archived
-      console.log("Promoting existing release to archived:", existingReleases.find(r => r.channel === res.channel));
-      await promoteRelease(existingReleases.find(r => r.channel === res.channel)!.version, "archived");
-    }
     revalidatePath("/updates");
     return { success: true };
   } catch (e) {
@@ -96,6 +82,7 @@ export async function updateReleaseAction(
       description_en,
       description_it,
       is_critical,
+      critical_version: is_critical ? version : null,
       min_required_version,
     });
     revalidatePath("/updates");

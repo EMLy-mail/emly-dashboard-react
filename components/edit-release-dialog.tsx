@@ -33,6 +33,9 @@ interface EditReleaseDialogProps {
 export function EditReleaseDialog({ release, open, onOpenChange }: EditReleaseDialogProps) {
   const [channel, setChannel] = useState<string>(release.channel);
   const [severityType, setSeverityType] = useState<string>(release.severity_type);
+  const [isCritical, setIsCritical] = useState<boolean>(release.is_critical);
+
+  const isArchived = channel === "archived";
 
   const boundAction = updateReleaseAction.bind(null, release.version);
   const [state, formAction, isPending] = useActionState(boundAction, initialState);
@@ -41,6 +44,7 @@ export function EditReleaseDialog({ release, open, onOpenChange }: EditReleaseDi
     if (nextOpen) {
       setChannel(release.channel);
       setSeverityType(release.severity_type);
+      setIsCritical(release.is_critical);
     }
     onOpenChange(nextOpen);
   };
@@ -144,10 +148,15 @@ export function EditReleaseDialog({ release, open, onOpenChange }: EditReleaseDi
               id="edit-critical"
               name="is_critical"
               value="true"
-              defaultChecked={release.is_critical}
-              className="h-4 w-4 rounded border-border accent-primary"
+              checked={!isArchived && isCritical}
+              onChange={(e) => setIsCritical(e.target.checked)}
+              disabled={isArchived}
+              className="h-4 w-4 rounded border-border accent-primary disabled:cursor-not-allowed disabled:opacity-50"
             />
-            <Label htmlFor="edit-critical" className="cursor-pointer font-normal">
+            <Label
+              htmlFor="edit-critical"
+              className={`font-normal ${isArchived ? "cursor-not-allowed text-muted-foreground" : "cursor-pointer"}`}
+            >
               Critical update (clients must update immediately)
             </Label>
           </div>
