@@ -33,8 +33,10 @@ export function CreateReleaseDialog() {
 
   useEffect(() => {
     if (state.success) {
-      setOpen(false);
+      const frame = requestAnimationFrame(() => setOpen(false));
       toast.success("Release created successfully");
+
+      return () => cancelAnimationFrame(frame);
     }
   }, [state.success]);
 
