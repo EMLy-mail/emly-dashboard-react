@@ -25,6 +25,7 @@ export async function createReleaseAction(
   _prevState: ReleaseActionState,
   formData: FormData,
 ): Promise<ReleaseActionState> {
+  await requireAdmin();
   const file = formData.get("file") as File;
   const version = formData.get("version") as string;
   const short_note = (formData.get("short_note") as string) || undefined;

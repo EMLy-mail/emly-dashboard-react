@@ -47,7 +47,7 @@ function SeverityBadge({ severity }: { severity: string }) {
   return <Badge variant="outline">none</Badge>;
 }
 
-export function ReleasesTable({ releases }: { releases: Release[] }) {
+export function ReleasesTable({ releases, isAdmin }: { releases: Release[]; isAdmin: boolean }) {
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [editTarget, setEditTarget] = useState<Release | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -125,6 +125,7 @@ export function ReleasesTable({ releases }: { releases: Release[] }) {
                   {new Date(release.released_at).toLocaleDateString()}
                 </TableCell>
                 <TableCell>
+                  {isAdmin && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon" disabled={isPending}>
@@ -166,6 +167,7 @@ export function ReleasesTable({ releases }: { releases: Release[] }) {
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
+                  )}
                 </TableCell>
               </TableRow>
             ))}

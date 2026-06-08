@@ -74,7 +74,7 @@ export default async function UpdatesPage() {
         </div>
       )}
 
-      <ReleasesTable releases={releases} />
+      <ReleasesTable releases={releases} isAdmin={isAdmin} />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { getBugReports } from "@/lib/api";
+import { getCurrentUser } from "@/lib/auth";
 import { BugReportsTable } from "@/components/bug-reports-table";
 import { BugReportSearch } from "@/components/bug-report-search";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +14,8 @@ export default async function BugReportsPage({ searchParams }: PageProps) {
   const page_size = 20;
 
   const reports = await getBugReports({ page, page_size, search });
+  const currentUser = await getCurrentUser();
+  const isAdmin = currentUser?.role === "admin";
 
   return (
     <div className="space-y-6">
@@ -36,6 +39,7 @@ export default async function BugReportsPage({ searchParams }: PageProps) {
         totalPages={reports.total_pages}
         currentPage={page}
         search={search}
+        isAdmin={isAdmin}
       />
     </div>
   );

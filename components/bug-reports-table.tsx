@@ -29,9 +29,10 @@ interface BugReportsTableProps {
   totalPages: number;
   currentPage: number;
   search?: string;
+  isAdmin: boolean;
 }
 
-export function BugReportsTable({ data: rawData, totalPages, currentPage, search }: BugReportsTableProps) {
+export function BugReportsTable({ data: rawData, totalPages, currentPage, search, isAdmin }: BugReportsTableProps) {
   const data = rawData ?? [];
   const router = useRouter();
   const pathname = usePathname();
@@ -112,14 +113,16 @@ export function BugReportsTable({ data: rawData, totalPages, currentPage, search
                           View Details
                         </Link>
                       </DropdownMenuItem>
-                      <DropdownMenuItem
-                        className="text-destructive"
-                        onClick={() => handleDelete(report.id)}
-                        disabled={isPending}
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
-                      </DropdownMenuItem>
+                      {isAdmin && (
+                        <DropdownMenuItem
+                          className="text-destructive"
+                          onClick={() => handleDelete(report.id)}
+                          disabled={isPending}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete
+                        </DropdownMenuItem>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>

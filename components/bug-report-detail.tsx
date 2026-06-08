@@ -132,11 +132,12 @@ interface Props {
   report: BugReport;
   files: BugReportFile[];
   reportId: number;
+  isAdmin: boolean;
 }
 
 // ── Component ──────────────────────────────────────────────────────────────
 
-export function BugReportDetail({ report, files, reportId }: Props) {
+export function BugReportDetail({ report, files, reportId, isAdmin }: Props) {
   const [status, setStatus] = useState<BugReportStatus>(report.status);
   const [isPending, startTransition] = useTransition();
   const [downloadingZip, setDownloadingZip] = useState(false);
@@ -203,32 +204,34 @@ export function BugReportDetail({ report, files, reportId }: Props) {
             Download ZIP
           </Button>
 
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive" disabled={isPending}>
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete bug report #{reportId}?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This action cannot be undone. The report and all its attached files will be
-                  permanently deleted.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  onClick={handleDelete}
-                >
+          {isAdmin && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" disabled={isPending}>
+                  <Trash2 className="mr-2 h-4 w-4" />
                   Delete
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete bug report #{reportId}?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. The report and all its attached files will be
+                    permanently deleted.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    onClick={handleDelete}
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
       </div>
 
