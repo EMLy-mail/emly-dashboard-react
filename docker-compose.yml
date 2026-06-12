@@ -9,3 +9,4 @@ services:
       - API_KEY=${API_KEY}
       - ADMIN_KEY=${ADMIN_KEY}
       - DASHBOARD_KEY=${DASHBOARD_KEY}
+      - FACING_URL=${FACING_URL}

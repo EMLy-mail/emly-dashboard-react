@@ -11,6 +11,7 @@ type Env = {
   apiKey: string;
   adminKey: string;
   dashboardKey: string | undefined;
+  facingUrl: string;
 };
 
 function buildEnv(): Env {
@@ -18,7 +19,8 @@ function buildEnv(): Env {
     apiBaseUrl: requireEnv("API_BASE_URL"),
     apiKey: requireEnv("API_KEY"),
     adminKey: requireEnv("ADMIN_KEY"),
-    dashboardKey: process.env["DASHBOARD_KEY"],
+    dashboardKey: requireEnv("DASHBOARD_KEY"),
+    facingUrl: requireEnv("FACING_URL") || requireEnv("API_BASE_URL").replace(/\/?$/, ""), // fallback to API_BASE_URL if FACING_URL is not set
   };
 }
 

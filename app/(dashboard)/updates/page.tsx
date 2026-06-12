@@ -20,7 +20,7 @@ export default async function UpdatesPage() {
   const releases = releasesResult.status === "fulfilled" ? (releasesResult.value ?? []) : [];
   const currentUser = currentUserResult.status === "fulfilled" ? currentUserResult.value : null;
   const isAdmin = currentUser?.role === "admin";
-  const manifestUrl = `${env.apiBaseUrl}/v2/updates/manifest`;
+  const manifestUrl = `${env.facingUrl}/v2/updates/manifest`;
 
   return (
     <div className="space-y-6">
@@ -65,6 +65,11 @@ export default async function UpdatesPage() {
               <CardContent className="space-y-1">
                 <p className="font-mono text-2xl font-bold">{manifest.betaVersion}</p>
                 <p className="truncate text-xs text-muted-foreground">{manifest.betaDownload}</p>
+                {manifest.isCritical && (
+                <Badge variant="destructive" className="mt-1">
+                  Critical
+                </Badge>
+              )}
               </CardContent>
             </Card>
           )}
