@@ -1,9 +1,20 @@
 import "server-only";
 import { cache } from "react";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { validateSession, type AuthUser } from "./api";
 
 export const SESSION_COOKIE = "emly_session";
+
+async function shouldUseSecureCookie(): Promise<boolean> {
+  const hdrs = await headers();
+  const forwardedProto = hdrs.get("x-forwarded-proto");
+  if (!forwardedProto) return false;
+
+  return forwardedProto
+    .split(",")
+    .map((value) => value.trim().toLowerCase())
+    .includes("https");
+}
 
 export async function getSessionToken(): Promise<string | undefined> {
   const store = await cookies();
@@ -14,7 +25,7 @@ export async function setSessionToken(token: string): Promise<void> {
   const store = await cookies();
   store.set(SESSION_COOKIE, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: await shouldUseSecureCookie(),
     sameSite: "lax",
     path: "/",
     maxAge: 60 * 60 * 24 * 30,
