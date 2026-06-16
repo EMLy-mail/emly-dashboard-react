@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect } from "react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import type { User } from "@/lib/api";
 import { resetPasswordAction, type UserActionState } from "@/lib/actions/users";
 import {
@@ -24,19 +25,20 @@ const initialState: UserActionState = {};
 
 export function ResetPasswordDialog({ user, onClose }: Props) {
   const [state, formAction, isPending] = useActionState(resetPasswordAction, initialState);
+  const t = useTranslations("users");
 
   useEffect(() => {
     if (state.success) {
-      toast.success("Password reset successfully");
+      toast.success(t("resetPassword.success"));
       onClose();
     }
-  }, [state.success, onClose]);
+  }, [state.success, onClose, t]);
 
   return (
     <Dialog open={!!user} onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Reset Password for {user?.username}</DialogTitle>
+          <DialogTitle>{t("resetPassword.title", { username: user?.username ?? "" })}</DialogTitle>
         </DialogHeader>
         <form action={formAction} className="space-y-4">
           <input type="hidden" name="userId" value={user?.id ?? ""} />
@@ -46,15 +48,15 @@ export function ResetPasswordDialog({ user, onClose }: Props) {
             </Alert>
           )}
           <div className="space-y-2">
-            <Label htmlFor="reset-password">New Password</Label>
+            <Label htmlFor="reset-password">{t("resetPassword.newPassword")}</Label>
             <Input id="reset-password" name="password" type="password" required />
           </div>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
+              {t("resetPassword.cancel")}
             </Button>
             <Button type="submit" disabled={isPending}>
-              {isPending ? "Resetting..." : "Reset Password"}
+              {isPending ? t("resetPassword.resetting") : t("resetPassword.reset")}
             </Button>
           </div>
         </form>

@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import type { BugReport, BugReportFile, BugReportStatus } from "@/lib/api";
 import { updateStatusAction, deleteReportAction } from "@/lib/actions/bug-reports";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -119,15 +120,6 @@ function JsonViewer({ data }: { data: Record<string, unknown> }) {
   );
 }
 
-// ── Constants ──────────────────────────────────────────────────────────────
-
-const STATUS_OPTIONS: { value: BugReportStatus; label: string }[] = [
-  { value: "new", label: "New" },
-  { value: "in_review", label: "In Review" },
-  { value: "resolved", label: "Resolved" },
-  { value: "closed", label: "Closed" },
-];
-
 interface Props {
   report: BugReport;
   files: BugReportFile[];
@@ -142,13 +134,30 @@ export function BugReportDetail({ report, files, reportId, isAdmin }: Props) {
   const [isPending, startTransition] = useTransition();
   const [downloadingZip, setDownloadingZip] = useState(false);
   const [downloadingFileId, setDownloadingFileId] = useState<number | null>(null);
+  const t = useTranslations("bugReports");
+
+  const STATUS_OPTIONS: { value: BugReportStatus; label: string }[] = [
+    { value: "new", label: t("status.new") },
+    { value: "in_review", label: t("status.in_review") },
+    { value: "resolved", label: t("status.resolved") },
+    { value: "closed", label: t("status.closed") },
+  ];
+
+  const reporterFields: { key: string; value: string; mono?: boolean }[] = [
+    { key: "name", value: report.name },
+    { key: "email", value: report.email },
+    { key: "hwid", value: report.hwid, mono: true },
+    { key: "hostname", value: report.hostname, mono: true },
+    { key: "osUser", value: report.os_user },
+    { key: "ip", value: report.submitter_ip, mono: true },
+  ];
 
   async function handleZipDownload() {
     setDownloadingZip(true);
     try {
       await triggerDownload(`/api/bug-reports/${reportId}/download`, `report-${reportId}.zip`);
     } catch {
-      toast.error("Download failed");
+      toast.error(t("detail.downloadFailed"));
     } finally {
       setDownloadingZip(false);
     }
@@ -159,7 +168,7 @@ export function BugReportDetail({ report, files, reportId, isAdmin }: Props) {
     try {
       await triggerDownload(`/api/bug-reports/${reportId}/files/${file.id}`, file.filename);
     } catch {
-      toast.error("Download failed");
+      toast.error(t("detail.downloadFailed"));
     } finally {
       setDownloadingFileId(null);
     }
@@ -169,7 +178,7 @@ export function BugReportDetail({ report, files, reportId, isAdmin }: Props) {
     setStatus(newStatus);
     startTransition(async () => {
       await updateStatusAction(reportId, newStatus);
-      toast.success(`Status updated to "${newStatus.replace("_", " ")}"`);
+      toast.success(t("detail.statusUpdated", { status: t(`status.${newStatus}`) }));
     });
   }
 
@@ -190,8 +199,8 @@ export function BugReportDetail({ report, files, reportId, isAdmin }: Props) {
             </Link>
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">Bug Report #{reportId}</h1>
-            <p className="text-muted-foreground">Submitted by {report.name}</p>
+            <h1 className="text-2xl font-bold">{t("detail.title", { id: reportId })}</h1>
+            <p className="text-muted-foreground">{t("detail.submittedBy", { name: report.name })}</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -201,7 +210,7 @@ export function BugReportDetail({ report, files, reportId, isAdmin }: Props) {
             ) : (
               <Download className="mr-2 h-4 w-4" />
             )}
-            Download ZIP
+            {t("detail.downloadZip")}
           </Button>
 
           {isAdmin && (
@@ -209,24 +218,23 @@ export function BugReportDetail({ report, files, reportId, isAdmin }: Props) {
               <AlertDialogTrigger asChild>
                 <Button variant="destructive" disabled={isPending}>
                   <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
+                  {t("detail.delete")}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Delete bug report #{reportId}?</AlertDialogTitle>
+                  <AlertDialogTitle>{t("detail.deleteTitle", { id: reportId })}</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This action cannot be undone. The report and all its attached files will be
-                    permanently deleted.
+                    {t("detail.deleteDescription")}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogCancel>{t("detail.cancel")}</AlertDialogCancel>
                   <AlertDialogAction
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     onClick={handleDelete}
                   >
-                    Delete
+                    {t("detail.delete")}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
@@ -239,19 +247,12 @@ export function BugReportDetail({ report, files, reportId, isAdmin }: Props) {
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Reporter Information</CardTitle>
+            <CardTitle>{t("detail.reporterInfo")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
-            {[
-              { label: "Name", value: report.name },
-              { label: "Email", value: report.email },
-              { label: "HWID", value: report.hwid, mono: true },
-              { label: "Hostname", value: report.hostname, mono: true },
-              { label: "OS User", value: report.os_user },
-              { label: "IP", value: report.submitter_ip, mono: true },
-            ].map(({ label, value, mono }) => (
-              <div key={label} className="flex justify-between gap-2">
-                <span className="text-muted-foreground shrink-0">{label}</span>
+            {reporterFields.map(({ key, value, mono }) => (
+              <div key={key} className="flex justify-between gap-2">
+                <span className="text-muted-foreground shrink-0">{t(`detail.fields.${key}`)}</span>
                 <span className={mono ? "font-mono text-xs" : "truncate"}>{value}</span>
               </div>
             ))}
@@ -260,11 +261,11 @@ export function BugReportDetail({ report, files, reportId, isAdmin }: Props) {
 
         <Card>
           <CardHeader>
-            <CardTitle>Status & Timeline</CardTitle>
+            <CardTitle>{t("detail.statusTimeline")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <p className="text-sm text-muted-foreground mb-2">Current Status</p>
+              <p className="text-sm text-muted-foreground mb-2">{t("detail.currentStatus")}</p>
               <Select
                 value={status}
                 onValueChange={(v) => handleStatusChange(v as BugReportStatus)}
@@ -285,11 +286,11 @@ export function BugReportDetail({ report, files, reportId, isAdmin }: Props) {
             <Separator />
             <div className="text-sm space-y-1">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Created</span>
+                <span className="text-muted-foreground">{t("detail.created")}</span>
                 <span>{new Date(report.created_at).toLocaleString()}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Updated</span>
+                <span className="text-muted-foreground">{t("detail.updated")}</span>
                 <span>{new Date(report.updated_at).toLocaleString()}</span>
               </div>
             </div>
@@ -300,7 +301,7 @@ export function BugReportDetail({ report, files, reportId, isAdmin }: Props) {
       {/* Description */}
       <Card>
         <CardHeader>
-          <CardTitle>Description</CardTitle>
+          <CardTitle>{t("detail.description")}</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="whitespace-pre-wrap text-sm">{report.description}</p>
@@ -311,7 +312,7 @@ export function BugReportDetail({ report, files, reportId, isAdmin }: Props) {
       {report.system_info && (
         <Card>
           <CardHeader>
-            <CardTitle>System Info</CardTitle>
+            <CardTitle>{t("detail.systemInfo")}</CardTitle>
           </CardHeader>
           <CardContent>
             <JsonViewer data={report.system_info} />
@@ -323,7 +324,7 @@ export function BugReportDetail({ report, files, reportId, isAdmin }: Props) {
       {files.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Attached Files ({files.length})</CardTitle>
+            <CardTitle>{t("detail.attachedFiles", { count: files.length })}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">

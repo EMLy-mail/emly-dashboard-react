@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FileJson } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { getReleases, getUpdateManifest } from "@/lib/api";
 import { getCurrentUser } from "@/lib/auth";
 import { env } from "@/lib/env";
@@ -10,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function UpdatesPage() {
+  const t = await getTranslations("updates");
+
   const [manifestResult, releasesResult, currentUserResult] = await Promise.allSettled([
     getUpdateManifest(),
     getReleases(),
@@ -39,14 +42,14 @@ export default async function UpdatesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Updates</h1>
-          <p className="text-muted-foreground">Manage software releases and update channels.</p>
+          <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
+          <p className="text-muted-foreground">{t("description")}</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" asChild>
             <Link href={manifestUrl} target="_blank" rel="noopener noreferrer">
               <FileJson className="mr-2 h-4 w-4" />
-              Show manifest
+              {t("showManifest")}
             </Link>
           </Button>
           {isAdmin && <CreateReleaseDialog />}
@@ -57,7 +60,7 @@ export default async function UpdatesPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Stable</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">{t("manifest.stable")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-1">
               <p className="font-mono text-2xl font-bold">{manifest.stableVersion}</p>
@@ -66,7 +69,7 @@ export default async function UpdatesPage() {
               </p>
               {manifest.criticalVersion === manifest.stableVersion && (
                 <Badge variant="destructive" className="mt-1">
-                  Critical
+                  {t("manifest.critical")}
                 </Badge>
               )}
             </CardContent>
@@ -75,7 +78,7 @@ export default async function UpdatesPage() {
           {manifest.betaVersion && (
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Beta</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">{t("manifest.beta")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-1">
                 <p className="font-mono text-2xl font-bold">{manifest.betaVersion}</p>
@@ -84,7 +87,7 @@ export default async function UpdatesPage() {
                 </p>
                 {manifest.criticalVersion === manifest.betaVersion && (
                   <Badge variant="destructive" className="mt-1">
-                    Critical
+                    {t("manifest.critical")}
                   </Badge>
                 )}
               </CardContent>
@@ -95,13 +98,13 @@ export default async function UpdatesPage() {
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Min Required
+                  {t("manifest.minRequired")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="font-mono text-2xl font-bold">{manifest.minRequiredVersion}</p>
                 <p className="text-xs text-muted-foreground">
-                  Clients below this version are blocked
+                  {t("manifest.blockedBelow")}
                 </p>
               </CardContent>
             </Card>

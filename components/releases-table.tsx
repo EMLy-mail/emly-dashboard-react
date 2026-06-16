@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import type { Release, ReleaseChannel } from "@/lib/api";
 import { promoteReleaseAction, deleteReleaseAction } from "@/lib/actions/updates";
 import {
@@ -51,14 +52,15 @@ export function ReleasesTable({ releases, isAdmin }: { releases: Release[]; isAd
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [editTarget, setEditTarget] = useState<Release | null>(null);
   const [isPending, startTransition] = useTransition();
+  const t = useTranslations("updates");
 
   function handlePromote(version: string, channel: ReleaseChannel) {
     startTransition(async () => {
       try {
         await promoteReleaseAction(version, channel);
-        toast.success(`${version} moved to ${channel}`);
+        toast.success(t("table.promoted", { version, channel }));
       } catch {
-        toast.error("Failed to update channel");
+        toast.error(t("table.promoteFailed"));
       }
     });
   }
@@ -70,9 +72,9 @@ export function ReleasesTable({ releases, isAdmin }: { releases: Release[]; isAd
     startTransition(async () => {
       try {
         await deleteReleaseAction(version);
-        toast.success(`Release ${version} deleted`);
+        toast.success(t("table.deleted", { version }));
       } catch {
-        toast.error("Failed to delete release");
+        toast.error(t("table.deleteFailed"));
       }
     });
   }
@@ -83,13 +85,13 @@ export function ReleasesTable({ releases, isAdmin }: { releases: Release[]; isAd
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Version</TableHead>
-              <TableHead>Channel</TableHead>
-              <TableHead>Severity</TableHead>
-              <TableHead>Note</TableHead>
-              <TableHead>Critical</TableHead>
-              <TableHead>Min Required</TableHead>
-              <TableHead>Released</TableHead>
+              <TableHead>{t("table.version")}</TableHead>
+              <TableHead>{t("table.channel")}</TableHead>
+              <TableHead>{t("table.severity")}</TableHead>
+              <TableHead>{t("table.note")}</TableHead>
+              <TableHead>{t("table.critical")}</TableHead>
+              <TableHead>{t("table.minRequired")}</TableHead>
+              <TableHead>{t("table.released")}</TableHead>
               <TableHead className="w-10" />
             </TableRow>
           </TableHeader>
@@ -97,7 +99,7 @@ export function ReleasesTable({ releases, isAdmin }: { releases: Release[]; isAd
             {releases.length === 0 && (
               <TableRow>
                 <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">
-                  No releases found.
+                  {t("table.noData")}
                 </TableCell>
               </TableRow>
             )}
@@ -135,25 +137,25 @@ export function ReleasesTable({ releases, isAdmin }: { releases: Release[]; isAd
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => setEditTarget(release)}>
                         <Pencil className="mr-2 h-4 w-4" />
-                        Edit
+                        {t("table.edit")}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       {release.channel !== "stable" && (
                         <DropdownMenuItem onClick={() => handlePromote(release.version, "stable")}>
                           <ArrowUpCircle className="mr-2 h-4 w-4" />
-                          Promote to Stable
+                          {t("table.promoteStable")}
                         </DropdownMenuItem>
                       )}
                       {release.channel !== "beta" && (
                         <DropdownMenuItem onClick={() => handlePromote(release.version, "beta")}>
                           <ArrowUpCircle className="mr-2 h-4 w-4" />
-                          Promote to Beta
+                          {t("table.promoteBeta")}
                         </DropdownMenuItem>
                       )}
                       {release.channel !== "archived" && (
                         <DropdownMenuItem onClick={() => handlePromote(release.version, "archived")}>
                           <Archive className="mr-2 h-4 w-4" />
-                          Archive
+                          {t("table.archive")}
                         </DropdownMenuItem>
                       )}
                       <DropdownMenuSeparator />
@@ -163,7 +165,7 @@ export function ReleasesTable({ releases, isAdmin }: { releases: Release[]; isAd
                         disabled={isPending}
                       >
                         <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
+                        {t("table.delete")}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -186,18 +188,18 @@ export function ReleasesTable({ releases, isAdmin }: { releases: Release[]; isAd
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete release "{deleteTarget}"?</AlertDialogTitle>
+            <AlertDialogTitle>{t("table.deleteTitle", { version: deleteTarget ?? "" })}</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently remove the release record and delete the installer file from storage. This action cannot be undone.
+              {t("table.deleteDescription")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("table.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={confirmDelete}
             >
-              Delete
+              {t("table.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { getBugReports } from "@/lib/api";
 import { getCurrentUser } from "@/lib/auth";
 import { BugReportsTable } from "@/components/bug-reports-table";
@@ -13,20 +14,23 @@ export default async function BugReportsPage({ searchParams }: PageProps) {
   const page = pageStr ? parseInt(pageStr, 10) : 1;
   const page_size = 20;
 
-  const reports = await getBugReports({ page, page_size, search });
-  const currentUser = await getCurrentUser();
+  const [reports, currentUser, t] = await Promise.all([
+    getBugReports({ page, page_size, search }),
+    getCurrentUser(),
+    getTranslations("bugReports"),
+  ]);
   const isAdmin = currentUser?.role === "admin";
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Bug Reports</h1>
-          <p className="text-muted-foreground">Manage and triage incoming bug reports.</p>
+          <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
+          <p className="text-muted-foreground">{t("description")}</p>
         </div>
         <Card className="w-32">
           <CardHeader className="pb-1 pt-3 px-4">
-            <CardTitle className="text-xs font-medium text-muted-foreground">Total</CardTitle>
+            <CardTitle className="text-xs font-medium text-muted-foreground">{t("total")}</CardTitle>
           </CardHeader>
           <CardContent className="pb-3 px-4">
             <p className="text-2xl font-bold">{reports.total}</p>

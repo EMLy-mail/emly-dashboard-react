@@ -1,17 +1,17 @@
+"use client";
+
+import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import type { BugReportStatus } from "@/lib/api";
 
-const statusConfig: Record<
-  BugReportStatus,
-  { label: string; variant: "default" | "secondary" | "destructive" | "outline" }
-> = {
-  new: { label: "New", variant: "default" },
-  in_review: { label: "In Review", variant: "secondary" },
-  resolved: { label: "Resolved", variant: "outline" },
-  closed: { label: "Closed", variant: "outline" },
+const variantMap: Record<BugReportStatus, "default" | "secondary" | "destructive" | "outline"> = {
+  new: "default",
+  in_review: "secondary",
+  resolved: "outline",
+  closed: "outline",
 };
 
 export function BugReportStatusBadge({ status }: { status: BugReportStatus }) {
-  const config = statusConfig[status];
-  return <Badge variant={config.variant}>{config.label}</Badge>;
+  const t = useTranslations("bugReports");
+  return <Badge variant={variantMap[status]}>{t(`status.${status}`)}</Badge>;
 }

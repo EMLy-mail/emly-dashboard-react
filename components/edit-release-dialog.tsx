@@ -2,6 +2,7 @@
 
 import { useState, useActionState, useEffect } from "react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { updateReleaseAction, type ReleaseActionState } from "@/lib/actions/updates";
 import type { Release } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,7 @@ export function EditReleaseDialog({ release, open, onOpenChange }: EditReleaseDi
   const [channel, setChannel] = useState<string>(release.channel);
   const [severityType, setSeverityType] = useState<string>(release.severity_type);
   const [isCritical, setIsCritical] = useState<boolean>(release.is_critical);
+  const t = useTranslations("updates");
 
   const isArchived = channel === "archived";
 
@@ -52,15 +54,15 @@ export function EditReleaseDialog({ release, open, onOpenChange }: EditReleaseDi
   useEffect(() => {
     if (state.success) {
       onOpenChange(false);
-      toast.success(`Release ${release.version} updated`);
+      toast.success(t("editDialog.success", { version: release.version }));
     }
-  }, [state.success, onOpenChange, release.version]);
+  }, [state.success, onOpenChange, release.version, t]);
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Edit Release {release.version}</DialogTitle>
+          <DialogTitle>{t("editDialog.title", { version: release.version })}</DialogTitle>
         </DialogHeader>
         <form action={formAction} className="space-y-4">
           <input type="hidden" name="channel" value={channel} />
@@ -72,45 +74,45 @@ export function EditReleaseDialog({ release, open, onOpenChange }: EditReleaseDi
           )}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Channel</Label>
+              <Label>{t("editDialog.channel")}</Label>
               <Select value={channel} onValueChange={setChannel}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="archived">Archived</SelectItem>
-                  <SelectItem value="beta">Beta</SelectItem>
-                  <SelectItem value="stable">Stable</SelectItem>
+                  <SelectItem value="archived">{t("editDialog.channelArchived")}</SelectItem>
+                  <SelectItem value="beta">{t("editDialog.channelBeta")}</SelectItem>
+                  <SelectItem value="stable">{t("editDialog.channelStable")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Severity</Label>
+              <Label>{t("editDialog.severity")}</Label>
               <Select value={severityType} onValueChange={setSeverityType}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  <SelectItem value="bugfix">Bugfix</SelectItem>
-                  <SelectItem value="feature">Feature</SelectItem>
-                  <SelectItem value="security">Security</SelectItem>
+                  <SelectItem value="none">{t("editDialog.severityNone")}</SelectItem>
+                  <SelectItem value="bugfix">{t("editDialog.severityBugfix")}</SelectItem>
+                  <SelectItem value="feature">{t("editDialog.severityFeature")}</SelectItem>
+                  <SelectItem value="security">{t("editDialog.severitySecurity")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-note">Short Note</Label>
+              <Label htmlFor="edit-note">{t("editDialog.shortNote")}</Label>
               <Input
                 id="edit-note"
                 name="short_note"
                 defaultValue={release.short_note ?? ""}
-                placeholder="Brief release summary"
+                placeholder={t("editDialog.shortNotePlaceholder")}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-minver">Min Required Version</Label>
+              <Label htmlFor="edit-minver">{t("editDialog.minRequiredVersion")}</Label>
               <Input
                 id="edit-minver"
                 name="min_required_version"
@@ -120,25 +122,24 @@ export function EditReleaseDialog({ release, open, onOpenChange }: EditReleaseDi
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="edit-desc-en">Description (EN)</Label>
+            <Label htmlFor="edit-desc-en">{t("editDialog.descriptionEn")}</Label>
             <textarea
               id="edit-desc-en"
               name="description_en"
               rows={3}
               defaultValue={release.description_en ?? ""}
-              placeholder="English release description"
+              placeholder={t("editDialog.descriptionEnPlaceholder")}
               className="flex w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="edit-desc-it">Description (IT)</Label>
+            <Label htmlFor="edit-desc-it">{t("editDialog.descriptionIt")}</Label>
             <textarea
               id="edit-desc-it"
               name="description_it"
               rows={3}
               defaultValue={release.description_it ?? ""}
-              placeholder="Descrizione in italiano"
+              placeholder={t("editDialog.descriptionItPlaceholder")}
               className="flex w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             />
           </div>
@@ -157,15 +158,15 @@ export function EditReleaseDialog({ release, open, onOpenChange }: EditReleaseDi
               htmlFor="edit-critical"
               className={`font-normal ${isArchived ? "cursor-not-allowed text-muted-foreground" : "cursor-pointer"}`}
             >
-              Critical update (clients must update immediately)
+              {t("editDialog.critical")}
             </Label>
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
+              {t("editDialog.cancel")}
             </Button>
             <Button type="submit" disabled={isPending}>
-              {isPending ? "Saving..." : "Save Changes"}
+              {isPending ? t("editDialog.saving") : t("editDialog.save")}
             </Button>
           </div>
         </form>

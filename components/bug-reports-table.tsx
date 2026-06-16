@@ -2,6 +2,7 @@
 
 import { useRouter, usePathname } from "next/navigation";
 import { useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import Link from "next/link";
 import type { BugReportListItem } from "@/lib/api";
@@ -37,6 +38,7 @@ export function BugReportsTable({ data: rawData, totalPages, currentPage, search
   const router = useRouter();
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
+  const t = useTranslations("bugReports");
 
   function navigatePage(page: number) {
     const params = new URLSearchParams();
@@ -48,7 +50,7 @@ export function BugReportsTable({ data: rawData, totalPages, currentPage, search
   function handleDelete(id: number) {
     startTransition(async () => {
       await deleteReportAction(id);
-      toast.success("Bug report deleted");
+      toast.success(t("table.deleted"));
     });
   }
 
@@ -58,13 +60,13 @@ export function BugReportsTable({ data: rawData, totalPages, currentPage, search
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-16">ID</TableHead>
-              <TableHead>Reporter</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Hostname</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Files</TableHead>
-              <TableHead>Date</TableHead>
+              <TableHead className="w-16">{t("table.id")}</TableHead>
+              <TableHead>{t("table.reporter")}</TableHead>
+              <TableHead>{t("table.description")}</TableHead>
+              <TableHead>{t("table.hostname")}</TableHead>
+              <TableHead>{t("table.status")}</TableHead>
+              <TableHead>{t("table.files")}</TableHead>
+              <TableHead>{t("table.date")}</TableHead>
               <TableHead className="w-10" />
             </TableRow>
           </TableHeader>
@@ -72,7 +74,7 @@ export function BugReportsTable({ data: rawData, totalPages, currentPage, search
             {data.length === 0 && (
               <TableRow>
                 <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
-                  No bug reports found.
+                  {t("table.noData")}
                 </TableCell>
               </TableRow>
             )}
@@ -110,7 +112,7 @@ export function BugReportsTable({ data: rawData, totalPages, currentPage, search
                       <DropdownMenuItem asChild>
                         <Link href={`/bug-reports/${report.id}`}>
                           <Eye className="mr-2 h-4 w-4" />
-                          View Details
+                          {t("table.viewDetails")}
                         </Link>
                       </DropdownMenuItem>
                       {isAdmin && (
@@ -120,7 +122,7 @@ export function BugReportsTable({ data: rawData, totalPages, currentPage, search
                           disabled={isPending}
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
+                          {t("table.delete")}
                         </DropdownMenuItem>
                       )}
                     </DropdownMenuContent>
@@ -135,7 +137,7 @@ export function BugReportsTable({ data: rawData, totalPages, currentPage, search
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            Page {currentPage} of {totalPages}
+            {t("table.page", { current: currentPage, total: totalPages })}
           </p>
           <div className="flex gap-2">
             <Button
@@ -144,7 +146,7 @@ export function BugReportsTable({ data: rawData, totalPages, currentPage, search
               disabled={currentPage <= 1 || isPending}
               onClick={() => navigatePage(currentPage - 1)}
             >
-              Previous
+              {t("table.previous")}
             </Button>
             <Button
               variant="outline"
@@ -152,7 +154,7 @@ export function BugReportsTable({ data: rawData, totalPages, currentPage, search
               disabled={currentPage >= totalPages || isPending}
               onClick={() => navigatePage(currentPage + 1)}
             >
-              Next
+              {t("table.next")}
             </Button>
           </div>
         </div>

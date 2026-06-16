@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import type { User } from "@/lib/api";
 import { updateUserAction, deleteUserAction } from "@/lib/actions/users";
 import { ResetPasswordDialog } from "./reset-password-dialog";
@@ -38,11 +39,12 @@ export function UsersTable({ users, isAdmin }: { users: User[]; isAdmin: boolean
   const [resetTarget, setResetTarget] = useState<User | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
   const [isPending, startTransition] = useTransition();
+  const t = useTranslations("users");
 
   function handleToggleEnabled(user: User) {
     startTransition(async () => {
       await updateUserAction(user.id, { enabled: !user.enabled });
-      toast.success(`User ${user.enabled ? "disabled" : "enabled"}`);
+      toast.success(user.enabled ? t("table.toggledDisabled") : t("table.toggledEnabled"));
     });
   }
 
@@ -52,7 +54,7 @@ export function UsersTable({ users, isAdmin }: { users: User[]; isAdmin: boolean
     setDeleteTarget(null);
     startTransition(async () => {
       await deleteUserAction(id);
-      toast.success("User deleted");
+      toast.success(t("table.deleted"));
     });
   }
 
@@ -62,11 +64,11 @@ export function UsersTable({ users, isAdmin }: { users: User[]; isAdmin: boolean
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Username</TableHead>
-              <TableHead>Display Name</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Created</TableHead>
+              <TableHead>{t("table.username")}</TableHead>
+              <TableHead>{t("table.displayName")}</TableHead>
+              <TableHead>{t("table.role")}</TableHead>
+              <TableHead>{t("table.status")}</TableHead>
+              <TableHead>{t("table.created")}</TableHead>
               <TableHead className="w-10" />
             </TableRow>
           </TableHeader>
@@ -74,7 +76,7 @@ export function UsersTable({ users, isAdmin }: { users: User[]; isAdmin: boolean
             {users.length === 0 && (
               <TableRow>
                 <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                  No users found.
+                  {t("table.noData")}
                 </TableCell>
               </TableRow>
             )}
@@ -89,7 +91,7 @@ export function UsersTable({ users, isAdmin }: { users: User[]; isAdmin: boolean
                 </TableCell>
                 <TableCell>
                   <Badge variant={user.enabled ? "outline" : "destructive"}>
-                    {user.enabled ? "Active" : "Disabled"}
+                    {user.enabled ? t("table.active") : t("table.disabled")}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
@@ -113,11 +115,11 @@ export function UsersTable({ users, isAdmin }: { users: User[]; isAdmin: boolean
                           ) : (
                             <ToggleRight className="mr-2 h-4 w-4" />
                           )}
-                          {user.enabled ? "Disable" : "Enable"}
+                          {user.enabled ? t("table.disable") : t("table.enable")}
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => setResetTarget(user)}>
                           <KeyRound className="mr-2 h-4 w-4" />
-                          Reset Password
+                          {t("table.resetPassword")}
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
@@ -126,7 +128,7 @@ export function UsersTable({ users, isAdmin }: { users: User[]; isAdmin: boolean
                           disabled={isPending}
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
+                          {t("table.delete")}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -142,18 +144,18 @@ export function UsersTable({ users, isAdmin }: { users: User[]; isAdmin: boolean
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete user "{deleteTarget?.username}"?</AlertDialogTitle>
+            <AlertDialogTitle>{t("table.deleteTitle", { username: deleteTarget?.username ?? "" })}</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. The user will lose access to the dashboard immediately.
+              {t("table.deleteDescription")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("table.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={confirmDelete}
             >
-              Delete
+              {t("table.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
