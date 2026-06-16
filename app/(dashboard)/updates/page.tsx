@@ -22,6 +22,19 @@ export default async function UpdatesPage() {
   const isAdmin = currentUser?.role === "admin";
   const manifestUrl = `${env.facingUrl}/v2/updates/manifest`;
 
+  function toFacingUrl(url: string | undefined): string | undefined {
+    if (!url) return undefined;
+    try {
+      const parsed = new URL(url);
+      const facing = new URL(env.facingUrl);
+      parsed.protocol = facing.protocol;
+      parsed.host = facing.host;
+      return parsed.toString();
+    } catch {
+      return url;
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -48,8 +61,10 @@ export default async function UpdatesPage() {
             </CardHeader>
             <CardContent className="space-y-1">
               <p className="font-mono text-2xl font-bold">{manifest.stableVersion}</p>
-              <p className="truncate text-xs text-muted-foreground">{manifest.stableDownload}</p>
-              {manifest.isCritical && (
+              <p className="truncate text-xs text-muted-foreground">
+                {toFacingUrl(manifest.stableDownload)}
+              </p>
+              {manifest.criticalVersion === manifest.stableVersion && (
                 <Badge variant="destructive" className="mt-1">
                   Critical
                 </Badge>
@@ -64,12 +79,14 @@ export default async function UpdatesPage() {
               </CardHeader>
               <CardContent className="space-y-1">
                 <p className="font-mono text-2xl font-bold">{manifest.betaVersion}</p>
-                <p className="truncate text-xs text-muted-foreground">{manifest.betaDownload}</p>
-                {manifest.isCritical && (
-                <Badge variant="destructive" className="mt-1">
-                  Critical
-                </Badge>
-              )}
+                <p className="truncate text-xs text-muted-foreground">
+                  {toFacingUrl(manifest.betaDownload)}
+                </p>
+                {manifest.criticalVersion === manifest.betaVersion && (
+                  <Badge variant="destructive" className="mt-1">
+                    Critical
+                  </Badge>
+                )}
               </CardContent>
             </Card>
           )}
