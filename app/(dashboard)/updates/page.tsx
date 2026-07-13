@@ -1,21 +1,32 @@
 import Link from "next/link";
 import { FileJson } from "lucide-react";
 import { getTranslations } from "next-intl/server";
-import { getReleases, getUpdateManifest } from "@/lib/api";
+import { getReleasesV3, getUpdateManifestV3, type ReleaseProduct } from "@/lib/api";
 import { getCurrentUser } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { ReleasesTable } from "@/components/releases-table";
 import { CreateReleaseDialog } from "@/components/create-release-dialog";
+import { UpdatesProductTabs } from "@/components/updates-product-tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-export default async function UpdatesPage() {
+interface PageProps {
+  searchParams: Promise<{ product?: string }>;
+}
+
+function parseProduct(value: string | undefined): ReleaseProduct {
+  return value === "updater" ? "updater" : "app";
+}
+
+export default async function UpdatesPage({ searchParams }: PageProps) {
   const t = await getTranslations("updates");
+  const { product: productParam } = await searchParams;
+  const product = parseProduct(productParam);
 
   const [manifestResult, releasesResult, currentUserResult] = await Promise.allSettled([
-    getUpdateManifest(),
-    getReleases(),
+    getUpdateManifestV3(product),
+    getReleasesV3(product),
     getCurrentUser(),
   ]);
 
@@ -23,7 +34,7 @@ export default async function UpdatesPage() {
   const releases = releasesResult.status === "fulfilled" ? (releasesResult.value ?? []) : [];
   const currentUser = currentUserResult.status === "fulfilled" ? currentUserResult.value : null;
   const isAdmin = currentUser?.role === "admin";
-  const manifestUrl = `${env.facingUrl}/v2/updates/manifest`;
+  const manifestUrl = `${env.facingUrl}/v3/updates/${product}/manifest`;
 
   function toFacingUrl(url: string | undefined): string | undefined {
     if (!url) return undefined;
@@ -52,9 +63,11 @@ export default async function UpdatesPage() {
               {t("showManifest")}
             </Link>
           </Button>
-          {isAdmin && <CreateReleaseDialog />}
+          {isAdmin && <CreateReleaseDialog product={product} />}
         </div>
       </div>
+
+      <UpdatesProductTabs product={product} />
 
       {manifest && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -112,7 +125,7 @@ export default async function UpdatesPage() {
         </div>
       )}
 
-      <ReleasesTable releases={releases} isAdmin={isAdmin} />
+      <ReleasesTable releases={releases} isAdmin={isAdmin} product={product} />
     </div>
   );
 }

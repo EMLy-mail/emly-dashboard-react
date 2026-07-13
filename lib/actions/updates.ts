@@ -2,13 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import {
-  createRelease,
-  updateRelease,
-  deleteRelease,
-  promoteRelease,
+  createReleaseV3,
+  updateReleaseV3,
+  deleteReleaseV3,
+  promoteReleaseV3,
   ApiError,
   type ReleaseChannel,
   type ReleaseSeverity,
+  type ReleaseProduct,
 } from "@/lib/api";
 import { getCurrentUser } from "@/lib/auth";
 
@@ -20,6 +21,7 @@ async function requireAdmin() {
 export type ReleaseActionState = { error?: string; success?: boolean };
 
 export async function createReleaseAction(
+  product: ReleaseProduct,
   _prevState: ReleaseActionState,
   formData: FormData,
 ): Promise<ReleaseActionState> {
@@ -37,10 +39,11 @@ export async function createReleaseAction(
   if (!file || file.size === 0) return { error: "Installer file is required" };
 
   try {
-    // The backend atomically clears the critical flag from other releases when
-    // is_critical is true, and auto-archives any release already in the target
-    // stable/beta slot — so no manual reconciliation is needed here.
-    await createRelease({
+    // The backend atomically clears the critical flag from other releases of the
+    // same product when is_critical is true, and auto-archives any release
+    // already in the target stable/beta slot for that product — no manual
+    // reconciliation needed here.
+    await createReleaseV3(product, {
       file,
       version,
       short_note,
@@ -61,6 +64,7 @@ export async function createReleaseAction(
 }
 
 export async function updateReleaseAction(
+  product: ReleaseProduct,
   version: string,
   _prevState: ReleaseActionState,
   formData: FormData,
@@ -75,7 +79,7 @@ export async function updateReleaseAction(
   const min_required_version = (formData.get("min_required_version") as string) || null;
 
   try {
-    await updateRelease(version, {
+    await updateReleaseV3(product, version, {
       short_note,
       channel,
       severity_type,
@@ -93,14 +97,14 @@ export async function updateReleaseAction(
   }
 }
 
-export async function promoteReleaseAction(version: string, channel: ReleaseChannel) {
+export async function promoteReleaseAction(product: ReleaseProduct, version: string, channel: ReleaseChannel) {
   await requireAdmin();
-  await promoteRelease(version, channel);
+  await promoteReleaseV3(product, version, channel);
   revalidatePath("/updates");
 }
 
-export async function deleteReleaseAction(version: string) {
+export async function deleteReleaseAction(product: ReleaseProduct, version: string) {
   await requireAdmin();
-  await deleteRelease(version);
+  await deleteReleaseV3(product, version);
   revalidatePath("/updates");
 }

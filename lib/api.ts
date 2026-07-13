@@ -249,6 +249,7 @@ export async function resetUserPassword(id: string, password: string) {
 
 export type ReleaseChannel = "stable" | "beta" | "archived";
 export type ReleaseSeverity = "none" | "security" | "bugfix" | "feature";
+export type ReleaseProduct = "app" | "updater";
 
 export interface DetailedNote {
   severityType: ReleaseSeverity;
@@ -269,6 +270,7 @@ export interface UpdateManifest {
 }
 
 export interface Release {
+  product: ReleaseProduct;
   version: string;
   channel: ReleaseChannel;
   download_filename: string;
@@ -377,5 +379,109 @@ export async function promoteRelease(version: string, channel: ReleaseChannel) {
       body: JSON.stringify({ channel }),
     },
     { requiresAdmin: true, requiresApi: false, baseUrl: updatesBase() },
+  );
+}
+
+// ── Updates v3 (multi-product: app + updater) ───────────────────────────────
+// Same endpoints as above but product-scoped; product is a path segment, not
+// a form/body field. /v2 functions above stay untouched (implicitly "app").
+
+function updatesBaseV3(product: ReleaseProduct): string {
+  return `${env.apiBaseUrl}/v3/updates/${product}`;
+}
+
+export async function getUpdateManifestV3(product: ReleaseProduct) {
+  return apiFetch<UpdateManifest>(
+    "/manifest",
+    {},
+    { requiresApi: false, baseUrl: updatesBaseV3(product) },
+  );
+}
+
+export async function getReleasesV3(product: ReleaseProduct, channel?: ReleaseChannel) {
+  const qs = channel ? `?channel=${channel}` : "";
+  return apiFetch<Release[]>(
+    `/releases${qs}`,
+    {},
+    { requiresAdmin: true, requiresApi: false, baseUrl: updatesBaseV3(product) },
+  );
+}
+
+export async function createReleaseV3(
+  product: ReleaseProduct,
+  data: {
+    file: File;
+    version: string;
+    short_note?: string;
+    channel?: ReleaseChannel;
+    severity_type?: ReleaseSeverity;
+    description_en?: string | null;
+    description_it?: string | null;
+    is_critical?: boolean;
+    critical_version?: string | null;
+    min_required_version?: string | null;
+  },
+) {
+  const form = new FormData();
+  form.append("file", data.file);
+  form.append("version", data.version);
+  if (data.channel) form.append("channel", data.channel);
+  if (data.short_note) form.append("short_note", data.short_note);
+  if (data.severity_type) form.append("severity_type", data.severity_type);
+  if (data.description_en) form.append("description_en", data.description_en);
+  if (data.description_it) form.append("description_it", data.description_it);
+  form.append("is_critical", data.is_critical ? "true" : "false");
+  if (data.critical_version) form.append("critical_version", data.critical_version);
+  if (data.min_required_version) form.append("min_required_version", data.min_required_version);
+
+  return apiFetch<{ product: ReleaseProduct; version: string; channel: ReleaseChannel; download_filename: string; sha256_checksum: string }>(
+    "/releases",
+    { method: "POST", body: form },
+    { requiresAdmin: true, requiresApi: false, baseUrl: updatesBaseV3(product) },
+  );
+}
+
+export async function deleteReleaseV3(product: ReleaseProduct, version: string) {
+  return apiFetch<{ deleted: boolean }>(
+    `/releases/${encodeURIComponent(version)}`,
+    { method: "DELETE" },
+    { requiresAdmin: true, requiresApi: false, baseUrl: updatesBaseV3(product) },
+  );
+}
+
+export async function updateReleaseV3(
+  product: ReleaseProduct,
+  version: string,
+  data: {
+    short_note?: string;
+    channel?: ReleaseChannel;
+    severity_type?: ReleaseSeverity;
+    description_en?: string | null;
+    description_it?: string | null;
+    is_critical?: boolean;
+    critical_version?: string | null;
+    min_required_version?: string | null;
+  },
+) {
+  return apiFetch<Release>(
+    `/releases/${encodeURIComponent(version)}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    },
+    { requiresAdmin: true, requiresApi: false, baseUrl: updatesBaseV3(product) },
+  );
+}
+
+export async function promoteReleaseV3(product: ReleaseProduct, version: string, channel: ReleaseChannel) {
+  return apiFetch<{ product: ReleaseProduct; version: string; channel: ReleaseChannel }>(
+    `/releases/${encodeURIComponent(version)}/channel`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ channel }),
+    },
+    { requiresAdmin: true, requiresApi: false, baseUrl: updatesBaseV3(product) },
   );
 }

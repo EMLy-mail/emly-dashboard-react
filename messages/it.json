@@ -126,6 +126,10 @@
     "description": "Gestisci le versioni software e i canali di aggiornamento.",
     "showManifest": "Mostra manifest",
     "newRelease": "Nuova Versione",
+    "tabs": {
+      "app": "App",
+      "updater": "Updater"
+    },
     "manifest": {
       "stable": "Stabile",
       "beta": "Beta",

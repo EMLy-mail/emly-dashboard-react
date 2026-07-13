@@ -4,6 +4,7 @@ import { useState, useActionState, useEffect } from "react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { createReleaseAction, type ReleaseActionState } from "@/lib/actions/updates";
+import type { ReleaseProduct } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -26,12 +27,13 @@ import { Plus } from "lucide-react";
 
 const initialState: ReleaseActionState = {};
 
-export function CreateReleaseDialog() {
+export function CreateReleaseDialog({ product }: { product: ReleaseProduct }) {
   const [open, setOpen] = useState(false);
   const [channel, setChannel] = useState("archived");
   const [severityType, setSeverityType] = useState("none");
   const [isCritical, setIsCritical] = useState(false);
-  const [state, formAction, isPending] = useActionState(createReleaseAction, initialState);
+  const boundAction = createReleaseAction.bind(null, product);
+  const [state, formAction, isPending] = useActionState(boundAction, initialState);
   const t = useTranslations("updates");
 
   const isArchived = channel === "archived";

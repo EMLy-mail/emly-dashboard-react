@@ -126,6 +126,10 @@
     "description": "Manage software releases and update channels.",
     "showManifest": "Show manifest",
     "newRelease": "New Release",
+    "tabs": {
+      "app": "App",
+      "updater": "Updater"
+    },
     "manifest": {
       "stable": "Stable",
       "beta": "Beta",

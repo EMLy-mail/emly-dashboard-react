@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
-import type { Release, ReleaseChannel } from "@/lib/api";
+import type { Release, ReleaseChannel, ReleaseProduct } from "@/lib/api";
 import { promoteReleaseAction, deleteReleaseAction } from "@/lib/actions/updates";
 import {
   Table,
@@ -48,7 +48,15 @@ function SeverityBadge({ severity }: { severity: string }) {
   return <Badge variant="outline">none</Badge>;
 }
 
-export function ReleasesTable({ releases, isAdmin }: { releases: Release[]; isAdmin: boolean }) {
+export function ReleasesTable({
+  releases,
+  isAdmin,
+  product,
+}: {
+  releases: Release[];
+  isAdmin: boolean;
+  product: ReleaseProduct;
+}) {
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [editTarget, setEditTarget] = useState<Release | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -57,7 +65,7 @@ export function ReleasesTable({ releases, isAdmin }: { releases: Release[]; isAd
   function handlePromote(version: string, channel: ReleaseChannel) {
     startTransition(async () => {
       try {
-        await promoteReleaseAction(version, channel);
+        await promoteReleaseAction(product, version, channel);
         toast.success(t("table.promoted", { version, channel }));
       } catch {
         toast.error(t("table.promoteFailed"));
@@ -71,7 +79,7 @@ export function ReleasesTable({ releases, isAdmin }: { releases: Release[]; isAd
     setDeleteTarget(null);
     startTransition(async () => {
       try {
-        await deleteReleaseAction(version);
+        await deleteReleaseAction(product, version);
         toast.success(t("table.deleted", { version }));
       } catch {
         toast.error(t("table.deleteFailed"));
@@ -180,6 +188,7 @@ export function ReleasesTable({ releases, isAdmin }: { releases: Release[]; isAd
       {editTarget && (
         <EditReleaseDialog
           release={editTarget}
+          product={product}
           open={!!editTarget}
           onOpenChange={(open) => { if (!open) setEditTarget(null); }}
         />
