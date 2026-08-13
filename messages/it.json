@@ -4,7 +4,8 @@
     "nav": {
       "bugReports": "Segnalazioni Bug",
       "users": "Utenti",
-      "updates": "Aggiornamenti"
+      "updates": "Aggiornamenti",
+      "statistics": "Statistiche"
     },
     "signOut": "Esci",
     "toggleTheme": "Cambia tema",
@@ -206,6 +207,78 @@
       "severityFeature": "Funzionalità",
       "severitySecurity": "Sicurezza",
       "critical": "Aggiornamento critico (i client devono aggiornare immediatamente)"
+    }
+  },
+  "statistics": {
+    "title": "Statistiche",
+    "description": "Statistiche della flotta di client EMLy Updater.",
+    "summary": {
+      "totalClients": "Client Totali",
+      "connectedClients": "Client Connessi",
+      "windowMinutes": "Online negli ultimi {minutes}m",
+      "eventsLast24h": "Eventi (Ultime 24h)",
+      "clientsByVersion": "Client per Versione",
+      "unknownVersion": "Sconosciuta",
+      "noData": "Nessun dato disponibile."
+    },
+    "events": {
+      "manifest_check": "Controllo Manifest",
+      "download": "Download"
+    },
+    "clients": {
+      "title": "Client Updater",
+      "onlineOnly": "Solo online",
+      "table": {
+        "hostname": "Hostname",
+        "adDomain": "Dominio AD",
+        "version": "Versione",
+        "lastIp": "Ultimo IP",
+        "firstSeen": "Prima Rilevazione",
+        "lastSeen": "Ultima Rilevazione",
+        "status": "Stato",
+        "online": "Online",
+        "offline": "Offline",
+        "noData": "Nessun client trovato.",
+        "page": "Pagina {current} di {total}",
+        "previous": "Precedente",
+        "next": "Successivo"
+      }
+    },
+    "clientDetail": {
+      "title": "Client: {hostname}",
+      "back": "Torna alle Statistiche",
+      "info": {
+        "hostname": "Hostname",
+        "adDomain": "Dominio AD",
+        "version": "Versione",
+        "contact": "Contatto",
+        "lastIp": "Ultimo IP",
+        "firstSeen": "Prima Rilevazione",
+        "lastSeen": "Ultima Rilevazione"
+      },
+      "events": {
+        "title": "Eventi Recenti",
+        "table": {
+          "type": "Tipo",
+          "version": "Versione",
+          "ip": "Indirizzo IP",
+          "date": "Data",
+          "noData": "Nessun evento registrato per questo client."
+        }
+      }
+    },
+    "eventsChart": {
+      "title": "Volume Eventi",
+      "bucket": {
+        "day": "Giornaliero",
+        "hour": "Orario"
+      },
+      "eventType": {
+        "all": "Tutti gli Eventi",
+        "manifest_check": "Controllo Manifest",
+        "download": "Download"
+      },
+      "noData": "Nessun evento in questo intervallo."
     }
   }
 }

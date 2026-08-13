@@ -4,7 +4,8 @@
     "nav": {
       "bugReports": "Bug Reports",
       "users": "Users",
-      "updates": "Updates"
+      "updates": "Updates",
+      "statistics": "Statistics"
     },
     "signOut": "Sign out",
     "toggleTheme": "Toggle dark mode",
@@ -206,6 +207,78 @@
       "severityFeature": "Feature",
       "severitySecurity": "Security",
       "critical": "Critical update (clients must update immediately)"
+    }
+  },
+  "statistics": {
+    "title": "Statistics",
+    "description": "Fleet-wide statistics for EMLy Updater clients.",
+    "summary": {
+      "totalClients": "Total Clients",
+      "connectedClients": "Connected Clients",
+      "windowMinutes": "Online in the last {minutes}m",
+      "eventsLast24h": "Events (Last 24h)",
+      "clientsByVersion": "Clients by Version",
+      "unknownVersion": "Unknown",
+      "noData": "No data yet."
+    },
+    "events": {
+      "manifest_check": "Manifest Check",
+      "download": "Download"
+    },
+    "clients": {
+      "title": "Updater Clients",
+      "onlineOnly": "Online only",
+      "table": {
+        "hostname": "Hostname",
+        "adDomain": "AD Domain",
+        "version": "Version",
+        "lastIp": "Last IP",
+        "firstSeen": "First Seen",
+        "lastSeen": "Last Seen",
+        "status": "Status",
+        "online": "Online",
+        "offline": "Offline",
+        "noData": "No clients found.",
+        "page": "Page {current} of {total}",
+        "previous": "Previous",
+        "next": "Next"
+      }
+    },
+    "clientDetail": {
+      "title": "Client: {hostname}",
+      "back": "Back to Statistics",
+      "info": {
+        "hostname": "Hostname",
+        "adDomain": "AD Domain",
+        "version": "Version",
+        "contact": "Contact",
+        "lastIp": "Last IP",
+        "firstSeen": "First Seen",
+        "lastSeen": "Last Seen"
+      },
+      "events": {
+        "title": "Recent Events",
+        "table": {
+          "type": "Type",
+          "version": "Version",
+          "ip": "IP Address",
+          "date": "Date",
+          "noData": "No events recorded for this client."
+        }
+      }
+    },
+    "eventsChart": {
+      "title": "Event Volume",
+      "bucket": {
+        "day": "Daily",
+        "hour": "Hourly"
+      },
+      "eventType": {
+        "all": "All Events",
+        "manifest_check": "Manifest Check",
+        "download": "Download"
+      },
+      "noData": "No events in this range."
     }
   }
 }
