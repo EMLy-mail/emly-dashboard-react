@@ -31,6 +31,7 @@ export function CreateReleaseDialog() {
   const [channel, setChannel] = useState("archived");
   const [severityType, setSeverityType] = useState("none");
   const [isCritical, setIsCritical] = useState(false);
+  const [archivePrevious, setArchivePrevious] = useState(true);
   const [state, formAction, isPending] = useActionState(createReleaseAction, initialState);
   const t = useTranslations("updates");
 
@@ -61,6 +62,7 @@ export function CreateReleaseDialog() {
           {/* hidden inputs carry Select values since Select doesn't submit natively */}
           <input type="hidden" name="channel" value={channel} />
           <input type="hidden" name="severity_type" value={severityType} />
+          <input type="hidden" name="archive_previous" value={!isArchived && archivePrevious ? "true" : "false"} />
           {state.error && (
             <Alert variant="destructive">
               <AlertDescription>{state.error}</AlertDescription>
@@ -159,6 +161,22 @@ export function CreateReleaseDialog() {
               className={`font-normal ${isArchived ? "cursor-not-allowed text-muted-foreground" : "cursor-pointer"}`}
             >
               {t("createDialog.critical")}
+            </Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="rel-archive-previous"
+              checked={!isArchived && archivePrevious}
+              onChange={(e) => setArchivePrevious(e.target.checked)}
+              disabled={isArchived}
+              className="h-4 w-4 rounded border-border accent-primary disabled:cursor-not-allowed disabled:opacity-50"
+            />
+            <Label
+              htmlFor="rel-archive-previous"
+              className={`font-normal ${isArchived ? "cursor-not-allowed text-muted-foreground" : "cursor-pointer"}`}
+            >
+              {t("createDialog.archivePrevious")}
             </Label>
           </div>
           <div className="flex justify-end gap-2 pt-2">

@@ -6,6 +6,7 @@ import {
   updateRelease,
   deleteRelease,
   promoteRelease,
+  getReleases,
   ApiError,
   type ReleaseChannel,
   type ReleaseSeverity,
@@ -33,14 +34,12 @@ export async function createReleaseAction(
   const description_it = (formData.get("description_it") as string) || null;
   const is_critical = formData.get("is_critical") === "true";
   const min_required_version = (formData.get("min_required_version") as string) || null;
+  const archive_previous = formData.get("archive_previous") !== "false";
 
   if (!file || file.size === 0) return { error: "Installer file is required" };
 
   try {
-    // The backend atomically clears the critical flag from other releases when
-    // is_critical is true, and auto-archives any release already in the target
-    // stable/beta slot — so no manual reconciliation is needed here.
-    await createRelease({
+    const created = await createRelease({
       file,
       version,
       short_note,
@@ -52,6 +51,16 @@ export async function createReleaseAction(
       critical_version: is_critical ? version : null,
       min_required_version,
     });
+
+    if (archive_previous && (channel === "stable" || channel === "beta")) {
+      const siblings = await getReleases(channel);
+      await Promise.all(
+        siblings
+          .filter((r) => r.version !== created.version)
+          .map((r) => promoteRelease(r.version, "archived")),
+      );
+    }
+
     revalidatePath("/updates");
     return { success: true };
   } catch (e) {

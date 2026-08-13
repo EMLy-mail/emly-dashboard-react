@@ -170,6 +170,7 @@
       "descriptionIt": "Description (IT)",
       "descriptionItPlaceholder": "Descrizione in italiano",
       "critical": "Critical update (clients must update immediately)",
+      "archivePrevious": "Archive the currently active release in this channel",
       "cancel": "Cancel",
       "create": "Create Release",
       "creating": "Creating...",

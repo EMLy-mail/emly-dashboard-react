@@ -170,6 +170,7 @@
       "descriptionIt": "Descrizione (IT)",
       "descriptionItPlaceholder": "Descrizione in italiano",
       "critical": "Aggiornamento critico (i client devono aggiornare immediatamente)",
+      "archivePrevious": "Archivia la versione attualmente attiva in questo canale",
       "cancel": "Annulla",
       "create": "Crea Versione",
       "creating": "Creazione...",
