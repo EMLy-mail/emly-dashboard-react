@@ -379,3 +379,111 @@ export async function promoteRelease(version: string, channel: ReleaseChannel) {
     { requiresAdmin: true, requiresApi: false, baseUrl: updatesBase() },
   );
 }
+
+// ── Stats ──────────────────────────────────────────────────────────────────
+
+export type UpdaterEventType = "manifest_check" | "download";
+export type StatsEventBucket = "day" | "hour";
+
+export interface UpdaterClient {
+  id: number;
+  hostname: string;
+  ad_domain: string;
+  updater_version?: string | null;
+  contact?: string | null;
+  last_ip?: string | null;
+  first_seen_at: string;
+  last_seen_at: string;
+}
+
+export interface UpdaterEvent {
+  id: number;
+  client_id: number;
+  event_type: UpdaterEventType;
+  version?: string | null;
+  ip_address?: string | null;
+  created_at: string;
+}
+
+export interface StatsSummary {
+  total_clients: number;
+  connected_clients: number;
+  window_minutes: number;
+  events_last_24h: { event_type: string; count: number }[];
+  clients_by_version: { updater_version: string | null; count: number }[];
+}
+
+export interface PaginatedStatsClients {
+  data: UpdaterClient[] | null;
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+export interface StatsClientDetail {
+  client: UpdaterClient;
+  events: UpdaterEvent[];
+}
+
+export interface StatsEventsResponse {
+  bucket: StatsEventBucket;
+  from: string;
+  to: string;
+  data: { bucket: string; event_type: string; count: number }[];
+}
+
+export async function getStatsSummary(windowMinutes?: number) {
+  const qs = windowMinutes ? `?window_minutes=${windowMinutes}` : "";
+  return apiFetch<StatsSummary>(
+    `/stats/summary${qs}`,
+    {},
+    { requiresAdmin: true, requiresApi: false, baseUrl: updatesBase() },
+  );
+}
+
+export async function getStatsClients(opts: {
+  page?: number;
+  page_size?: number;
+  online?: boolean;
+  window_minutes?: number;
+}) {
+  const params = new URLSearchParams();
+  if (opts.page) params.set("page", String(opts.page));
+  if (opts.page_size) params.set("page_size", String(opts.page_size));
+  if (opts.online) params.set("online", "true");
+  if (opts.window_minutes) params.set("window_minutes", String(opts.window_minutes));
+  const qs = params.toString() ? `?${params}` : "";
+  return apiFetch<PaginatedStatsClients>(
+    `/stats/clients${qs}`,
+    {},
+    { requiresAdmin: true, requiresApi: false, baseUrl: updatesBase() },
+  );
+}
+
+export async function getStatsClientDetail(id: number) {
+  return apiFetch<StatsClientDetail>(
+    `/stats/clients/${id}`,
+    {},
+    { requiresAdmin: true, requiresApi: false, baseUrl: updatesBase() },
+  );
+}
+
+export async function getStatsEvents(opts: {
+  bucket?: StatsEventBucket;
+  event_type?: string;
+  from?: string;
+  to?: string;
+}) {
+  const params = new URLSearchParams();
+  if (opts.bucket) params.set("bucket", opts.bucket);
+  if (opts.event_type) params.set("event_type", opts.event_type);
+  if (opts.from) params.set("from", opts.from);
+  if (opts.to) params.set("to", opts.to);
+  const qs = params.toString() ? `?${params}` : "";
+  return apiFetch<StatsEventsResponse>(
+    `/stats/events${qs}`,
+    {},
+    { requiresAdmin: true, requiresApi: false, baseUrl: updatesBase() },
+  );
+}
