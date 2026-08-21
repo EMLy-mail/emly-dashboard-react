@@ -32,19 +32,19 @@ interface EditReleaseDialogProps {
 }
 
 export function EditReleaseDialog({ release, open, onOpenChange }: EditReleaseDialogProps) {
-  const [channel, setChannel] = useState<string>(release.channel);
+  const [isStable, setIsStable] = useState<boolean>(release.is_stable);
+  const [isBeta, setIsBeta] = useState<boolean>(release.is_beta);
   const [severityType, setSeverityType] = useState<string>(release.severity_type);
   const [isCritical, setIsCritical] = useState<boolean>(release.is_critical);
   const t = useTranslations("updates");
-
-  const isArchived = channel === "archived";
 
   const boundAction = updateReleaseAction.bind(null, release.version);
   const [state, formAction, isPending] = useActionState(boundAction, initialState);
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (nextOpen) {
-      setChannel(release.channel);
+      setIsStable(release.is_stable);
+      setIsBeta(release.is_beta);
       setSeverityType(release.severity_type);
       setIsCritical(release.is_critical);
     }
@@ -65,7 +65,8 @@ export function EditReleaseDialog({ release, open, onOpenChange }: EditReleaseDi
           <DialogTitle>{t("editDialog.title", { version: release.version })}</DialogTitle>
         </DialogHeader>
         <form action={formAction} className="space-y-4">
-          <input type="hidden" name="channel" value={channel} />
+          <input type="hidden" name="is_stable" value={isStable ? "true" : "false"} />
+          <input type="hidden" name="is_beta" value={isBeta ? "true" : "false"} />
           <input type="hidden" name="severity_type" value={severityType} />
           {state.error && (
             <Alert variant="destructive">
@@ -75,16 +76,32 @@ export function EditReleaseDialog({ release, open, onOpenChange }: EditReleaseDi
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>{t("editDialog.channel")}</Label>
-              <Select value={channel} onValueChange={setChannel}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="archived">{t("editDialog.channelArchived")}</SelectItem>
-                  <SelectItem value="beta">{t("editDialog.channelBeta")}</SelectItem>
-                  <SelectItem value="stable">{t("editDialog.channelStable")}</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex h-10 items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="edit-stable"
+                    checked={isStable}
+                    onChange={(e) => setIsStable(e.target.checked)}
+                    className="h-4 w-4 rounded border-border accent-primary"
+                  />
+                  <Label htmlFor="edit-stable" className="cursor-pointer font-normal">
+                    {t("editDialog.channelStable")}
+                  </Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="edit-beta"
+                    checked={isBeta}
+                    onChange={(e) => setIsBeta(e.target.checked)}
+                    className="h-4 w-4 rounded border-border accent-primary"
+                  />
+                  <Label htmlFor="edit-beta" className="cursor-pointer font-normal">
+                    {t("editDialog.channelBeta")}
+                  </Label>
+                </div>
+              </div>
             </div>
             <div className="space-y-2">
               <Label>{t("editDialog.severity")}</Label>
@@ -101,6 +118,7 @@ export function EditReleaseDialog({ release, open, onOpenChange }: EditReleaseDi
               </Select>
             </div>
           </div>
+          <p className="-mt-2 text-xs text-muted-foreground">{t("editDialog.channelsHelp")}</p>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="edit-note">{t("editDialog.shortNote")}</Label>
@@ -149,15 +167,11 @@ export function EditReleaseDialog({ release, open, onOpenChange }: EditReleaseDi
               id="edit-critical"
               name="is_critical"
               value="true"
-              checked={!isArchived && isCritical}
+              checked={isCritical}
               onChange={(e) => setIsCritical(e.target.checked)}
-              disabled={isArchived}
-              className="h-4 w-4 rounded border-border accent-primary disabled:cursor-not-allowed disabled:opacity-50"
+              className="h-4 w-4 rounded border-border accent-primary"
             />
-            <Label
-              htmlFor="edit-critical"
-              className={`font-normal ${isArchived ? "cursor-not-allowed text-muted-foreground" : "cursor-pointer"}`}
-            >
+            <Label htmlFor="edit-critical" className="cursor-pointer font-normal">
               {t("editDialog.critical")}
             </Label>
           </div>

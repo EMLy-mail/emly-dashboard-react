@@ -28,14 +28,12 @@ const initialState: ReleaseActionState = {};
 
 export function CreateReleaseDialog() {
   const [open, setOpen] = useState(false);
-  const [channel, setChannel] = useState("archived");
+  const [isStable, setIsStable] = useState(false);
+  const [isBeta, setIsBeta] = useState(false);
   const [severityType, setSeverityType] = useState("none");
   const [isCritical, setIsCritical] = useState(false);
-  const [archivePrevious, setArchivePrevious] = useState(true);
   const [state, formAction, isPending] = useActionState(createReleaseAction, initialState);
   const t = useTranslations("updates");
-
-  const isArchived = channel === "archived";
 
   useEffect(() => {
     if (state.success) {
@@ -60,9 +58,9 @@ export function CreateReleaseDialog() {
         </DialogHeader>
         <form action={formAction} className="space-y-4">
           {/* hidden inputs carry Select values since Select doesn't submit natively */}
-          <input type="hidden" name="channel" value={channel} />
+          <input type="hidden" name="is_stable" value={isStable ? "true" : "false"} />
+          <input type="hidden" name="is_beta" value={isBeta ? "true" : "false"} />
           <input type="hidden" name="severity_type" value={severityType} />
-          <input type="hidden" name="archive_previous" value={!isArchived && archivePrevious ? "true" : "false"} />
           {state.error && (
             <Alert variant="destructive">
               <AlertDescription>{state.error}</AlertDescription>
@@ -75,18 +73,35 @@ export function CreateReleaseDialog() {
             </div>
             <div className="space-y-2">
               <Label>{t("createDialog.channel")}</Label>
-              <Select value={channel} onValueChange={setChannel}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="archived">{t("createDialog.channelArchived")}</SelectItem>
-                  <SelectItem value="beta">{t("createDialog.channelBeta")}</SelectItem>
-                  <SelectItem value="stable">{t("createDialog.channelStable")}</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex h-10 items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="rel-stable"
+                    checked={isStable}
+                    onChange={(e) => setIsStable(e.target.checked)}
+                    className="h-4 w-4 rounded border-border accent-primary"
+                  />
+                  <Label htmlFor="rel-stable" className="cursor-pointer font-normal">
+                    {t("createDialog.channelStable")}
+                  </Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="rel-beta"
+                    checked={isBeta}
+                    onChange={(e) => setIsBeta(e.target.checked)}
+                    className="h-4 w-4 rounded border-border accent-primary"
+                  />
+                  <Label htmlFor="rel-beta" className="cursor-pointer font-normal">
+                    {t("createDialog.channelBeta")}
+                  </Label>
+                </div>
+              </div>
             </div>
           </div>
+          <p className="-mt-2 text-xs text-muted-foreground">{t("createDialog.channelsHelp")}</p>
           <div className="space-y-2">
             <Label htmlFor="rel-file">{t("createDialog.installerFile")}</Label>
             <Input
@@ -151,32 +166,12 @@ export function CreateReleaseDialog() {
               id="rel-critical"
               name="is_critical"
               value="true"
-              checked={!isArchived && isCritical}
+              checked={isCritical}
               onChange={(e) => setIsCritical(e.target.checked)}
-              disabled={isArchived}
-              className="h-4 w-4 rounded border-border accent-primary disabled:cursor-not-allowed disabled:opacity-50"
+              className="h-4 w-4 rounded border-border accent-primary"
             />
-            <Label
-              htmlFor="rel-critical"
-              className={`font-normal ${isArchived ? "cursor-not-allowed text-muted-foreground" : "cursor-pointer"}`}
-            >
+            <Label htmlFor="rel-critical" className="cursor-pointer font-normal">
               {t("createDialog.critical")}
-            </Label>
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="rel-archive-previous"
-              checked={!isArchived && archivePrevious}
-              onChange={(e) => setArchivePrevious(e.target.checked)}
-              disabled={isArchived}
-              className="h-4 w-4 rounded border-border accent-primary disabled:cursor-not-allowed disabled:opacity-50"
-            />
-            <Label
-              htmlFor="rel-archive-previous"
-              className={`font-normal ${isArchived ? "cursor-not-allowed text-muted-foreground" : "cursor-pointer"}`}
-            >
-              {t("createDialog.archivePrevious")}
             </Label>
           </div>
           <div className="flex justify-end gap-2 pt-2">

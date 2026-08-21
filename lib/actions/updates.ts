@@ -5,10 +5,8 @@ import {
   createRelease,
   updateRelease,
   deleteRelease,
-  promoteRelease,
-  getReleases,
+  setReleaseChannels,
   ApiError,
-  type ReleaseChannel,
   type ReleaseSeverity,
 } from "@/lib/api";
 import { getCurrentUser } from "@/lib/auth";
@@ -28,22 +26,23 @@ export async function createReleaseAction(
   const file = formData.get("file") as File;
   const version = formData.get("version") as string;
   const short_note = (formData.get("short_note") as string) || undefined;
-  const channel = (formData.get("channel") as ReleaseChannel) || "archived";
+  const is_stable = formData.get("is_stable") === "true";
+  const is_beta = formData.get("is_beta") === "true";
   const severity_type = (formData.get("severity_type") as ReleaseSeverity) || "none";
   const description_en = (formData.get("description_en") as string) || null;
   const description_it = (formData.get("description_it") as string) || null;
   const is_critical = formData.get("is_critical") === "true";
   const min_required_version = (formData.get("min_required_version") as string) || null;
-  const archive_previous = formData.get("archive_previous") !== "false";
 
   if (!file || file.size === 0) return { error: "Installer file is required" };
 
   try {
-    const created = await createRelease({
+    await createRelease({
       file,
       version,
       short_note,
-      channel,
+      is_stable,
+      is_beta,
       severity_type,
       description_en,
       description_it,
@@ -51,15 +50,6 @@ export async function createReleaseAction(
       critical_version: is_critical ? version : null,
       min_required_version,
     });
-
-    if (archive_previous && (channel === "stable" || channel === "beta")) {
-      const siblings = await getReleases(channel);
-      await Promise.all(
-        siblings
-          .filter((r) => r.version !== created.version)
-          .map((r) => promoteRelease(r.version, "archived")),
-      );
-    }
 
     revalidatePath("/updates");
     return { success: true };
@@ -76,7 +66,8 @@ export async function updateReleaseAction(
 ): Promise<ReleaseActionState> {
   await requireAdmin();
   const short_note = (formData.get("short_note") as string) || undefined;
-  const channel = (formData.get("channel") as ReleaseChannel) || undefined;
+  const is_stable = formData.get("is_stable") === "true";
+  const is_beta = formData.get("is_beta") === "true";
   const severity_type = (formData.get("severity_type") as ReleaseSeverity) || undefined;
   const description_en = (formData.get("description_en") as string) || null;
   const description_it = (formData.get("description_it") as string) || null;
@@ -86,7 +77,8 @@ export async function updateReleaseAction(
   try {
     await updateRelease(version, {
       short_note,
-      channel,
+      is_stable,
+      is_beta,
       severity_type,
       description_en,
       description_it,
@@ -102,9 +94,12 @@ export async function updateReleaseAction(
   }
 }
 
-export async function promoteReleaseAction(version: string, channel: ReleaseChannel) {
+export async function setReleaseChannelsAction(
+  version: string,
+  flags: { is_stable?: boolean; is_beta?: boolean },
+) {
   await requireAdmin();
-  await promoteRelease(version, channel);
+  await setReleaseChannels(version, flags);
   revalidatePath("/updates");
 }
 

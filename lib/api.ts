@@ -247,6 +247,11 @@ export async function resetUserPassword(id: string, password: string) {
 
 // ── Updates ────────────────────────────────────────────────────────────────
 
+/**
+ * Filter value for `GET /updates/releases?channel=`. Not used to set channel
+ * membership on a release — that's done via `Release.is_stable`/`is_beta`,
+ * which are independent (a release can be both at once).
+ */
 export type ReleaseChannel = "stable" | "beta" | "archived";
 export type ReleaseSeverity = "none" | "security" | "bugfix" | "feature";
 
@@ -270,7 +275,8 @@ export interface UpdateManifest {
 
 export interface Release {
   version: string;
-  channel: ReleaseChannel;
+  is_stable: boolean;
+  is_beta: boolean;
   download_filename: string;
   sha256_checksum: string;
   short_note: string;
@@ -309,7 +315,8 @@ export async function createRelease(data: {
   file: File;
   version: string;
   short_note?: string;
-  channel?: ReleaseChannel;
+  is_stable?: boolean;
+  is_beta?: boolean;
   severity_type?: ReleaseSeverity;
   description_en?: string | null;
   description_it?: string | null;
@@ -320,7 +327,8 @@ export async function createRelease(data: {
   const form = new FormData();
   form.append("file", data.file);
   form.append("version", data.version);
-  if (data.channel) form.append("channel", data.channel);
+  form.append("is_stable", data.is_stable ? "true" : "false");
+  form.append("is_beta", data.is_beta ? "true" : "false");
   if (data.short_note) form.append("short_note", data.short_note);
   if (data.severity_type) form.append("severity_type", data.severity_type);
   if (data.description_en) form.append("description_en", data.description_en);
@@ -329,7 +337,7 @@ export async function createRelease(data: {
   if (data.critical_version) form.append("critical_version", data.critical_version);
   if (data.min_required_version) form.append("min_required_version", data.min_required_version);
 
-  return apiFetch<{ version: string; channel: ReleaseChannel; download_filename: string; sha256_checksum: string }>(
+  return apiFetch<{ version: string; is_stable: boolean; is_beta: boolean; download_filename: string; sha256_checksum: string }>(
     "/updates/releases",
     { method: "POST", body: form },
     { requiresAdmin: true, requiresApi: false, baseUrl: updatesBase() },
@@ -348,7 +356,8 @@ export async function updateRelease(
   version: string,
   data: {
     short_note?: string;
-    channel?: ReleaseChannel;
+    is_stable?: boolean;
+    is_beta?: boolean;
     severity_type?: ReleaseSeverity;
     description_en?: string | null;
     description_it?: string | null;
@@ -368,13 +377,21 @@ export async function updateRelease(
   );
 }
 
-export async function promoteRelease(version: string, channel: ReleaseChannel) {
-  return apiFetch<{ version: string; channel: ReleaseChannel }>(
+/**
+ * Sets is_stable and/or is_beta on a release. Setting either to true demotes
+ * whoever currently holds that slot; the two flags are independent, so a
+ * release may hold both at once. Setting a flag to false just clears it.
+ */
+export async function setReleaseChannels(
+  version: string,
+  flags: { is_stable?: boolean; is_beta?: boolean },
+) {
+  return apiFetch<{ version: string; is_stable: boolean; is_beta: boolean }>(
     `/updates/releases/${encodeURIComponent(version)}/channel`,
     {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ channel }),
+      body: JSON.stringify(flags),
     },
     { requiresAdmin: true, requiresApi: false, baseUrl: updatesBase() },
   );

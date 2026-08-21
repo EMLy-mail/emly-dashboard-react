@@ -3,8 +3,8 @@
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
-import type { Release, ReleaseChannel } from "@/lib/api";
-import { promoteReleaseAction, deleteReleaseAction } from "@/lib/actions/updates";
+import type { Release } from "@/lib/api";
+import { setReleaseChannelsAction, deleteReleaseAction } from "@/lib/actions/updates";
 import {
   Table,
   TableBody,
@@ -35,10 +35,14 @@ import {
 import { MoreHorizontal, ArrowUpCircle, Archive, AlertTriangle, Trash2, Pencil } from "lucide-react";
 import { EditReleaseDialog } from "@/components/edit-release-dialog";
 
-function ChannelBadge({ channel }: { channel: ReleaseChannel }) {
-  if (channel === "stable") return <Badge>stable</Badge>;
-  if (channel === "beta") return <Badge variant="secondary">beta</Badge>;
-  return <Badge variant="outline">archived</Badge>;
+function ChannelBadges({ isStable, isBeta }: { isStable: boolean; isBeta: boolean }) {
+  if (!isStable && !isBeta) return <Badge variant="outline">archived</Badge>;
+  return (
+    <div className="flex gap-1">
+      {isStable && <Badge>stable</Badge>}
+      {isBeta && <Badge variant="secondary">beta</Badge>}
+    </div>
+  );
 }
 
 function SeverityBadge({ severity }: { severity: string }) {
@@ -54,11 +58,15 @@ export function ReleasesTable({ releases, isAdmin }: { releases: Release[]; isAd
   const [isPending, startTransition] = useTransition();
   const t = useTranslations("updates");
 
-  function handlePromote(version: string, channel: ReleaseChannel) {
+  function handleSetChannels(
+    version: string,
+    flags: { is_stable?: boolean; is_beta?: boolean },
+    successKey: string,
+  ) {
     startTransition(async () => {
       try {
-        await promoteReleaseAction(version, channel);
-        toast.success(t("table.promoted", { version, channel }));
+        await setReleaseChannelsAction(version, flags);
+        toast.success(t(successKey, { version }));
       } catch {
         toast.error(t("table.promoteFailed"));
       }
@@ -107,7 +115,7 @@ export function ReleasesTable({ releases, isAdmin }: { releases: Release[]; isAd
               <TableRow key={release.version}>
                 <TableCell className="font-mono font-medium">{release.version}</TableCell>
                 <TableCell>
-                  <ChannelBadge channel={release.channel} />
+                  <ChannelBadges isStable={release.is_stable} isBeta={release.is_beta} />
                 </TableCell>
                 <TableCell>
                   <SeverityBadge severity={release.severity_type} />
@@ -140,22 +148,42 @@ export function ReleasesTable({ releases, isAdmin }: { releases: Release[]; isAd
                         {t("table.edit")}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      {release.channel !== "stable" && (
-                        <DropdownMenuItem onClick={() => handlePromote(release.version, "stable")}>
+                      {release.is_stable ? (
+                        <DropdownMenuItem
+                          onClick={() =>
+                            handleSetChannels(release.version, { is_stable: false }, "table.removedFromStable")
+                          }
+                        >
+                          <Archive className="mr-2 h-4 w-4" />
+                          {t("table.removeFromStable")}
+                        </DropdownMenuItem>
+                      ) : (
+                        <DropdownMenuItem
+                          onClick={() =>
+                            handleSetChannels(release.version, { is_stable: true }, "table.promotedStable")
+                          }
+                        >
                           <ArrowUpCircle className="mr-2 h-4 w-4" />
                           {t("table.promoteStable")}
                         </DropdownMenuItem>
                       )}
-                      {release.channel !== "beta" && (
-                        <DropdownMenuItem onClick={() => handlePromote(release.version, "beta")}>
+                      {release.is_beta ? (
+                        <DropdownMenuItem
+                          onClick={() =>
+                            handleSetChannels(release.version, { is_beta: false }, "table.removedFromBeta")
+                          }
+                        >
+                          <Archive className="mr-2 h-4 w-4" />
+                          {t("table.removeFromBeta")}
+                        </DropdownMenuItem>
+                      ) : (
+                        <DropdownMenuItem
+                          onClick={() =>
+                            handleSetChannels(release.version, { is_beta: true }, "table.promotedBeta")
+                          }
+                        >
                           <ArrowUpCircle className="mr-2 h-4 w-4" />
                           {t("table.promoteBeta")}
-                        </DropdownMenuItem>
-                      )}
-                      {release.channel !== "archived" && (
-                        <DropdownMenuItem onClick={() => handlePromote(release.version, "archived")}>
-                          <Archive className="mr-2 h-4 w-4" />
-                          {t("table.archive")}
                         </DropdownMenuItem>
                       )}
                       <DropdownMenuSeparator />
