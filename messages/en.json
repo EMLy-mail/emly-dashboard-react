@@ -210,6 +210,83 @@
       "severityFeature": "Feature",
       "severitySecurity": "Security",
       "critical": "Critical update (clients must update immediately)"
+    },
+    "tabs": {
+      "emly": "EMLy",
+      "updater": "EMLy Updater"
+    },
+    "updater": {
+      "description": "Self-update channel for the EMLy Updater itself. Exactly one build is served at a time; clients apply it silently and never downgrade.",
+      "showManifest": "Show manifest",
+      "newRelease": "New Updater Release",
+      "notesHelp": "Notes go to the log and the Event Log only — they are never shown to the user.",
+      "currentHelp": "Only one build is served at a time: promoting this one demotes the other. Clearing it everywhere is the kill-switch — the manifest reverts to an empty version and clients do nothing.",
+      "manifest": {
+        "served": "Served build",
+        "none": "None",
+        "noneHelp": "No release is marked as served — the manifest returns an empty version and clients do nothing.",
+        "size": "Installer size",
+        "published": "Published",
+        "silentHelp": "Applied silently as soon as clients see it."
+      },
+      "table": {
+        "version": "Version",
+        "status": "Status",
+        "notes": "Notes",
+        "size": "Size",
+        "checksum": "SHA-256",
+        "published": "Published",
+        "noData": "No updater releases found.",
+        "current": "served",
+        "archived": "archived",
+        "edit": "Edit",
+        "download": "Download installer",
+        "promote": "Serve this build",
+        "pull": "Stop serving (kill-switch)",
+        "delete": "Delete",
+        "deleteTitle": "Delete updater release \"{version}\"?",
+        "deleteDescription": "This will permanently remove the release record and delete the installer file from storage. This action cannot be undone.",
+        "cancel": "Cancel",
+        "promoted": "{version} is now served by the manifest",
+        "pulled": "{version} is no longer served — the manifest is now empty",
+        "promoteFailed": "Failed to change the served build",
+        "deleted": "Updater release {version} deleted",
+        "deleteFailed": "Failed to delete updater release"
+      },
+      "createDialog": {
+        "title": "New Updater Release",
+        "version": "Version *",
+        "versionHelp": "Bare semver, matching the ApplicationVersion of the installer.",
+        "publishedAt": "Published At",
+        "publishedAtHelp": "Defaults to now.",
+        "installerFile": "Installer File (.exe) *",
+        "checksumNote": "SHA-256 and size are computed server-side from the uploaded bytes.",
+        "notesEn": "Notes (EN)",
+        "notesEnPlaceholder": "Fixed handling of multiple DC/subnet mappings.",
+        "notesIt": "Notes (IT)",
+        "notesItPlaceholder": "Corretta la gestione dei mapping DC/subnet multipli.",
+        "current": "Serve this build from the manifest right away",
+        "cancel": "Cancel",
+        "create": "Publish Release",
+        "creating": "Publishing...",
+        "success": "Updater release published"
+      },
+      "editDialog": {
+        "title": "Edit Updater Release {version}",
+        "file": "File",
+        "size": "Size",
+        "checksum": "SHA-256",
+        "publishedAt": "Published At",
+        "notesEn": "Notes (EN)",
+        "notesEnPlaceholder": "Fixed handling of multiple DC/subnet mappings.",
+        "notesIt": "Notes (IT)",
+        "notesItPlaceholder": "Corretta la gestione dei mapping DC/subnet multipli.",
+        "current": "Serve this build from the manifest",
+        "cancel": "Cancel",
+        "save": "Save Changes",
+        "saving": "Saving...",
+        "success": "Updater release {version} updated"
+      }
     }
   },
   "statistics": {

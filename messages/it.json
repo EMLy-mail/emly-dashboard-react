@@ -210,6 +210,83 @@
       "severityFeature": "Funzionalità",
       "severitySecurity": "Sicurezza",
       "critical": "Aggiornamento critico (i client devono aggiornare immediatamente)"
+    },
+    "tabs": {
+      "emly": "EMLy",
+      "updater": "EMLy Updater"
+    },
+    "updater": {
+      "description": "Canale di auto-aggiornamento dello stesso EMLy Updater. Viene distribuita una sola build alla volta; i client la applicano in silenzio e non tornano mai a versioni precedenti.",
+      "showManifest": "Mostra manifest",
+      "newRelease": "Nuova Versione Updater",
+      "notesHelp": "Le note finiscono solo nel log e nel Registro eventi — non vengono mai mostrate all'utente.",
+      "currentHelp": "Viene distribuita una sola build alla volta: promuovendo questa si declassa l'altra. Toglierla ovunque è il kill-switch — il manifest torna a versione vuota e i client non fanno nulla.",
+      "manifest": {
+        "served": "Build distribuita",
+        "none": "Nessuna",
+        "noneHelp": "Nessuna versione è marcata come distribuita — il manifest restituisce una versione vuota e i client non fanno nulla.",
+        "size": "Dimensione installer",
+        "published": "Pubblicata",
+        "silentHelp": "Applicata in silenzio non appena i client la rilevano."
+      },
+      "table": {
+        "version": "Versione",
+        "status": "Stato",
+        "notes": "Note",
+        "size": "Dimensione",
+        "checksum": "SHA-256",
+        "published": "Pubblicata",
+        "noData": "Nessuna versione updater trovata.",
+        "current": "distribuita",
+        "archived": "archiviata",
+        "edit": "Modifica",
+        "download": "Scarica installer",
+        "promote": "Distribuisci questa build",
+        "pull": "Interrompi distribuzione (kill-switch)",
+        "delete": "Elimina",
+        "deleteTitle": "Eliminare la versione updater \"{version}\"?",
+        "deleteDescription": "Questo rimuoverà definitivamente il record della versione e il file installer dall'archivio. Questa azione non può essere annullata.",
+        "cancel": "Annulla",
+        "promoted": "{version} è ora distribuita dal manifest",
+        "pulled": "{version} non è più distribuita — il manifest è ora vuoto",
+        "promoteFailed": "Cambio della build distribuita fallito",
+        "deleted": "Versione updater {version} eliminata",
+        "deleteFailed": "Eliminazione della versione updater fallita"
+      },
+      "createDialog": {
+        "title": "Nuova Versione Updater",
+        "version": "Versione *",
+        "versionHelp": "Semver senza prefisso, uguale alla ApplicationVersion dell'installer.",
+        "publishedAt": "Data di Pubblicazione",
+        "publishedAtHelp": "Predefinita: adesso.",
+        "installerFile": "File Installer (.exe) *",
+        "checksumNote": "SHA-256 e dimensione sono calcolati lato server dai byte caricati.",
+        "notesEn": "Note (EN)",
+        "notesEnPlaceholder": "Fixed handling of multiple DC/subnet mappings.",
+        "notesIt": "Note (IT)",
+        "notesItPlaceholder": "Corretta la gestione dei mapping DC/subnet multipli.",
+        "current": "Distribuisci subito questa build dal manifest",
+        "cancel": "Annulla",
+        "create": "Pubblica Versione",
+        "creating": "Pubblicazione...",
+        "success": "Versione updater pubblicata"
+      },
+      "editDialog": {
+        "title": "Modifica Versione Updater {version}",
+        "file": "File",
+        "size": "Dimensione",
+        "checksum": "SHA-256",
+        "publishedAt": "Data di Pubblicazione",
+        "notesEn": "Note (EN)",
+        "notesEnPlaceholder": "Fixed handling of multiple DC/subnet mappings.",
+        "notesIt": "Note (IT)",
+        "notesItPlaceholder": "Corretta la gestione dei mapping DC/subnet multipli.",
+        "current": "Distribuisci questa build dal manifest",
+        "cancel": "Annulla",
+        "save": "Salva Modifiche",
+        "saving": "Salvataggio...",
+        "success": "Versione updater {version} aggiornata"
+      }
     }
   },
   "statistics": {

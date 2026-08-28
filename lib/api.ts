@@ -397,6 +397,113 @@ export async function setReleaseChannels(
   );
 }
 
+// ── Updater self-update ────────────────────────────────────────────────────
+
+/**
+ * Self-update contract for the EMLy Updater. Deliberately poorer than
+ * `UpdateManifest`: no channels, no criticality, no downgrade. An empty (or
+ * absent) `version` means "nothing to distribute" — the kill-switch state.
+ */
+export interface UpdaterManifest {
+  version: string;
+  download?: string;
+  sha256?: string;
+  size?: number;
+  publishedAt?: string;
+  releaseNotes?: Record<string, string>;
+}
+
+export interface UpdaterRelease {
+  version: string;
+  /** At most one release holds this — promoting one demotes the other. */
+  is_current: boolean;
+  download_filename: string;
+  sha256_checksum: string;
+  file_size: number;
+  notes_it: string | null;
+  notes_en: string | null;
+  published_at: string;
+  created_at: string;
+}
+
+export async function getUpdaterManifest() {
+  return apiFetch<UpdaterManifest>(
+    "/updates/manifest/updater",
+    {},
+    { requiresApi: true, baseUrl: updatesBase() },
+  );
+}
+
+export async function getUpdaterReleases() {
+  return apiFetch<UpdaterRelease[]>(
+    "/updates/updater/releases",
+    {},
+    { requiresAdmin: true, requiresApi: false, baseUrl: updatesBase() },
+  );
+}
+
+export async function createUpdaterRelease(data: {
+  file: File;
+  version: string;
+  is_current?: boolean;
+  notes_it?: string | null;
+  notes_en?: string | null;
+  published_at?: string | null;
+}) {
+  const form = new FormData();
+  form.append("file", data.file);
+  form.append("version", data.version);
+  form.append("is_current", data.is_current ? "true" : "false");
+  if (data.notes_it) form.append("notes_it", data.notes_it);
+  if (data.notes_en) form.append("notes_en", data.notes_en);
+  if (data.published_at) form.append("published_at", data.published_at);
+
+  return apiFetch<{
+    version: string;
+    is_current: boolean;
+    download_filename: string;
+    sha256_checksum: string;
+    file_size: number;
+  }>(
+    "/updates/updater/releases",
+    { method: "POST", body: form },
+    { requiresAdmin: true, requiresApi: false, baseUrl: updatesBase() },
+  );
+}
+
+/**
+ * Partial update — only the keys present in `data` are changed. An empty
+ * string clears a note. `{ is_current: false }` on the served build is the
+ * kill-switch: the manifest immediately reverts to `{"version": ""}`.
+ */
+export async function updateUpdaterRelease(
+  version: string,
+  data: {
+    is_current?: boolean;
+    notes_it?: string;
+    notes_en?: string;
+    published_at?: string;
+  },
+) {
+  return apiFetch<UpdaterRelease>(
+    `/updates/updater/releases/${encodeURIComponent(version)}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    },
+    { requiresAdmin: true, requiresApi: false, baseUrl: updatesBase() },
+  );
+}
+
+export async function deleteUpdaterRelease(version: string) {
+  return apiFetch<{ deleted: boolean }>(
+    `/updates/updater/releases/${encodeURIComponent(version)}`,
+    { method: "DELETE" },
+    { requiresAdmin: true, requiresApi: false, baseUrl: updatesBase() },
+  );
+}
+
 // ── Stats ──────────────────────────────────────────────────────────────────
 
 export type UpdaterEventType = "manifest_check" | "download";
