@@ -45,6 +45,12 @@ export default function StatisticsLoading() {
         </CardContent>
       </Card>
 
+      <div className="flex flex-wrap items-center gap-2">
+        {["w-56", "w-44", "w-44", "w-52", "w-36"].map((w, i) => (
+          <Skeleton key={i} className={`h-9 ${w}`} />
+        ))}
+      </div>
+
       <div className="rounded-md border">
         <div className="flex items-center gap-4 px-4 py-3 border-b bg-muted/40">
           {["w-32", "w-24", "w-16", "w-24", "w-16", "w-28", "w-28"].map((w, i) => (

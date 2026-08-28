@@ -585,6 +585,30 @@ export async function getStatsClients(opts: {
   );
 }
 
+// The stats API paginates but exposes no search parameters, so the dashboard pulls
+// the whole (small: a few hundred) client list and filters it locally.
+const ALL_CLIENTS_PAGE_SIZE = 200;
+const ALL_CLIENTS_MAX_PAGES = 25;
+
+export async function getAllStatsClients(opts: { window_minutes?: number } = {}) {
+  const clients: UpdaterClient[] = [];
+  let page = 1;
+  let totalPages = 1;
+
+  while (page <= totalPages && page <= ALL_CLIENTS_MAX_PAGES) {
+    const result = await getStatsClients({
+      page,
+      page_size: ALL_CLIENTS_PAGE_SIZE,
+      window_minutes: opts.window_minutes,
+    });
+    clients.push(...(result.data ?? []));
+    totalPages = result.total_pages;
+    page += 1;
+  }
+
+  return clients;
+}
+
 export async function getStatsClientDetail(id: number) {
   return apiFetch<StatsClientDetail>(
     `/stats/clients/${id}`,

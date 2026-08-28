@@ -307,7 +307,16 @@
     },
     "clients": {
       "title": "Client Updater",
-      "onlineOnly": "Solo online",
+      "filters": {
+        "hostname": "Filtra per nome...",
+        "ip": "Filtra per IP...",
+        "allVersions": "Tutte le versioni",
+        "allDomains": "Tutti i domini AD",
+        "allStatuses": "Tutti gli stati",
+        "unknown": "Sconosciuto",
+        "reset": "Azzera",
+        "count": "{shown} di {total} client"
+      },
       "table": {
         "hostname": "Hostname",
         "adDomain": "Dominio AD",
