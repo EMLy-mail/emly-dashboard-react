@@ -16,7 +16,7 @@ function UserRowSkeleton() {
 export default function UsersLoading() {
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1.5">
           <Skeleton className="h-7 w-16" />
           <Skeleton className="h-4 w-48" />

@@ -64,7 +64,7 @@ export default async function UpdatesPage() {
 
   const emlySection = (
     <>
-      <div className="flex items-center justify-end gap-2">
+      <div className="flex flex-wrap items-center justify-end gap-2">
         <Button variant="outline" asChild>
           <Link href={manifestUrl} target="_blank" rel="noopener noreferrer">
             <FileJson className="mr-2 h-4 w-4" />
@@ -138,9 +138,9 @@ export default async function UpdatesPage() {
 
   const updaterSection = (
     <>
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <p className="max-w-2xl text-sm text-muted-foreground">{t("updater.description")}</p>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
           <Button variant="outline" asChild>
             <Link href={updaterManifestUrl} target="_blank" rel="noopener noreferrer">
               <FileJson className="mr-2 h-4 w-4" />

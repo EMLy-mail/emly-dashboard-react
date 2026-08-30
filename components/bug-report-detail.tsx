@@ -191,7 +191,7 @@ export function BugReportDetail({ report, files, reportId, isAdmin }: Props) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild>
             <Link href="/bug-reports">
@@ -203,7 +203,7 @@ export function BugReportDetail({ report, files, reportId, isAdmin }: Props) {
             <p className="text-muted-foreground">{t("detail.submittedBy", { name: report.name })}</p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={handleZipDownload} disabled={downloadingZip}>
             {downloadingZip ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -334,19 +334,19 @@ export function BugReportDetail({ report, files, reportId, isAdmin }: Props) {
                 return (
                   <div
                     key={file.id}
-                    className="flex items-center justify-between rounded-md border p-3"
+                    className="flex items-center justify-between gap-3 rounded-md border p-3"
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
                       <RoleIcon className="h-4 w-4 text-muted-foreground shrink-0" />
-                      <div>
+                      <div className="min-w-0">
                         <button
                           onClick={() => handleFileDownload(file)}
                           disabled={isDownloading}
-                          className="text-sm font-medium hover:underline text-left disabled:opacity-50"
+                          className="block w-full truncate text-sm font-medium hover:underline text-left disabled:opacity-50"
                         >
                           {file.filename}
                         </button>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="truncate text-xs text-muted-foreground">
                           {file.file_role} · {file.mime_type} · {formatFileSize(file.file_size)}
                         </p>
                       </div>
@@ -354,6 +354,7 @@ export function BugReportDetail({ report, files, reportId, isAdmin }: Props) {
                     <Button
                       variant="outline"
                       size="sm"
+                      className="shrink-0"
                       onClick={() => handleFileDownload(file)}
                       disabled={isDownloading}
                     >

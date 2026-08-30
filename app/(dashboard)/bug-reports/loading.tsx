@@ -22,12 +22,12 @@ function TableRowSkeleton() {
 export default function BugReportsLoading() {
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1.5">
           <Skeleton className="h-7 w-36" />
           <Skeleton className="h-4 w-56" />
         </div>
-        <Card className="w-32">
+        <Card className="w-32 self-start">
           <CardHeader className="pb-1 pt-3 px-4">
             <Skeleton className="h-3 w-8" />
           </CardHeader>

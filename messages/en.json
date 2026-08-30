@@ -9,7 +9,9 @@
     },
     "signOut": "Sign out",
     "toggleTheme": "Toggle dark mode",
-    "toggleLanguage": "Change language"
+    "toggleLanguage": "Change language",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
   },
   "login": {
     "title": "EMLy Admin",

@@ -116,7 +116,7 @@ export function StatsClientsTable({ data: rawData, windowMinutes }: StatsClients
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-lg font-semibold">{t("title")}</h2>
         <p className="text-sm text-muted-foreground">
           {t("filters.count", { shown: filtered.length, total: data.length })}

@@ -62,9 +62,9 @@ export function StatsEventsChart({ data, bucket, eventType }: StatsEventsChartPr
 
   return (
     <Card>
-      <CardHeader className="flex-row items-center justify-between space-y-0">
+      <CardHeader className="flex flex-col items-start gap-3 space-y-0 sm:flex-row sm:items-center sm:justify-between">
         <CardTitle>{t("title")}</CardTitle>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Select value={eventType || "all"} onValueChange={(v) => navigate({ eventType: v })}>
             <SelectTrigger size="sm" className="w-40">
               <SelectValue />
