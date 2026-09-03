@@ -65,6 +65,10 @@ export default async function StatsClientDetailPage({ params }: PageProps) {
             <p className="font-medium">{client.ad_domain || "—"}</p>
           </div>
           <div>
+            <p className="text-xs font-medium text-muted-foreground">{t("info.hwid")}</p>
+            <p className="font-medium">{client.hwid || "—"}</p>
+          </div>
+          <div>
             <p className="text-xs font-medium text-muted-foreground">{t("info.version")}</p>
             <p className="font-mono font-medium">{client.updater_version ?? "—"}</p>
           </div>

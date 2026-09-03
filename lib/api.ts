@@ -518,6 +518,7 @@ export interface UpdaterClient {
   last_ip?: string | null;
   first_seen_at: string;
   last_seen_at: string;
+  hwid?: string | null;
 }
 
 export interface UpdaterEvent {

@@ -345,7 +345,8 @@
         "contact": "Contatto",
         "lastIp": "Ultimo IP",
         "firstSeen": "Prima Rilevazione",
-        "lastSeen": "Ultima Rilevazione"
+        "lastSeen": "Ultima Rilevazione",
+        "hwid": "HWID"
       },
       "events": {
         "title": "Eventi Recenti",
