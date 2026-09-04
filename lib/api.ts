@@ -594,7 +594,11 @@ const ALL_CLIENTS_PAGE_SIZE = 200;
 const ALL_CLIENTS_MAX_PAGES = 25;
 
 export async function getAllStatsClients(opts: { window_minutes?: number } = {}) {
-  const clients: UpdaterClient[] = [];
+  // Keyed by id rather than pushed into an array: the backend list is ordered by
+  // last-seen activity, so a client whose activity updates between page fetches can
+  // shift pages and be returned twice. A Map absorbs that drift instead of yielding
+  // duplicate rows (and duplicate React keys) downstream.
+  const clients = new Map<number, UpdaterClient>();
   let page = 1;
   let totalPages = 1;
 
@@ -604,12 +608,14 @@ export async function getAllStatsClients(opts: { window_minutes?: number } = {})
       page_size: ALL_CLIENTS_PAGE_SIZE,
       window_minutes: opts.window_minutes,
     });
-    clients.push(...(result.data ?? []));
+    for (const client of result.data ?? []) {
+      clients.set(client.id, client);
+    }
     totalPages = result.total_pages;
     page += 1;
   }
 
-  return clients;
+  return Array.from(clients.values());
 }
 
 export async function getStatsClientDetail(id: number) {

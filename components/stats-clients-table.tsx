@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
-import { Search, X } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Search, X } from "lucide-react";
 import type { UpdaterClient } from "@/lib/api";
+import { cn } from "@/lib/utils";
 import {
   Table,
   TableBody,
@@ -54,6 +55,25 @@ const EMPTY_FILTERS: Filters = {
   status: ANY,
 };
 
+type SortColumn =
+  | "hostname"
+  | "adDomain"
+  | "version"
+  | "lastIp"
+  | "status"
+  | "firstSeen"
+  | "lastSeen";
+type SortDirection = "asc" | "desc";
+type SortState = { column: SortColumn; direction: SortDirection };
+
+function compareStrings(a: string, b: string) {
+  // Empty/unknown values always sort last, regardless of direction.
+  if (!a && !b) return 0;
+  if (!a) return 1;
+  if (!b) return -1;
+  return a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" });
+}
+
 export function StatsClientsTable({ data: rawData, windowMinutes }: StatsClientsTableProps) {
   const data = useMemo(() => rawData ?? [], [rawData]);
   const t = useTranslations("statistics.clients");
@@ -61,7 +81,17 @@ export function StatsClientsTable({ data: rawData, windowMinutes }: StatsClients
   // component-purity rules (no impure calls like Date.now() in the render body).
   const [now] = useState(() => Date.now());
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
+  const [sort, setSort] = useState<SortState | null>(null);
   const [page, setPage] = useState(1);
+
+  function toggleSort(column: SortColumn) {
+    setSort((prev) => {
+      if (!prev || prev.column !== column) return { column, direction: "asc" };
+      if (prev.direction === "asc") return { column, direction: "desc" };
+      return null;
+    });
+    setPage(1);
+  }
 
   // The stats API exposes no search parameters, so the page loads the whole client
   // list (a few hundred rows at most) and every filter below runs in the browser.
@@ -104,9 +134,40 @@ export function StatsClientsTable({ data: rawData, windowMinutes }: StatsClients
     });
   }, [data, filters, now, windowMinutes]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const sorted = useMemo(() => {
+    if (!sort) return filtered;
+    const dir = sort.direction === "asc" ? 1 : -1;
+
+    return [...filtered].sort((a, b) => {
+      switch (sort.column) {
+        case "hostname":
+          return dir * compareStrings(a.hostname, b.hostname);
+        case "adDomain":
+          return dir * compareStrings(a.ad_domain, b.ad_domain);
+        case "version":
+          return dir * compareStrings(a.updater_version ?? "", b.updater_version ?? "");
+        case "lastIp":
+          return dir * compareStrings(a.last_ip ?? "", b.last_ip ?? "");
+        case "status": {
+          const aOnline = isOnlineAt(a, now, windowMinutes) ? 1 : 0;
+          const bOnline = isOnlineAt(b, now, windowMinutes) ? 1 : 0;
+          return dir * (aOnline - bOnline);
+        }
+        case "firstSeen":
+          return (
+            dir * (new Date(a.first_seen_at).getTime() - new Date(b.first_seen_at).getTime())
+          );
+        case "lastSeen":
+          return dir * (new Date(a.last_seen_at).getTime() - new Date(b.last_seen_at).getTime());
+        default:
+          return 0;
+      }
+    });
+  }, [filtered, sort, now, windowMinutes]);
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
-  const visible = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const visible = sorted.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
   const isFiltered =
     filters.hostname !== "" ||
     filters.ip !== "" ||
@@ -195,13 +256,27 @@ export function StatsClientsTable({ data: rawData, windowMinutes }: StatsClients
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{t("table.hostname")}</TableHead>
-              <TableHead>{t("table.adDomain")}</TableHead>
-              <TableHead>{t("table.version")}</TableHead>
-              <TableHead>{t("table.lastIp")}</TableHead>
-              <TableHead>{t("table.status")}</TableHead>
-              <TableHead>{t("table.firstSeen")}</TableHead>
-              <TableHead>{t("table.lastSeen")}</TableHead>
+              <SortableTableHead column="hostname" sort={sort} onSort={toggleSort}>
+                {t("table.hostname")}
+              </SortableTableHead>
+              <SortableTableHead column="adDomain" sort={sort} onSort={toggleSort}>
+                {t("table.adDomain")}
+              </SortableTableHead>
+              <SortableTableHead column="version" sort={sort} onSort={toggleSort}>
+                {t("table.version")}
+              </SortableTableHead>
+              <SortableTableHead column="lastIp" sort={sort} onSort={toggleSort}>
+                {t("table.lastIp")}
+              </SortableTableHead>
+              <SortableTableHead column="status" sort={sort} onSort={toggleSort}>
+                {t("table.status")}
+              </SortableTableHead>
+              <SortableTableHead column="firstSeen" sort={sort} onSort={toggleSort}>
+                {t("table.firstSeen")}
+              </SortableTableHead>
+              <SortableTableHead column="lastSeen" sort={sort} onSort={toggleSort}>
+                {t("table.lastSeen")}
+              </SortableTableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -268,5 +343,33 @@ export function StatsClientsTable({ data: rawData, windowMinutes }: StatsClients
         </div>
       )}
     </div>
+  );
+}
+
+interface SortableTableHeadProps {
+  column: SortColumn;
+  sort: SortState | null;
+  onSort: (column: SortColumn) => void;
+  children: ReactNode;
+}
+
+function SortableTableHead({ column, sort, onSort, children }: SortableTableHeadProps) {
+  const active = sort?.column === column;
+  const Icon = active ? (sort.direction === "asc" ? ArrowUp : ArrowDown) : ArrowUpDown;
+
+  return (
+    <TableHead>
+      <button
+        type="button"
+        onClick={() => onSort(column)}
+        className={cn(
+          "flex items-center gap-1 hover:text-foreground",
+          active ? "text-foreground" : "text-muted-foreground",
+        )}
+      >
+        {children}
+        <Icon className="h-3.5 w-3.5" />
+      </button>
+    </TableHead>
   );
 }
