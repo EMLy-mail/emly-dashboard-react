@@ -44,7 +44,11 @@ export async function createConfigRevisionAction(
   _prevState: ConfigActionState,
   formData: FormData,
 ): Promise<ConfigActionState> {
-  await requireAdmin();
+  try {
+    await requireAdmin();
+  } catch {
+    return { error: "Unauthorized" };
+  }
   const raw = (formData.get("document") as string) ?? "";
   const notes = (formData.get("notes") as string) || undefined;
   const publish = formData.get("publish") === "true";
@@ -75,7 +79,11 @@ export async function validateConfigDocumentAction(
   _prevState: ValidateActionState,
   formData: FormData,
 ): Promise<ValidateActionState> {
-  await requireAdmin();
+  try {
+    await requireAdmin();
+  } catch {
+    return { checked: true, valid: false, error: "Unauthorized" };
+  }
   const raw = (formData.get("document") as string) ?? "";
   const { document, error } = parseDocumentJson(raw);
   if (error) return { checked: true, valid: false, error };
@@ -112,7 +120,11 @@ export async function rollbackConfigAction(
   _prevState: ConfigActionState,
   formData: FormData,
 ): Promise<ConfigActionState> {
-  await requireAdmin();
+  try {
+    await requireAdmin();
+  } catch {
+    return { error: "Unauthorized" };
+  }
   const to = Number(formData.get("to"));
   const notes = (formData.get("notes") as string) || undefined;
   if (!to) return { error: "Nothing to roll back to" };
@@ -138,7 +150,11 @@ export async function previewConfigAction(
   _prevState: PreviewActionState,
   formData: FormData,
 ): Promise<PreviewActionState> {
-  await requireAdmin();
+  try {
+    await requireAdmin();
+  } catch {
+    return { error: "Unauthorized" };
+  }
   const revisionRaw = (formData.get("revision") as string) || "";
   const documentRaw = (formData.get("document") as string) || "";
   const ipsRaw = (formData.get("ips") as string) || "";

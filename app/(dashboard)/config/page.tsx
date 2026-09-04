@@ -31,7 +31,7 @@ export default async function ConfigPage({ searchParams }: PageProps) {
   const isAdmin = currentUser?.role === "admin";
   const revisions = revisionsResult?.revisions ?? [];
   const totalPages = revisionsResult ? Math.max(1, Math.ceil(revisionsResult.total / page_size)) : 1;
-  const published = publishedResult?.revisions[0] ?? null;
+  const published = publishedResult?.revisions?.[0] ?? null;
 
   return (
     <div className="space-y-6">

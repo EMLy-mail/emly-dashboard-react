@@ -4,6 +4,7 @@ import { useState, useActionState } from "react";
 import { useTranslations } from "next-intl";
 import { previewConfigAction, type PreviewActionState } from "@/lib/actions/config";
 import type { RemoteConfigRevisionSummary } from "@/lib/api";
+import { formatConfigDocument } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -178,7 +179,7 @@ export function ConfigPreviewDialog({
               <div className="space-y-2">
                 <Label>{t("previewDialog.effectiveDocument")}</Label>
                 <ConfigJsonTextarea
-                  value={JSON.stringify(state.result.effective_document, null, 2)}
+                  value={formatConfigDocument(state.result.effective_document)}
                   readOnly
                   rows={14}
                 />

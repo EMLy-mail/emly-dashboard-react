@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { getConfigRevisionAction } from "@/lib/actions/config";
 import type { RemoteConfigRevisionSummary } from "@/lib/api";
+import { formatConfigDocument } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -36,7 +37,7 @@ export function ConfigRevisionViewDialog({ revision, open, onOpenChange }: Confi
     getConfigRevisionAction(revision.revision)
       .then((full) => {
         if (cancelled) return;
-        setDocumentText(JSON.stringify(full.document, null, 2));
+        setDocumentText(formatConfigDocument(full.document));
       })
       .catch(() => {
         if (!cancelled) setError(t("viewDialog.loadFailed"));
