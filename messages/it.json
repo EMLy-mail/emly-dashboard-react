@@ -5,7 +5,8 @@
       "bugReports": "Segnalazioni Bug",
       "users": "Utenti",
       "updates": "Aggiornamenti",
-      "statistics": "Statistiche"
+      "statistics": "Statistiche",
+      "config": "Config Remota"
     },
     "signOut": "Esci",
     "toggleTheme": "Cambia tema",
@@ -371,6 +372,116 @@
         "download": "Download"
       },
       "noData": "Nessun evento in questo intervallo."
+    }
+  },
+  "config": {
+    "title": "Config Remota",
+    "description": "Il documento di policy per tutta la fleet, servito a EMLy Updater ed EMLy da GET /v2/config.",
+    "preview": "Anteprima",
+    "newRevision": "Nuova Revisione",
+    "status": {
+      "draft": "bozza",
+      "published": "pubblicata",
+      "superseded": "sostituita"
+    },
+    "filter": {
+      "all": "Tutte",
+      "draft": "Bozze",
+      "published": "Pubblicate",
+      "superseded": "Sostituite"
+    },
+    "published": {
+      "revision": "Revisione Pubblicata",
+      "none": "Ancora nulla di pubblicato — i client ricevono un 204 silenzioso.",
+      "publishedAt": "Pubblicata Il",
+      "clientsOnRevision": "Client Su Questa Revisione",
+      "clientsHelp": "Conteggiato dall'ultima GET /v2/config di ogni client.",
+      "createdBy": "Creata Da"
+    },
+    "table": {
+      "revision": "Revisione",
+      "status": "Stato",
+      "notes": "Note",
+      "createdBy": "Creata Da",
+      "basedOn": "Basata Su",
+      "generatedAt": "Generata Il",
+      "clients": "Client",
+      "anonymous": "—",
+      "noData": "Nessuna revisione ancora.",
+      "page": "Pagina {current} di {total}",
+      "previous": "Precedente",
+      "next": "Successiva",
+      "view": "Visualizza documento",
+      "publish": "Pubblica",
+      "published": "Revisione #{revision} pubblicata",
+      "publishFailed": "Pubblicazione fallita — potrebbe non essere più una bozza, oppure è stata pubblicata una revisione più recente nel frattempo",
+      "rollbackToThis": "Ripristina a questa",
+      "delete": "Elimina",
+      "deleteTitle": "Eliminare la bozza #{revision}?",
+      "deleteDescription": "Solo le revisioni in bozza possono essere eliminate. Il numero di revisione non viene liberato. Questa azione non può essere annullata.",
+      "deleted": "Revisione #{revision} eliminata",
+      "deleteFailed": "Eliminazione fallita — solo una bozza può essere eliminata",
+      "cancel": "Annulla"
+    },
+    "createDialog": {
+      "title": "Nuova Revisione Config",
+      "document": "Documento (JSON)",
+      "documentHelp": "Non deve contenere revision o generatedAt — il server assegna entrambi e segnala un valore inviato come avviso, non come errore.",
+      "notes": "Note",
+      "notesPlaceholder": "Cosa è cambiato e perché",
+      "publish": "Pubblica",
+      "publishNow": "Pubblica subito",
+      "publishHelp": "Altrimenti viene salvata come bozza, revisionabile e pubblicabile in seguito dalla tabella.",
+      "validate": "Valida",
+      "validating": "Validazione...",
+      "validationValid": "Valido",
+      "validationInvalid": "Non valido",
+      "cancel": "Annulla",
+      "createDraft": "Salva Bozza",
+      "createAndPublish": "Crea e Pubblica",
+      "creating": "Salvataggio...",
+      "success": "Revisione #{revision} creata"
+    },
+    "viewDialog": {
+      "title": "Revisione #{revision}",
+      "loadFailed": "Impossibile caricare il documento.",
+      "etag": "ETag",
+      "basedOn": "basata su #{revision}",
+      "createdBy": "creata da {user}"
+    },
+    "rollbackDialog": {
+      "title": "Ripristinare alla revisione #{revision}?",
+      "description": "Clona il contenuto della revisione #{revision} in una nuova revisione più alta e la pubblica subito. È l'unico modo per tornare indietro — ripubblicare la #{revision} stessa darebbe alla fleet un numero più basso di quello che ha già, che ogni client ignorerebbe.",
+      "notes": "Note",
+      "notesPlaceholder": "Perché stai facendo il rollback",
+      "cancel": "Annulla",
+      "confirm": "Ripristina",
+      "rollingBack": "Ripristino...",
+      "success": "Revisione #{revision} pubblicata"
+    },
+    "previewDialog": {
+      "title": "Anteprima Policy Effettiva",
+      "sourceRevision": "Revisione salvata",
+      "sourceDocument": "Incolla un documento",
+      "revision": "Revisione",
+      "currentlyPublished": "attualmente pubblicata",
+      "document": "Documento (JSON)",
+      "host": "Host",
+      "hwid": "HWID",
+      "hostname": "Hostname",
+      "dc": "Domain controller",
+      "domain": "Dominio AD",
+      "ips": "Indirizzi IPv4 locali, separati da virgola",
+      "hostHelp": "Lascia vuoti i campi non necessari — un matcher su un valore assente semplicemente non corrisponde. \"now\" default all'orologio del server.",
+      "close": "Chiudi",
+      "run": "Anteprima",
+      "previewing": "Anteprima...",
+      "matchedSite": "Sito corrispondente",
+      "defaultServer": "defaultServer (non mappato)",
+      "resolverChain": "Catena di risoluzione",
+      "appliedOverrides": "Override applicati",
+      "none": "nessuno",
+      "effectiveDocument": "Documento effettivo"
     }
   }
 }

@@ -66,6 +66,8 @@ export class ApiError extends Error {
   constructor(
     public status: number,
     message: string,
+    /** Present on a 422 from the remote-config validate/preview/publish routes. */
+    public problems?: RemoteConfigProblem[],
   ) {
     super(message);
     this.name = "ApiError";
@@ -114,7 +116,7 @@ async function apiFetch<T>(
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new ApiError(res.status, body.error ?? "Unknown error");
+    throw new ApiError(res.status, body.error ?? "Unknown error", body.problems);
   }
 
   return res.json() as Promise<T>;
@@ -634,5 +636,195 @@ export async function getStatsEvents(opts: {
     `/stats/events${qs}`,
     {},
     { requiresAdmin: true, requiresApi: false, baseUrl: updatesBase() },
+  );
+}
+
+// ── Remote Config ──────────────────────────────────────────────────────────
+//
+// The fleet-wide policy document served to the EMLy Updater and EMLy at
+// GET /v2/config. See emly-api-go's
+// docs/superpowers/specs/2026-09-04-remote-config-api-design.md (storage,
+// revisions, admin routes) and emly-updater's
+// docs/superpowers/specs/2026-09-04-remote-config-design.md (the document
+// schema and validation rules this dashboard is not re-implementing).
+
+export type RemoteConfigStatus = "draft" | "published" | "superseded";
+
+export interface RemoteConfigProblem {
+  path: string;
+  message: string;
+}
+
+/**
+ * The document itself is intentionally untyped beyond its required
+ * top-level shape: the API's own validator (`internal/remoteconfig`)
+ * ignores fields it doesn't recognize so either side can add one without a
+ * schema bump, and this dashboard edits the document as raw JSON rather
+ * than re-modeling its whole schema (servers, dcLookupMap, ipcProtocol,
+ * control, updater, logging, overrides — see the client spec §7). A
+ * structured, per-field editor is future work the API design doc leaves
+ * room for.
+ */
+export type RemoteConfigDocument = {
+  schemaVersion: number;
+  revision?: number;
+  generatedAt?: string;
+  servers: Record<string, string>;
+  defaultServer: string;
+} & Record<string, unknown>;
+
+/** Fields common to every shape the API returns for a revision. */
+interface RemoteConfigRevisionBase {
+  revision: number;
+  schema_version: number;
+  status: RemoteConfigStatus;
+  etag: string;
+  notes: string | null;
+  created_by: string | null;
+  based_on: number | null;
+  generated_at: string;
+  published_at: string | null;
+  created_at: string;
+}
+
+/**
+ * Metadata-only projection served by `GET /config/revisions` (the list).
+ * clients_on_revision is a `COUNT(*)` the list query joins in — it does
+ * *not* appear on the single-revision shapes below (get/create/publish/
+ * rollback), which come straight off the `remote_config_revisions` row.
+ */
+export interface RemoteConfigRevisionSummary extends RemoteConfigRevisionBase {
+  clients_on_revision: number;
+}
+
+/** One revision with its full document — get/create/publish/rollback. */
+export interface RemoteConfigRevision extends RemoteConfigRevisionBase {
+  document: RemoteConfigDocument;
+}
+
+export interface PaginatedConfigRevisions {
+  page: number;
+  page_size: number;
+  total: number;
+  revisions: RemoteConfigRevisionSummary[];
+}
+
+export interface ConfigPreviewHost {
+  hwid?: string;
+  hostname?: string;
+  dc?: string;
+  ips?: string[];
+  domain?: string;
+  /** RFC 3339; defaults to the server clock when omitted. */
+  now?: string;
+}
+
+export interface ConfigPreviewResult {
+  revision: number;
+  effective_document: RemoteConfigDocument;
+  applied_override_ids: string[];
+  matched_site: string | null;
+  resolver_chain: string[];
+}
+
+function configBase(): string {
+  return env.apiBaseUrl + "/v2";
+}
+
+export async function getConfigRevisions(
+  opts: { page?: number; page_size?: number; status?: RemoteConfigStatus } = {},
+) {
+  const params = new URLSearchParams();
+  if (opts.page) params.set("page", String(opts.page));
+  if (opts.page_size) params.set("page_size", String(opts.page_size));
+  if (opts.status) params.set("status", opts.status);
+  const qs = params.toString() ? `?${params}` : "";
+  return apiFetch<PaginatedConfigRevisions>(
+    `/config/revisions${qs}`,
+    {},
+    { requiresAdmin: true, requiresApi: false, baseUrl: configBase() },
+  );
+}
+
+export async function getConfigRevision(revision: number) {
+  return apiFetch<RemoteConfigRevision>(
+    `/config/revisions/${revision}`,
+    {},
+    { requiresAdmin: true, requiresApi: false, baseUrl: configBase() },
+  );
+}
+
+/**
+ * document must not carry `revision`/`generatedAt` — the API assigns both
+ * and reports a submitted value back as a warning, not an error.
+ * sessionToken, when given, attributes the revision to the signed-in admin
+ * (`created_by`); omitted, the revision is created anonymously.
+ */
+export async function createConfigRevision(
+  data: { document: unknown; notes?: string; publish?: boolean },
+  opts: { sessionToken?: string } = {},
+) {
+  return apiFetch<RemoteConfigRevision & { warnings: RemoteConfigProblem[] }>(
+    "/config/revisions",
+    { method: "POST", body: JSON.stringify(data) },
+    { requiresAdmin: true, requiresApi: false, baseUrl: configBase(), sessionToken: opts.sessionToken },
+  );
+}
+
+/** Only a draft revision can be deleted; it does not free the revision number. */
+export async function deleteConfigRevision(revision: number) {
+  return apiFetch<{ deleted: boolean }>(
+    `/config/revisions/${revision}`,
+    { method: "DELETE" },
+    { requiresAdmin: true, requiresApi: false, baseUrl: configBase() },
+  );
+}
+
+export async function publishConfigRevision(revision: number, opts: { sessionToken?: string } = {}) {
+  return apiFetch<RemoteConfigRevision>(
+    `/config/revisions/${revision}/publish`,
+    { method: "POST" },
+    { requiresAdmin: true, requiresApi: false, baseUrl: configBase(), sessionToken: opts.sessionToken },
+  );
+}
+
+/**
+ * The only rollback mechanism: clones `to`'s content into a new, higher
+ * revision and publishes it — republishing `to` itself would hand the
+ * fleet a lower number than it already has, which every client ignores.
+ */
+export async function rollbackConfig(
+  data: { to: number; notes?: string },
+  opts: { sessionToken?: string } = {},
+) {
+  return apiFetch<RemoteConfigRevision>(
+    "/config/rollback",
+    { method: "POST", body: JSON.stringify(data) },
+    { requiresAdmin: true, requiresApi: false, baseUrl: configBase(), sessionToken: opts.sessionToken },
+  );
+}
+
+/** Validates a document without storing it — for a "check" button. */
+export async function validateConfigDocument(document: unknown) {
+  return apiFetch<{ valid: boolean; warnings: RemoteConfigProblem[] }>(
+    "/config/validate",
+    { method: "POST", body: JSON.stringify({ document }) },
+    { requiresAdmin: true, requiresApi: false, baseUrl: configBase() },
+  );
+}
+
+/**
+ * Exactly one of `revision` (a stored revision) or `document` (inline, not
+ * stored) must be given. Answers "what would this host actually see".
+ */
+export async function previewConfig(data: {
+  revision?: number;
+  document?: unknown;
+  host: ConfigPreviewHost;
+}) {
+  return apiFetch<ConfigPreviewResult>(
+    "/config/preview",
+    { method: "POST", body: JSON.stringify(data) },
+    { requiresAdmin: true, requiresApi: false, baseUrl: configBase() },
   );
 }

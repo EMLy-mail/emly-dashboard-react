@@ -5,7 +5,8 @@
       "bugReports": "Bug Reports",
       "users": "Users",
       "updates": "Updates",
-      "statistics": "Statistics"
+      "statistics": "Statistics",
+      "config": "Remote Config"
     },
     "signOut": "Sign out",
     "toggleTheme": "Toggle dark mode",
@@ -371,6 +372,116 @@
         "download": "Download"
       },
       "noData": "No events in this range."
+    }
+  },
+  "config": {
+    "title": "Remote Config",
+    "description": "The fleet-wide policy document served to the EMLy Updater and EMLy at GET /v2/config.",
+    "preview": "Preview",
+    "newRevision": "New Revision",
+    "status": {
+      "draft": "draft",
+      "published": "published",
+      "superseded": "superseded"
+    },
+    "filter": {
+      "all": "All",
+      "draft": "Draft",
+      "published": "Published",
+      "superseded": "Superseded"
+    },
+    "published": {
+      "revision": "Published Revision",
+      "none": "Nothing published yet — clients get a silent 204.",
+      "publishedAt": "Published At",
+      "clientsOnRevision": "Clients On This Revision",
+      "clientsHelp": "Counted from the last GET /v2/config each client made.",
+      "createdBy": "Created By"
+    },
+    "table": {
+      "revision": "Revision",
+      "status": "Status",
+      "notes": "Notes",
+      "createdBy": "Created By",
+      "basedOn": "Based On",
+      "generatedAt": "Generated At",
+      "clients": "Clients",
+      "anonymous": "—",
+      "noData": "No revisions yet.",
+      "page": "Page {current} of {total}",
+      "previous": "Previous",
+      "next": "Next",
+      "view": "View document",
+      "publish": "Publish",
+      "published": "Revision #{revision} published",
+      "publishFailed": "Failed to publish — it may no longer be a draft, or a newer revision has since been published",
+      "rollbackToThis": "Roll back to this",
+      "delete": "Delete",
+      "deleteTitle": "Delete draft revision #{revision}?",
+      "deleteDescription": "Only draft revisions can be deleted. This does not free the revision number. This action cannot be undone.",
+      "deleted": "Revision #{revision} deleted",
+      "deleteFailed": "Failed to delete — only a draft can be deleted",
+      "cancel": "Cancel"
+    },
+    "createDialog": {
+      "title": "New Config Revision",
+      "document": "Document (JSON)",
+      "documentHelp": "Must not include revision or generatedAt — the server assigns both and reports a submitted value back as a warning, not an error.",
+      "notes": "Notes",
+      "notesPlaceholder": "What changed and why",
+      "publish": "Publish",
+      "publishNow": "Publish immediately",
+      "publishHelp": "Otherwise this is saved as a draft you can review and publish later from the table.",
+      "validate": "Validate",
+      "validating": "Validating...",
+      "validationValid": "Valid",
+      "validationInvalid": "Invalid",
+      "cancel": "Cancel",
+      "createDraft": "Save Draft",
+      "createAndPublish": "Create & Publish",
+      "creating": "Saving...",
+      "success": "Revision #{revision} created"
+    },
+    "viewDialog": {
+      "title": "Revision #{revision}",
+      "loadFailed": "Failed to load the document.",
+      "etag": "ETag",
+      "basedOn": "based on #{revision}",
+      "createdBy": "created by {user}"
+    },
+    "rollbackDialog": {
+      "title": "Roll back to revision #{revision}?",
+      "description": "Clones revision #{revision}'s content into a new, higher revision and publishes it immediately. This is the only way to roll back — republishing #{revision} itself would hand the fleet a lower number than it already has, which every client would ignore.",
+      "notes": "Notes",
+      "notesPlaceholder": "Why you're rolling back",
+      "cancel": "Cancel",
+      "confirm": "Roll Back",
+      "rollingBack": "Rolling back...",
+      "success": "Revision #{revision} published"
+    },
+    "previewDialog": {
+      "title": "Preview Effective Policy",
+      "sourceRevision": "Stored revision",
+      "sourceDocument": "Paste a document",
+      "revision": "Revision",
+      "currentlyPublished": "currently published",
+      "document": "Document (JSON)",
+      "host": "Host",
+      "hwid": "HWID",
+      "hostname": "Hostname",
+      "dc": "Domain controller",
+      "domain": "AD domain",
+      "ips": "Local IPv4 addresses, comma-separated",
+      "hostHelp": "Leave fields blank as needed — matchers on an absent value simply don't match. \"now\" defaults to the server clock.",
+      "close": "Close",
+      "run": "Preview",
+      "previewing": "Previewing...",
+      "matchedSite": "Matched site",
+      "defaultServer": "defaultServer (unmapped)",
+      "resolverChain": "Resolver chain",
+      "appliedOverrides": "Applied overrides",
+      "none": "none",
+      "effectiveDocument": "Effective document"
     }
   }
 }
