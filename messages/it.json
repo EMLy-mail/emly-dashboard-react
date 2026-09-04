@@ -295,6 +295,10 @@
   "statistics": {
     "title": "Statistiche",
     "description": "Statistiche della flotta di client EMLy Updater.",
+    "live": {
+      "on": "In diretta",
+      "off": "Non aggiornato in tempo reale"
+    },
     "summary": {
       "totalClients": "Client Totali",
       "connectedClients": "Client Connessi",

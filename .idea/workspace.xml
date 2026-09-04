@@ -6,6 +6,12 @@
   <component name="ChangeListManager">
     <list default="true" id="9ef8ab83-f0b0-47bb-8b0c-21d4f49db040" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(dashboard)/statistics/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(dashboard)/statistics/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/bun.lock" beforeDir="false" afterPath="$PROJECT_DIR$/bun.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/env.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/env.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/messages/en.json" beforeDir="false" afterPath="$PROJECT_DIR$/messages/en.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/messages/it.json" beforeDir="false" afterPath="$PROJECT_DIR$/messages/it.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -96,6 +102,7 @@
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
     "codeWithMe.voiceChat.enabledByDefault": "false",
     "git-widget-placeholder": "feat/config-editor",
+    "javascript.preferred.runtime.type.id": "bun",
     "js.debugger.nextJs.config.created.client": "true",
     "js.debugger.nextJs.config.created.server": "true",
     "last_opened_file_path": "/Users/lyzcoote/Developer/Gits/emly-dashboard-react",
@@ -137,7 +144,7 @@
       <option name="presentableId" value="Default" />
       <updated>1788437913345</updated>
       <workItem from="1788437914448" duration="1216000" />
-      <workItem from="1788515127928" duration="2863000" />
+      <workItem from="1788515127928" duration="7568000" />
     </task>
     <servers />
   </component>
