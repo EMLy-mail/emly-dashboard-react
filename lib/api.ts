@@ -66,6 +66,8 @@ export class ApiError extends Error {
   constructor(
     public status: number,
     message: string,
+    /** Present on a 422 from the remote-config validate/preview/publish routes. */
+    public problems?: RemoteConfigProblem[],
   ) {
     super(message);
     this.name = "ApiError";
@@ -114,7 +116,7 @@ async function apiFetch<T>(
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new ApiError(res.status, body.error ?? "Unknown error");
+    throw new ApiError(res.status, body.error ?? "Unknown error", body.problems);
   }
 
   return res.json() as Promise<T>;
@@ -247,9 +249,13 @@ export async function resetUserPassword(id: string, password: string) {
 
 // ── Updates ────────────────────────────────────────────────────────────────
 
+/**
+ * Filter value for `GET /updates/releases?channel=`. Not used to set channel
+ * membership on a release — that's done via `Release.is_stable`/`is_beta`,
+ * which are independent (a release can be both at once).
+ */
 export type ReleaseChannel = "stable" | "beta" | "archived";
 export type ReleaseSeverity = "none" | "security" | "bugfix" | "feature";
-export type ReleaseProduct = "app" | "updater";
 
 export interface DetailedNote {
   severityType: ReleaseSeverity;
@@ -270,9 +276,9 @@ export interface UpdateManifest {
 }
 
 export interface Release {
-  product: ReleaseProduct;
   version: string;
-  channel: ReleaseChannel;
+  is_stable: boolean;
+  is_beta: boolean;
   download_filename: string;
   sha256_checksum: string;
   short_note: string;
@@ -311,7 +317,8 @@ export async function createRelease(data: {
   file: File;
   version: string;
   short_note?: string;
-  channel?: ReleaseChannel;
+  is_stable?: boolean;
+  is_beta?: boolean;
   severity_type?: ReleaseSeverity;
   description_en?: string | null;
   description_it?: string | null;
@@ -322,7 +329,8 @@ export async function createRelease(data: {
   const form = new FormData();
   form.append("file", data.file);
   form.append("version", data.version);
-  if (data.channel) form.append("channel", data.channel);
+  form.append("is_stable", data.is_stable ? "true" : "false");
+  form.append("is_beta", data.is_beta ? "true" : "false");
   if (data.short_note) form.append("short_note", data.short_note);
   if (data.severity_type) form.append("severity_type", data.severity_type);
   if (data.description_en) form.append("description_en", data.description_en);
@@ -331,7 +339,7 @@ export async function createRelease(data: {
   if (data.critical_version) form.append("critical_version", data.critical_version);
   if (data.min_required_version) form.append("min_required_version", data.min_required_version);
 
-  return apiFetch<{ version: string; channel: ReleaseChannel; download_filename: string; sha256_checksum: string }>(
+  return apiFetch<{ version: string; is_stable: boolean; is_beta: boolean; download_filename: string; sha256_checksum: string }>(
     "/updates/releases",
     { method: "POST", body: form },
     { requiresAdmin: true, requiresApi: false, baseUrl: updatesBase() },
@@ -350,7 +358,8 @@ export async function updateRelease(
   version: string,
   data: {
     short_note?: string;
-    channel?: ReleaseChannel;
+    is_stable?: boolean;
+    is_beta?: boolean;
     severity_type?: ReleaseSeverity;
     description_en?: string | null;
     description_it?: string | null;
@@ -370,118 +379,514 @@ export async function updateRelease(
   );
 }
 
-export async function promoteRelease(version: string, channel: ReleaseChannel) {
-  return apiFetch<{ version: string; channel: ReleaseChannel }>(
+/**
+ * Sets is_stable and/or is_beta on a release. Setting either to true demotes
+ * whoever currently holds that slot; the two flags are independent, so a
+ * release may hold both at once. Setting a flag to false just clears it.
+ */
+export async function setReleaseChannels(
+  version: string,
+  flags: { is_stable?: boolean; is_beta?: boolean },
+) {
+  return apiFetch<{ version: string; is_stable: boolean; is_beta: boolean }>(
     `/updates/releases/${encodeURIComponent(version)}/channel`,
     {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ channel }),
+      body: JSON.stringify(flags),
     },
     { requiresAdmin: true, requiresApi: false, baseUrl: updatesBase() },
   );
 }
 
-// ── Updates v3 (multi-product: app + updater) ───────────────────────────────
-// Same endpoints as above but product-scoped; product is a path segment, not
-// a form/body field. /v2 functions above stay untouched (implicitly "app").
+// ── Updater self-update ────────────────────────────────────────────────────
 
-function updatesBaseV3(product: ReleaseProduct): string {
-  return `${env.apiBaseUrl}/v3/updates/${product}`;
+/**
+ * Self-update contract for the EMLy Updater. Deliberately poorer than
+ * `UpdateManifest`: no channels, no criticality, no downgrade. An empty (or
+ * absent) `version` means "nothing to distribute" — the kill-switch state.
+ */
+export interface UpdaterManifest {
+  version: string;
+  download?: string;
+  sha256?: string;
+  size?: number;
+  publishedAt?: string;
+  releaseNotes?: Record<string, string>;
 }
 
-export async function getUpdateManifestV3(product: ReleaseProduct) {
-  return apiFetch<UpdateManifest>(
-    "/manifest",
+export interface UpdaterRelease {
+  version: string;
+  /** At most one release holds this — promoting one demotes the other. */
+  is_current: boolean;
+  download_filename: string;
+  sha256_checksum: string;
+  file_size: number;
+  notes_it: string | null;
+  notes_en: string | null;
+  published_at: string;
+  created_at: string;
+}
+
+export async function getUpdaterManifest() {
+  return apiFetch<UpdaterManifest>(
+    "/updates/manifest/updater",
     {},
-    { requiresApi: false, baseUrl: updatesBaseV3(product) },
+    { requiresApi: true, baseUrl: updatesBase() },
   );
 }
 
-export async function getReleasesV3(product: ReleaseProduct, channel?: ReleaseChannel) {
-  const qs = channel ? `?channel=${channel}` : "";
-  return apiFetch<Release[]>(
-    `/releases${qs}`,
+export async function getUpdaterReleases() {
+  return apiFetch<UpdaterRelease[]>(
+    "/updates/updater/releases",
     {},
-    { requiresAdmin: true, requiresApi: false, baseUrl: updatesBaseV3(product) },
+    { requiresAdmin: true, requiresApi: false, baseUrl: updatesBase() },
   );
 }
 
-export async function createReleaseV3(
-  product: ReleaseProduct,
-  data: {
-    file: File;
-    version: string;
-    short_note?: string;
-    channel?: ReleaseChannel;
-    severity_type?: ReleaseSeverity;
-    description_en?: string | null;
-    description_it?: string | null;
-    is_critical?: boolean;
-    critical_version?: string | null;
-    min_required_version?: string | null;
-  },
-) {
+export async function createUpdaterRelease(data: {
+  file: File;
+  version: string;
+  is_current?: boolean;
+  notes_it?: string | null;
+  notes_en?: string | null;
+  published_at?: string | null;
+}) {
   const form = new FormData();
   form.append("file", data.file);
   form.append("version", data.version);
-  if (data.channel) form.append("channel", data.channel);
-  if (data.short_note) form.append("short_note", data.short_note);
-  if (data.severity_type) form.append("severity_type", data.severity_type);
-  if (data.description_en) form.append("description_en", data.description_en);
-  if (data.description_it) form.append("description_it", data.description_it);
-  form.append("is_critical", data.is_critical ? "true" : "false");
-  if (data.critical_version) form.append("critical_version", data.critical_version);
-  if (data.min_required_version) form.append("min_required_version", data.min_required_version);
+  form.append("is_current", data.is_current ? "true" : "false");
+  if (data.notes_it) form.append("notes_it", data.notes_it);
+  if (data.notes_en) form.append("notes_en", data.notes_en);
+  if (data.published_at) form.append("published_at", data.published_at);
 
-  return apiFetch<{ product: ReleaseProduct; version: string; channel: ReleaseChannel; download_filename: string; sha256_checksum: string }>(
-    "/releases",
+  return apiFetch<{
+    version: string;
+    is_current: boolean;
+    download_filename: string;
+    sha256_checksum: string;
+    file_size: number;
+  }>(
+    "/updates/updater/releases",
     { method: "POST", body: form },
-    { requiresAdmin: true, requiresApi: false, baseUrl: updatesBaseV3(product) },
+    { requiresAdmin: true, requiresApi: false, baseUrl: updatesBase() },
   );
 }
 
-export async function deleteReleaseV3(product: ReleaseProduct, version: string) {
-  return apiFetch<{ deleted: boolean }>(
-    `/releases/${encodeURIComponent(version)}`,
-    { method: "DELETE" },
-    { requiresAdmin: true, requiresApi: false, baseUrl: updatesBaseV3(product) },
-  );
-}
-
-export async function updateReleaseV3(
-  product: ReleaseProduct,
+/**
+ * Partial update — only the keys present in `data` are changed. An empty
+ * string clears a note. `{ is_current: false }` on the served build is the
+ * kill-switch: the manifest immediately reverts to `{"version": ""}`.
+ */
+export async function updateUpdaterRelease(
   version: string,
   data: {
-    short_note?: string;
-    channel?: ReleaseChannel;
-    severity_type?: ReleaseSeverity;
-    description_en?: string | null;
-    description_it?: string | null;
-    is_critical?: boolean;
-    critical_version?: string | null;
-    min_required_version?: string | null;
+    is_current?: boolean;
+    notes_it?: string;
+    notes_en?: string;
+    published_at?: string;
   },
 ) {
-  return apiFetch<Release>(
-    `/releases/${encodeURIComponent(version)}`,
+  return apiFetch<UpdaterRelease>(
+    `/updates/updater/releases/${encodeURIComponent(version)}`,
     {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     },
-    { requiresAdmin: true, requiresApi: false, baseUrl: updatesBaseV3(product) },
+    { requiresAdmin: true, requiresApi: false, baseUrl: updatesBase() },
   );
 }
 
-export async function promoteReleaseV3(product: ReleaseProduct, version: string, channel: ReleaseChannel) {
-  return apiFetch<{ product: ReleaseProduct; version: string; channel: ReleaseChannel }>(
-    `/releases/${encodeURIComponent(version)}/channel`,
-    {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ channel }),
-    },
-    { requiresAdmin: true, requiresApi: false, baseUrl: updatesBaseV3(product) },
+export async function deleteUpdaterRelease(version: string) {
+  return apiFetch<{ deleted: boolean }>(
+    `/updates/updater/releases/${encodeURIComponent(version)}`,
+    { method: "DELETE" },
+    { requiresAdmin: true, requiresApi: false, baseUrl: updatesBase() },
+  );
+}
+
+// ── Stats ──────────────────────────────────────────────────────────────────
+
+export type UpdaterEventType = "manifest_check" | "download";
+export type StatsEventBucket = "day" | "hour";
+
+export interface UpdaterClient {
+  id: number;
+  hostname: string;
+  ad_domain: string;
+  updater_version?: string | null;
+  contact?: string | null;
+  last_ip?: string | null;
+  first_seen_at: string;
+  last_seen_at: string;
+  hwid?: string | null;
+  /**
+   * Interactive user seen on the machine - console or RDP alike - at the last
+   * sighting that reported one, as `DOMAIN\user`. It is a snapshot, not a
+   * history: the API overwrites it on every request carrying
+   * X-EMLy-LoggedUser and never clears it, so always read it next to
+   * `last_seen_at`. Null for a client that has never reported one (an updater
+   * too old to send the header).
+   */
+  logged_user?: string | null;
+  /** Chassis serial number from the BIOS. */
+  serial?: string | null;
+  /** Vendor product/SKU number - on HP the `8XXXXXXX#ABZ` on the chassis label. */
+  product?: string | null;
+}
+
+// ── Bans ───────────────────────────────────────────────────────────────────
+
+/** Which identifier a ban matches on. The three are independent. */
+export type BanType = "ip" | "hwid" | "hostname";
+
+export interface Ban {
+  id: number;
+  ban_type: BanType;
+  value: string;
+  reason?: string | null;
+  created_by?: string | null;
+  created_at: string;
+}
+
+export async function getBans() {
+  return apiFetch<Ban[]>(
+    "/bans/",
+    {},
+    { requiresAdmin: true, requiresApi: false, baseUrl: updatesBase() },
+  );
+}
+
+/**
+ * Creates a ban, or returns the existing one when that identifier is already
+ * banned - the API treats a repeat as the state the caller asked for rather
+ * than a conflict, so this never needs a "does it exist" round trip.
+ */
+export async function createBan(input: { ban_type: BanType; value: string; reason?: string }) {
+  return apiFetch<Ban>(
+    "/bans/",
+    { method: "POST", body: JSON.stringify(input) },
+    { requiresAdmin: true, requiresApi: false, baseUrl: updatesBase() },
+  );
+}
+
+export async function deleteBan(id: number) {
+  return apiFetch<{ status: string }>(
+    `/bans/${id}`,
+    { method: "DELETE" },
+    { requiresAdmin: true, requiresApi: false, baseUrl: updatesBase() },
+  );
+}
+
+export interface UpdaterEvent {
+  id: number;
+  client_id: number;
+  event_type: UpdaterEventType;
+  version?: string | null;
+  ip_address?: string | null;
+  created_at: string;
+}
+
+export interface StatsSummary {
+  total_clients: number;
+  connected_clients: number;
+  window_minutes: number;
+  events_last_24h: { event_type: string; count: number }[];
+  clients_by_version: { updater_version: string | null; count: number }[];
+}
+
+export interface PaginatedStatsClients {
+  data: UpdaterClient[] | null;
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+export interface StatsClientDetail {
+  client: UpdaterClient;
+  events: UpdaterEvent[];
+}
+
+export interface StatsEventsResponse {
+  bucket: StatsEventBucket;
+  from: string;
+  to: string;
+  data: { bucket: string; event_type: string; count: number }[];
+}
+
+export async function getStatsSummary(windowMinutes?: number) {
+  const qs = windowMinutes ? `?window_minutes=${windowMinutes}` : "";
+  return apiFetch<StatsSummary>(
+    `/stats/summary${qs}`,
+    {},
+    { requiresAdmin: true, requiresApi: false, baseUrl: updatesBase() },
+  );
+}
+
+export async function getStatsClients(opts: {
+  page?: number;
+  page_size?: number;
+  online?: boolean;
+  window_minutes?: number;
+}) {
+  const params = new URLSearchParams();
+  if (opts.page) params.set("page", String(opts.page));
+  if (opts.page_size) params.set("page_size", String(opts.page_size));
+  if (opts.online) params.set("online", "true");
+  if (opts.window_minutes) params.set("window_minutes", String(opts.window_minutes));
+  const qs = params.toString() ? `?${params}` : "";
+  return apiFetch<PaginatedStatsClients>(
+    `/stats/clients${qs}`,
+    {},
+    { requiresAdmin: true, requiresApi: false, baseUrl: updatesBase() },
+  );
+}
+
+// The stats API paginates but exposes no search parameters, so the dashboard pulls
+// the whole (small: a few hundred) client list and filters it locally.
+const ALL_CLIENTS_PAGE_SIZE = 200;
+const ALL_CLIENTS_MAX_PAGES = 25;
+
+export async function getAllStatsClients(opts: { window_minutes?: number } = {}) {
+  // Keyed by id rather than pushed into an array: the backend list is ordered by
+  // last-seen activity, so a client whose activity updates between page fetches can
+  // shift pages and be returned twice. A Map absorbs that drift instead of yielding
+  // duplicate rows (and duplicate React keys) downstream.
+  const clients = new Map<number, UpdaterClient>();
+  let page = 1;
+  let totalPages = 1;
+
+  while (page <= totalPages && page <= ALL_CLIENTS_MAX_PAGES) {
+    const result = await getStatsClients({
+      page,
+      page_size: ALL_CLIENTS_PAGE_SIZE,
+      window_minutes: opts.window_minutes,
+    });
+    for (const client of result.data ?? []) {
+      clients.set(client.id, client);
+    }
+    totalPages = result.total_pages;
+    page += 1;
+  }
+
+  return Array.from(clients.values());
+}
+
+export async function getStatsClientDetail(id: number) {
+  return apiFetch<StatsClientDetail>(
+    `/stats/clients/${id}`,
+    {},
+    { requiresAdmin: true, requiresApi: false, baseUrl: updatesBase() },
+  );
+}
+
+export async function getStatsEvents(opts: {
+  bucket?: StatsEventBucket;
+  event_type?: string;
+  from?: string;
+  to?: string;
+}) {
+  const params = new URLSearchParams();
+  if (opts.bucket) params.set("bucket", opts.bucket);
+  if (opts.event_type) params.set("event_type", opts.event_type);
+  if (opts.from) params.set("from", opts.from);
+  if (opts.to) params.set("to", opts.to);
+  const qs = params.toString() ? `?${params}` : "";
+  return apiFetch<StatsEventsResponse>(
+    `/stats/events${qs}`,
+    {},
+    { requiresAdmin: true, requiresApi: false, baseUrl: updatesBase() },
+  );
+}
+
+// ── Remote Config ──────────────────────────────────────────────────────────
+//
+// The fleet-wide policy document served to the EMLy Updater and EMLy at
+// GET /v2/config. See emly-api-go's
+// docs/superpowers/specs/2026-09-04-remote-config-api-design.md (storage,
+// revisions, admin routes) and emly-updater's
+// docs/superpowers/specs/2026-09-04-remote-config-design.md (the document
+// schema and validation rules this dashboard is not re-implementing).
+
+export type RemoteConfigStatus = "draft" | "published" | "superseded";
+
+export interface RemoteConfigProblem {
+  path: string;
+  message: string;
+}
+
+/**
+ * The document itself is intentionally untyped beyond its required
+ * top-level shape: the API's own validator (`internal/remoteconfig`)
+ * ignores fields it doesn't recognize so either side can add one without a
+ * schema bump, and this dashboard edits the document as raw JSON rather
+ * than re-modeling its whole schema (servers, dcLookupMap, ipcProtocol,
+ * control, updater, logging, overrides — see the client spec §7). A
+ * structured, per-field editor is future work the API design doc leaves
+ * room for.
+ */
+export type RemoteConfigDocument = {
+  schemaVersion: number;
+  revision?: number;
+  generatedAt?: string;
+  servers: Record<string, string>;
+  defaultServer: string;
+} & Record<string, unknown>;
+
+/** Fields common to every shape the API returns for a revision. */
+interface RemoteConfigRevisionBase {
+  revision: number;
+  schema_version: number;
+  status: RemoteConfigStatus;
+  etag: string;
+  notes: string | null;
+  created_by: string | null;
+  based_on: number | null;
+  generated_at: string;
+  published_at: string | null;
+  created_at: string;
+}
+
+/**
+ * Metadata-only projection served by `GET /config/revisions` (the list).
+ * clients_on_revision is a `COUNT(*)` the list query joins in — it does
+ * *not* appear on the single-revision shapes below (get/create/publish/
+ * rollback), which come straight off the `remote_config_revisions` row.
+ */
+export interface RemoteConfigRevisionSummary extends RemoteConfigRevisionBase {
+  clients_on_revision: number;
+}
+
+/** One revision with its full document — get/create/publish/rollback. */
+export interface RemoteConfigRevision extends RemoteConfigRevisionBase {
+  document: RemoteConfigDocument;
+}
+
+export interface PaginatedConfigRevisions {
+  page: number;
+  page_size: number;
+  total: number;
+  revisions: RemoteConfigRevisionSummary[];
+}
+
+export interface ConfigPreviewHost {
+  hwid?: string;
+  hostname?: string;
+  dc?: string;
+  ips?: string[];
+  domain?: string;
+  /** RFC 3339; defaults to the server clock when omitted. */
+  now?: string;
+}
+
+export interface ConfigPreviewResult {
+  revision: number;
+  effective_document: RemoteConfigDocument;
+  applied_override_ids: string[];
+  matched_site: string | null;
+  resolver_chain: string[];
+}
+
+function configBase(): string {
+  return env.apiBaseUrl + "/v2";
+}
+
+export async function getConfigRevisions(
+  opts: { page?: number; page_size?: number; status?: RemoteConfigStatus } = {},
+) {
+  const params = new URLSearchParams();
+  if (opts.page) params.set("page", String(opts.page));
+  if (opts.page_size) params.set("page_size", String(opts.page_size));
+  if (opts.status) params.set("status", opts.status);
+  const qs = params.toString() ? `?${params}` : "";
+  return apiFetch<PaginatedConfigRevisions>(
+    `/config/revisions${qs}`,
+    {},
+    { requiresAdmin: true, requiresApi: false, baseUrl: configBase() },
+  );
+}
+
+export async function getConfigRevision(revision: number) {
+  return apiFetch<RemoteConfigRevision>(
+    `/config/revisions/${revision}`,
+    {},
+    { requiresAdmin: true, requiresApi: false, baseUrl: configBase() },
+  );
+}
+
+/**
+ * document must not carry `revision`/`generatedAt` — the API assigns both
+ * and reports a submitted value back as a warning, not an error.
+ * sessionToken, when given, attributes the revision to the signed-in admin
+ * (`created_by`); omitted, the revision is created anonymously.
+ */
+export async function createConfigRevision(
+  data: { document: unknown; notes?: string; publish?: boolean },
+  opts: { sessionToken?: string } = {},
+) {
+  return apiFetch<RemoteConfigRevision & { warnings: RemoteConfigProblem[] }>(
+    "/config/revisions",
+    { method: "POST", body: JSON.stringify(data) },
+    { requiresAdmin: true, requiresApi: false, baseUrl: configBase(), sessionToken: opts.sessionToken },
+  );
+}
+
+/** Only a draft revision can be deleted; it does not free the revision number. */
+export async function deleteConfigRevision(revision: number) {
+  return apiFetch<{ deleted: boolean }>(
+    `/config/revisions/${revision}`,
+    { method: "DELETE" },
+    { requiresAdmin: true, requiresApi: false, baseUrl: configBase() },
+  );
+}
+
+export async function publishConfigRevision(revision: number, opts: { sessionToken?: string } = {}) {
+  return apiFetch<RemoteConfigRevision>(
+    `/config/revisions/${revision}/publish`,
+    { method: "POST" },
+    { requiresAdmin: true, requiresApi: false, baseUrl: configBase(), sessionToken: opts.sessionToken },
+  );
+}
+
+/**
+ * The only rollback mechanism: clones `to`'s content into a new, higher
+ * revision and publishes it — republishing `to` itself would hand the
+ * fleet a lower number than it already has, which every client ignores.
+ */
+export async function rollbackConfig(
+  data: { to: number; notes?: string },
+  opts: { sessionToken?: string } = {},
+) {
+  return apiFetch<RemoteConfigRevision>(
+    "/config/rollback",
+    { method: "POST", body: JSON.stringify(data) },
+    { requiresAdmin: true, requiresApi: false, baseUrl: configBase(), sessionToken: opts.sessionToken },
+  );
+}
+
+/** Validates a document without storing it — for a "check" button. */
+export async function validateConfigDocument(document: unknown) {
+  return apiFetch<{ valid: boolean; warnings: RemoteConfigProblem[] }>(
+    "/config/validate",
+    { method: "POST", body: JSON.stringify({ document }) },
+    { requiresAdmin: true, requiresApi: false, baseUrl: configBase() },
+  );
+}
+
+/**
+ * Exactly one of `revision` (a stored revision) or `document` (inline, not
+ * stored) must be given. Answers "what would this host actually see".
+ */
+export async function previewConfig(data: {
+  revision?: number;
+  document?: unknown;
+  host: ConfigPreviewHost;
+}) {
+  return apiFetch<ConfigPreviewResult>(
+    "/config/preview",
+    { method: "POST", body: JSON.stringify(data) },
+    { requiresAdmin: true, requiresApi: false, baseUrl: configBase() },
   );
 }

@@ -16,7 +16,7 @@ export default function LoginPage() {
   const t = useTranslations("login");
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/40">
+    <div className="flex min-h-screen items-center justify-center bg-muted/40 px-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl">{t("title")}</CardTitle>

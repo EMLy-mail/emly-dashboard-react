@@ -12,6 +12,8 @@ type Env = {
   adminKey: string;
   dashboardKey: string | undefined;
   facingUrl: string;
+  /** Kill switch for the stats realtime (WS→SSE) pipeline. Defaults to on. */
+  statsRealtimeEnabled: boolean;
 };
 
 function buildEnv(): Env {
@@ -21,6 +23,7 @@ function buildEnv(): Env {
     adminKey: requireEnv("ADMIN_KEY"),
     dashboardKey: requireEnv("DASHBOARD_KEY"),
     facingUrl: requireEnv("FACING_URL") || requireEnv("API_BASE_URL").replace(/\/?$/, ""), // fallback to API_BASE_URL if FACING_URL is not set
+    statsRealtimeEnabled: process.env.STATS_REALTIME_ENABLED !== "false",
   };
 }
 

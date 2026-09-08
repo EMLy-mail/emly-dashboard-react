@@ -4,11 +4,16 @@
     "nav": {
       "bugReports": "Segnalazioni Bug",
       "users": "Utenti",
-      "updates": "Aggiornamenti"
+      "updates": "Aggiornamenti",
+      "statistics": "Statistiche",
+      "config": "Config Remota",
+      "bans": "Ban"
     },
     "signOut": "Esci",
     "toggleTheme": "Cambia tema",
-    "toggleLanguage": "Cambia lingua"
+    "toggleLanguage": "Cambia lingua",
+    "openMenu": "Apri menu",
+    "closeMenu": "Chiudi menu"
   },
   "login": {
     "title": "EMLy Admin",
@@ -126,10 +131,6 @@
     "description": "Gestisci le versioni software e i canali di aggiornamento.",
     "showManifest": "Mostra manifest",
     "newRelease": "Nuova Versione",
-    "tabs": {
-      "app": "App",
-      "updater": "Updater"
-    },
     "manifest": {
       "stable": "Stabile",
       "beta": "Beta",
@@ -149,12 +150,16 @@
       "edit": "Modifica",
       "promoteStable": "Promuovi a Stabile",
       "promoteBeta": "Promuovi a Beta",
-      "archive": "Archivia",
+      "removeFromStable": "Rimuovi da Stabile",
+      "removeFromBeta": "Rimuovi da Beta",
       "delete": "Elimina",
       "deleteTitle": "Eliminare la versione \"{version}\"?",
       "deleteDescription": "Questo rimuoverà definitivamente il record della versione e il file installer dall'archivio. Questa azione non può essere annullata.",
       "cancel": "Annulla",
-      "promoted": "{version} spostata in {channel}",
+      "promotedStable": "{version} promossa a stabile",
+      "promotedBeta": "{version} promossa a beta",
+      "removedFromStable": "{version} rimossa da stabile",
+      "removedFromBeta": "{version} rimossa da beta",
       "promoteFailed": "Aggiornamento canale fallito",
       "deleted": "Versione {version} eliminata",
       "deleteFailed": "Eliminazione versione fallita"
@@ -163,6 +168,7 @@
       "title": "Nuova Versione",
       "version": "Versione *",
       "channel": "Canale",
+      "channelsHelp": "Una versione può essere sia stabile che beta allo stesso tempo. Selezionando una casella la si toglie alla versione che attualmente la occupa.",
       "installerFile": "File Installer (.exe) *",
       "checksumNote": "Il checksum SHA-256 viene calcolato lato server dopo il caricamento.",
       "severity": "Gravità",
@@ -178,7 +184,6 @@
       "create": "Crea Versione",
       "creating": "Creazione...",
       "success": "Versione creata con successo",
-      "channelArchived": "Archiviato",
       "channelBeta": "Beta",
       "channelStable": "Stabile",
       "severityNone": "Nessuna",
@@ -189,6 +194,7 @@
     "editDialog": {
       "title": "Modifica Versione {version}",
       "channel": "Canale",
+      "channelsHelp": "Una versione può essere sia stabile che beta allo stesso tempo. Selezionando una casella la si toglie alla versione che attualmente la occupa.",
       "severity": "Gravità",
       "shortNote": "Nota Breve",
       "shortNotePlaceholder": "Breve riepilogo della versione",
@@ -201,7 +207,6 @@
       "save": "Salva Modifiche",
       "saving": "Salvataggio...",
       "success": "Versione {version} aggiornata",
-      "channelArchived": "Archiviato",
       "channelBeta": "Beta",
       "channelStable": "Stabile",
       "severityNone": "Nessuna",
@@ -209,6 +214,338 @@
       "severityFeature": "Funzionalità",
       "severitySecurity": "Sicurezza",
       "critical": "Aggiornamento critico (i client devono aggiornare immediatamente)"
+    },
+    "tabs": {
+      "emly": "EMLy",
+      "updater": "EMLy Updater"
+    },
+    "updater": {
+      "description": "Canale di auto-aggiornamento dello stesso EMLy Updater. Viene distribuita una sola build alla volta; i client la applicano in silenzio e non tornano mai a versioni precedenti.",
+      "showManifest": "Mostra manifest",
+      "newRelease": "Nuova Versione Updater",
+      "notesHelp": "Le note finiscono solo nel log e nel Registro eventi — non vengono mai mostrate all'utente.",
+      "currentHelp": "Viene distribuita una sola build alla volta: promuovendo questa si declassa l'altra. Toglierla ovunque è il kill-switch — il manifest torna a versione vuota e i client non fanno nulla.",
+      "manifest": {
+        "served": "Build distribuita",
+        "none": "Nessuna",
+        "noneHelp": "Nessuna versione è marcata come distribuita — il manifest restituisce una versione vuota e i client non fanno nulla.",
+        "size": "Dimensione installer",
+        "published": "Pubblicata",
+        "silentHelp": "Applicata in silenzio non appena i client la rilevano."
+      },
+      "table": {
+        "version": "Versione",
+        "status": "Stato",
+        "notes": "Note",
+        "size": "Dimensione",
+        "checksum": "SHA-256",
+        "published": "Pubblicata",
+        "noData": "Nessuna versione updater trovata.",
+        "current": "distribuita",
+        "archived": "archiviata",
+        "edit": "Modifica",
+        "download": "Scarica installer",
+        "promote": "Distribuisci questa build",
+        "pull": "Interrompi distribuzione (kill-switch)",
+        "delete": "Elimina",
+        "deleteTitle": "Eliminare la versione updater \"{version}\"?",
+        "deleteDescription": "Questo rimuoverà definitivamente il record della versione e il file installer dall'archivio. Questa azione non può essere annullata.",
+        "cancel": "Annulla",
+        "promoted": "{version} è ora distribuita dal manifest",
+        "pulled": "{version} non è più distribuita — il manifest è ora vuoto",
+        "promoteFailed": "Cambio della build distribuita fallito",
+        "deleted": "Versione updater {version} eliminata",
+        "deleteFailed": "Eliminazione della versione updater fallita"
+      },
+      "createDialog": {
+        "title": "Nuova Versione Updater",
+        "version": "Versione *",
+        "versionHelp": "Semver senza prefisso, uguale alla ApplicationVersion dell'installer.",
+        "publishedAt": "Data di Pubblicazione",
+        "publishedAtHelp": "Predefinita: adesso.",
+        "installerFile": "File Installer (.exe) *",
+        "checksumNote": "SHA-256 e dimensione sono calcolati lato server dai byte caricati.",
+        "notesEn": "Note (EN)",
+        "notesEnPlaceholder": "Fixed handling of multiple DC/subnet mappings.",
+        "notesIt": "Note (IT)",
+        "notesItPlaceholder": "Corretta la gestione dei mapping DC/subnet multipli.",
+        "current": "Distribuisci subito questa build dal manifest",
+        "cancel": "Annulla",
+        "create": "Pubblica Versione",
+        "creating": "Pubblicazione...",
+        "success": "Versione updater pubblicata"
+      },
+      "editDialog": {
+        "title": "Modifica Versione Updater {version}",
+        "file": "File",
+        "size": "Dimensione",
+        "checksum": "SHA-256",
+        "publishedAt": "Data di Pubblicazione",
+        "notesEn": "Note (EN)",
+        "notesEnPlaceholder": "Fixed handling of multiple DC/subnet mappings.",
+        "notesIt": "Note (IT)",
+        "notesItPlaceholder": "Corretta la gestione dei mapping DC/subnet multipli.",
+        "current": "Distribuisci questa build dal manifest",
+        "cancel": "Annulla",
+        "save": "Salva Modifiche",
+        "saving": "Salvataggio...",
+        "success": "Versione updater {version} aggiornata"
+      }
+    }
+  },
+  "statistics": {
+    "title": "Statistiche",
+    "description": "Statistiche della flotta di client EMLy Updater.",
+    "live": {
+      "on": "In diretta",
+      "off": "Non aggiornato in tempo reale"
+    },
+    "summary": {
+      "totalClients": "Client Totali",
+      "connectedClients": "Client Connessi",
+      "windowMinutes": "Online negli ultimi {minutes}m",
+      "eventsLast24h": "Eventi (Ultime 24h)",
+      "clientsByVersion": "Client per Versione",
+      "unknownVersion": "Sconosciuta",
+      "noData": "Nessun dato disponibile."
+    },
+    "events": {
+      "manifest_check": "Controllo Manifest",
+      "download": "Download"
+    },
+    "clients": {
+      "title": "Client Updater",
+      "filters": {
+        "hostname": "Filtra per nome...",
+        "ip": "Filtra per IP...",
+        "loggedUser": "Filtra per utente...",
+        "serial": "Filtra per seriale o product...",
+        "allVersions": "Tutte le versioni",
+        "allDomains": "Tutti i domini AD",
+        "allStatuses": "Tutti gli stati",
+        "unknown": "Sconosciuto",
+        "reset": "Azzera",
+        "count": "{shown} di {total} client"
+      },
+      "table": {
+        "hostname": "Hostname",
+        "adDomain": "Dominio AD",
+        "loggedUser": "Utente collegato",
+        "version": "Versione",
+        "lastIp": "Ultimo IP",
+        "firstSeen": "Prima Rilevazione",
+        "lastSeen": "Ultima Rilevazione",
+        "status": "Stato",
+        "online": "Online",
+        "offline": "Offline",
+        "noData": "Nessun client trovato.",
+        "page": "Pagina {current} di {total}",
+        "previous": "Precedente",
+        "next": "Successivo"
+      }
+    },
+    "clientDetail": {
+      "title": "Client: {hostname}",
+      "back": "Torna alle Statistiche",
+      "info": {
+        "hostname": "Hostname",
+        "adDomain": "Dominio AD",
+        "hwid": "HWID",
+        "loggedUser": "Utente collegato",
+        "loggedUserAsOf": "al {date}",
+        "serial": "Numero di serie",
+        "product": "Product number",
+        "version": "Versione",
+        "contact": "Contatto",
+        "lastIp": "Ultimo IP",
+        "firstSeen": "Prima Rilevazione",
+        "lastSeen": "Ultima Rilevazione"
+      },
+      "events": {
+        "title": "Eventi Recenti",
+        "table": {
+          "type": "Tipo",
+          "version": "Versione",
+          "ip": "Indirizzo IP",
+          "date": "Data",
+          "noData": "Nessun evento registrato per questo client."
+        }
+      }
+    },
+    "eventsChart": {
+      "title": "Volume Eventi",
+      "bucket": {
+        "day": "Giornaliero",
+        "hour": "Orario"
+      },
+      "eventType": {
+        "all": "Tutti gli Eventi",
+        "manifest_check": "Controllo Manifest",
+        "download": "Download"
+      },
+      "noData": "Nessun evento in questo intervallo."
+    }
+  },
+  "bans": {
+    "title": "Ban",
+    "description": "Blocchi permanenti su IP, HWID o hostname. Applicati a ogni richiesta all'API.",
+    "effectNotice": "Un client bannato riceve 403 su tutti gli endpoint, aggiornamenti e configurazione compresi - non solo sulle statistiche. Le richieste con una admin key valida sono esenti, quindi bannare il proprio IP non puo' tagliare fuori questa dashboard.",
+    "createBan": "Aggiungi ban",
+    "banHostname": "Banna hostname",
+    "banHwid": "Banna HWID",
+    "banIp": "Banna ultimo IP",
+    "clientBanned": "Questa macchina e' attualmente bloccata ({rules}).",
+    "type": {
+      "ip": "IP",
+      "hwid": "HWID",
+      "hostname": "Hostname"
+    },
+    "filters": {
+      "search": "Cerca valore o motivo...",
+      "allTypes": "Tutti i tipi",
+      "reset": "Azzera",
+      "count": "{shown} di {total} ban"
+    },
+    "table": {
+      "type": "Tipo",
+      "value": "Valore",
+      "reason": "Motivo",
+      "createdBy": "Creato da",
+      "createdAt": "Creato il",
+      "remove": "Rimuovi ban",
+      "removed": "Ban rimosso.",
+      "noBans": "Nessun ban configurato.",
+      "noMatches": "Nessun ban corrisponde ai filtri."
+    },
+    "createDialog": {
+      "title": "Aggiungi un ban permanente",
+      "type": "Banna per",
+      "value": "Valore",
+      "reason": "Motivo (facoltativo)",
+      "submit": "Aggiungi ban",
+      "submitting": "Aggiungo...",
+      "success": "Ban aggiunto.",
+      "hint": {
+        "ip": "Indirizzo esatto da cui arriva la richiesta. Su DHCP puo' cambiare.",
+        "hwid": "ID firmware della macchina. Sopravvive a rinomine, cambi di IP e di dominio AD.",
+        "hostname": "Confrontato senza distinzione di maiuscole. Smette di valere se la macchina viene rinominata."
+      }
+    },
+    "removeDialog": {
+      "title": "Rimuovere questo ban?",
+      "description": "{value} tornera' a raggiungere l'API dalla prossima richiesta.",
+      "cancel": "Annulla",
+      "confirm": "Rimuovi"
+    }
+  },
+  "config": {
+    "title": "Config Remota",
+    "description": "Il documento di policy per tutta la fleet, servito a EMLy Updater ed EMLy da GET /v2/config.",
+    "preview": "Anteprima",
+    "newRevision": "Nuova Revisione",
+    "status": {
+      "draft": "bozza",
+      "published": "pubblicata",
+      "superseded": "sostituita"
+    },
+    "filter": {
+      "all": "Tutte",
+      "draft": "Bozze",
+      "published": "Pubblicate",
+      "superseded": "Sostituite"
+    },
+    "published": {
+      "revision": "Revisione Pubblicata",
+      "none": "Ancora nulla di pubblicato — i client ricevono un 204 silenzioso.",
+      "publishedAt": "Pubblicata Il",
+      "clientsOnRevision": "Client Su Questa Revisione",
+      "clientsHelp": "Conteggiato dall'ultima GET /v2/config di ogni client.",
+      "createdBy": "Creata Da"
+    },
+    "table": {
+      "revision": "Revisione",
+      "status": "Stato",
+      "notes": "Note",
+      "createdBy": "Creata Da",
+      "basedOn": "Basata Su",
+      "generatedAt": "Generata Il",
+      "clients": "Client",
+      "anonymous": "—",
+      "noData": "Nessuna revisione ancora.",
+      "page": "Pagina {current} di {total}",
+      "previous": "Precedente",
+      "next": "Successiva",
+      "view": "Visualizza documento",
+      "publish": "Pubblica",
+      "published": "Revisione #{revision} pubblicata",
+      "publishFailed": "Pubblicazione fallita — potrebbe non essere più una bozza, oppure è stata pubblicata una revisione più recente nel frattempo",
+      "rollbackToThis": "Ripristina a questa",
+      "delete": "Elimina",
+      "deleteTitle": "Eliminare la bozza #{revision}?",
+      "deleteDescription": "Solo le revisioni in bozza possono essere eliminate. Il numero di revisione non viene liberato. Questa azione non può essere annullata.",
+      "deleted": "Revisione #{revision} eliminata",
+      "deleteFailed": "Eliminazione fallita — solo una bozza può essere eliminata",
+      "cancel": "Annulla"
+    },
+    "createDialog": {
+      "title": "Nuova Revisione Config",
+      "document": "Documento (JSON)",
+      "documentHelp": "Non deve contenere revision o generatedAt — il server assegna entrambi e segnala un valore inviato come avviso, non come errore.",
+      "notes": "Note",
+      "notesPlaceholder": "Cosa è cambiato e perché",
+      "publish": "Pubblica",
+      "publishNow": "Pubblica subito",
+      "publishHelp": "Altrimenti viene salvata come bozza, revisionabile e pubblicabile in seguito dalla tabella.",
+      "validate": "Valida",
+      "validating": "Validazione...",
+      "validationValid": "Valido",
+      "validationInvalid": "Non valido",
+      "cancel": "Annulla",
+      "createDraft": "Salva Bozza",
+      "createAndPublish": "Crea e Pubblica",
+      "creating": "Salvataggio...",
+      "success": "Revisione #{revision} creata"
+    },
+    "viewDialog": {
+      "title": "Revisione #{revision}",
+      "loadFailed": "Impossibile caricare il documento.",
+      "etag": "ETag",
+      "basedOn": "basata su #{revision}",
+      "createdBy": "creata da {user}"
+    },
+    "rollbackDialog": {
+      "title": "Ripristinare alla revisione #{revision}?",
+      "description": "Clona il contenuto della revisione #{revision} in una nuova revisione più alta e la pubblica subito. È l'unico modo per tornare indietro — ripubblicare la #{revision} stessa darebbe alla fleet un numero più basso di quello che ha già, che ogni client ignorerebbe.",
+      "notes": "Note",
+      "notesPlaceholder": "Perché stai facendo il rollback",
+      "cancel": "Annulla",
+      "confirm": "Ripristina",
+      "rollingBack": "Ripristino...",
+      "success": "Revisione #{revision} pubblicata"
+    },
+    "previewDialog": {
+      "title": "Anteprima Policy Effettiva",
+      "sourceRevision": "Revisione salvata",
+      "sourceDocument": "Incolla un documento",
+      "revision": "Revisione",
+      "currentlyPublished": "attualmente pubblicata",
+      "document": "Documento (JSON)",
+      "host": "Host",
+      "hwid": "HWID",
+      "hostname": "Hostname",
+      "dc": "Domain controller",
+      "domain": "Dominio AD",
+      "ips": "Indirizzi IPv4 locali, separati da virgola",
+      "hostHelp": "Lascia vuoti i campi non necessari — un matcher su un valore assente semplicemente non corrisponde. \"now\" default all'orologio del server.",
+      "close": "Chiudi",
+      "run": "Anteprima",
+      "previewing": "Anteprima...",
+      "matchedSite": "Sito corrispondente",
+      "defaultServer": "defaultServer (non mappato)",
+      "resolverChain": "Catena di risoluzione",
+      "appliedOverrides": "Override applicati",
+      "none": "nessuno",
+      "effectiveDocument": "Documento effettivo"
     }
   }
 }

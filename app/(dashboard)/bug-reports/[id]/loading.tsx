@@ -14,7 +14,7 @@ export default function BugReportDetailLoading() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <Skeleton className="h-9 w-9 rounded-md shrink-0" />
           <div className="space-y-1.5">
@@ -22,7 +22,7 @@ export default function BugReportDetailLoading() {
             <Skeleton className="h-4 w-32" />
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Skeleton className="h-9 w-32 rounded-md" />
           <Skeleton className="h-9 w-20 rounded-md" />
         </div>
