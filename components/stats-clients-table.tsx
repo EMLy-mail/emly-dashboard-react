@@ -42,6 +42,10 @@ interface StatsClientsTableProps {
 interface Filters {
   hostname: string;
   ip: string;
+  // Free text rather than a select: unlike version and AD domain these are
+  // near-unique per machine, so a dropdown would list one entry per client.
+  loggedUser: string;
+  serial: string;
   version: string;
   adDomain: string;
   status: string;
@@ -50,6 +54,8 @@ interface Filters {
 const EMPTY_FILTERS: Filters = {
   hostname: "",
   ip: "",
+  loggedUser: "",
+  serial: "",
   version: ANY,
   adDomain: ANY,
   status: ANY,
@@ -58,6 +64,7 @@ const EMPTY_FILTERS: Filters = {
 type SortColumn =
   | "hostname"
   | "adDomain"
+  | "loggedUser"
   | "version"
   | "lastIp"
   | "status"
@@ -119,10 +126,22 @@ export function StatsClientsTable({ data: rawData, windowMinutes }: StatsClients
   const filtered = useMemo(() => {
     const hostname = filters.hostname.trim().toLowerCase();
     const ip = filters.ip.trim().toLowerCase();
+    const loggedUser = filters.loggedUser.trim().toLowerCase();
+    // One box for both firmware identifiers: whoever is chasing an asset has
+    // either the serial or the product number off the chassis label in front
+    // of them and should not have to know which field it belongs to.
+    const serial = filters.serial.trim().toLowerCase();
 
     return data.filter((client) => {
       if (hostname && !client.hostname.toLowerCase().includes(hostname)) return false;
       if (ip && !(client.last_ip ?? "").toLowerCase().includes(ip)) return false;
+      if (loggedUser && !(client.logged_user ?? "").toLowerCase().includes(loggedUser)) return false;
+      if (
+        serial &&
+        !(client.serial ?? "").toLowerCase().includes(serial) &&
+        !(client.product ?? "").toLowerCase().includes(serial)
+      )
+        return false;
       if (filters.version !== ANY && (client.updater_version ?? UNKNOWN) !== filters.version) return false;
       if (filters.adDomain !== ANY && (client.ad_domain || UNKNOWN) !== filters.adDomain) return false;
       if (filters.status !== ANY) {
@@ -144,6 +163,11 @@ export function StatsClientsTable({ data: rawData, windowMinutes }: StatsClients
           return dir * compareStrings(a.hostname, b.hostname);
         case "adDomain":
           return dir * compareStrings(a.ad_domain, b.ad_domain);
+        // compareStrings already pushes empty values last in both
+        // directions, which is what a machine with nobody logged on should
+        // do - it is missing data, not a name that sorts before "A".
+        case "loggedUser":
+          return dir * compareStrings(a.logged_user ?? "", b.logged_user ?? "");
         case "version":
           return dir * compareStrings(a.updater_version ?? "", b.updater_version ?? "");
         case "lastIp":
@@ -171,6 +195,8 @@ export function StatsClientsTable({ data: rawData, windowMinutes }: StatsClients
   const isFiltered =
     filters.hostname !== "" ||
     filters.ip !== "" ||
+    filters.loggedUser !== "" ||
+    filters.serial !== "" ||
     filters.version !== ANY ||
     filters.adDomain !== ANY ||
     filters.status !== ANY;
@@ -202,6 +228,26 @@ export function StatsClientsTable({ data: rawData, windowMinutes }: StatsClients
             value={filters.ip}
             className="pl-8 font-mono"
             onChange={(e) => setFilter({ ip: e.target.value })}
+          />
+        </div>
+
+        <div className="relative w-full sm:w-52">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder={t("filters.loggedUser")}
+            value={filters.loggedUser}
+            className="pl-8"
+            onChange={(e) => setFilter({ loggedUser: e.target.value })}
+          />
+        </div>
+
+        <div className="relative w-full sm:w-48">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder={t("filters.serial")}
+            value={filters.serial}
+            className="pl-8 font-mono"
+            onChange={(e) => setFilter({ serial: e.target.value })}
           />
         </div>
 
@@ -262,6 +308,9 @@ export function StatsClientsTable({ data: rawData, windowMinutes }: StatsClients
               <SortableTableHead column="adDomain" sort={sort} onSort={toggleSort}>
                 {t("table.adDomain")}
               </SortableTableHead>
+              <SortableTableHead column="loggedUser" sort={sort} onSort={toggleSort}>
+                {t("table.loggedUser")}
+              </SortableTableHead>
               <SortableTableHead column="version" sort={sort} onSort={toggleSort}>
                 {t("table.version")}
               </SortableTableHead>
@@ -282,7 +331,7 @@ export function StatsClientsTable({ data: rawData, windowMinutes }: StatsClients
           <TableBody>
             {visible.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                   {t("table.noData")}
                 </TableCell>
               </TableRow>
@@ -297,6 +346,7 @@ export function StatsClientsTable({ data: rawData, windowMinutes }: StatsClients
                     </Link>
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">{client.ad_domain}</TableCell>
+                  <TableCell className="text-sm">{client.logged_user ?? "—"}</TableCell>
                   <TableCell className="font-mono text-sm">{client.updater_version ?? "—"}</TableCell>
                   <TableCell className="font-mono text-sm">{client.last_ip ?? "—"}</TableCell>
                   <TableCell>

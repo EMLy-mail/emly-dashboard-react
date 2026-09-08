@@ -69,6 +69,26 @@ export default async function StatsClientDetailPage({ params }: PageProps) {
             <p className="font-medium">{client.hwid || "—"}</p>
           </div>
           <div>
+            <p className="text-xs font-medium text-muted-foreground">{t("info.loggedUser")}</p>
+            <p className="font-medium">{client.logged_user ?? "—"}</p>
+            {/* The API never clears this field, so a machine nobody has used
+                in weeks still shows its last known user. Spelling out when it
+                was observed keeps that from reading as "logged on now". */}
+            {client.logged_user && (
+              <p className="text-xs text-muted-foreground">
+                {t("info.loggedUserAsOf", { date: new Date(client.last_seen_at).toLocaleString() })}
+              </p>
+            )}
+          </div>
+          <div>
+            <p className="text-xs font-medium text-muted-foreground">{t("info.serial")}</p>
+            <p className="font-mono font-medium">{client.serial ?? "—"}</p>
+          </div>
+          <div>
+            <p className="text-xs font-medium text-muted-foreground">{t("info.product")}</p>
+            <p className="font-mono font-medium">{client.product ?? "—"}</p>
+          </div>
+          <div>
             <p className="text-xs font-medium text-muted-foreground">{t("info.version")}</p>
             <p className="font-mono font-medium">{client.updater_version ?? "—"}</p>
           </div>

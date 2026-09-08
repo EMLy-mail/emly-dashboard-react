@@ -317,6 +317,8 @@
       "filters": {
         "hostname": "Filtra per nome...",
         "ip": "Filtra per IP...",
+        "loggedUser": "Filtra per utente...",
+        "serial": "Filtra per seriale o product...",
         "allVersions": "Tutte le versioni",
         "allDomains": "Tutti i domini AD",
         "allStatuses": "Tutti gli stati",
@@ -327,6 +329,7 @@
       "table": {
         "hostname": "Hostname",
         "adDomain": "Dominio AD",
+        "loggedUser": "Utente collegato",
         "version": "Versione",
         "lastIp": "Ultimo IP",
         "firstSeen": "Prima Rilevazione",
@@ -346,12 +349,16 @@
       "info": {
         "hostname": "Hostname",
         "adDomain": "Dominio AD",
+        "hwid": "HWID",
+        "loggedUser": "Utente collegato",
+        "loggedUserAsOf": "al {date}",
+        "serial": "Numero di serie",
+        "product": "Product number",
         "version": "Versione",
         "contact": "Contatto",
         "lastIp": "Ultimo IP",
         "firstSeen": "Prima Rilevazione",
-        "lastSeen": "Ultima Rilevazione",
-        "hwid": "HWID"
+        "lastSeen": "Ultima Rilevazione"
       },
       "events": {
         "title": "Eventi Recenti",

@@ -521,6 +521,19 @@ export interface UpdaterClient {
   first_seen_at: string;
   last_seen_at: string;
   hwid?: string | null;
+  /**
+   * Interactive user seen on the machine - console or RDP alike - at the last
+   * sighting that reported one, as `DOMAIN\user`. It is a snapshot, not a
+   * history: the API overwrites it on every request carrying
+   * X-EMLy-LoggedUser and never clears it, so always read it next to
+   * `last_seen_at`. Null for a client that has never reported one (an updater
+   * too old to send the header).
+   */
+  logged_user?: string | null;
+  /** Chassis serial number from the BIOS. */
+  serial?: string | null;
+  /** Vendor product/SKU number - on HP the `8XXXXXXX#ABZ` on the chassis label. */
+  product?: string | null;
 }
 
 export interface UpdaterEvent {
