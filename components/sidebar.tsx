@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useTranslations } from "next-intl";
-import { Bug, Users, PackageOpen, BarChart3, SlidersHorizontal, LogOut, Sun, Moon, Menu, X } from "lucide-react";
+import { Bug, Users, PackageOpen, BarChart3, SlidersHorizontal, Ban, LogOut, Sun, Moon, Menu, X } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,7 @@ export function Sidebar({ user }: { user: AuthUser }) {
     { href: "/updates", label: t("nav.updates"), icon: PackageOpen },
     { href: "/statistics", label: t("nav.statistics"), icon: BarChart3 },
     { href: "/config", label: t("nav.config"), icon: SlidersHorizontal },
+    { href: "/bans", label: t("nav.bans"), icon: Ban },
   ];
 
   const initials = (user.displayname || user.username)

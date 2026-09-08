@@ -2,7 +2,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { getTranslations } from "next-intl/server";
-import { getStatsClientDetail, ApiError } from "@/lib/api";
+import { getStatsClientDetail, getBans, ApiError, type Ban } from "@/lib/api";
+import { CreateBanDialog } from "@/components/create-ban-dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Ban as BanIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,11 +35,30 @@ export default async function StatsClientDetailPage({ params }: PageProps) {
     throw e;
   }
 
-  const [t, tEvents] = await Promise.all([
+  const [t, tEvents, tBans] = await Promise.all([
     getTranslations("statistics.clientDetail"),
     getTranslations("statistics.events"),
+    getTranslations("bans"),
   ]);
   const { client, events } = detail;
+
+  // A ban is by identifier, not by client row, so "is this machine blocked"
+  // is a question about three separate values - any one of them being on the
+  // list is enough to cut the machine off. Fetched best-effort: the block
+  // list is a side note here, and a hiccup reading it must not 500 the page
+  // an operator opened to look at events.
+  let bans: Ban[] = [];
+  try {
+    bans = await getBans();
+  } catch {
+    bans = [];
+  }
+  const matchedBans = bans.filter(
+    (b) =>
+      (b.ban_type === "hostname" && b.value.toLowerCase() === client.hostname.toLowerCase()) ||
+      (b.ban_type === "hwid" && !!client.hwid && b.value === client.hwid) ||
+      (b.ban_type === "ip" && !!client.last_ip && b.value === client.last_ip),
+  );
 
   function eventLabel(type: string) {
     return type === "manifest_check" || type === "download" ? tEvents(type) : type;
@@ -52,6 +74,45 @@ export default async function StatsClientDetailPage({ params }: PageProps) {
           </Link>
         </Button>
         <h1 className="text-2xl font-bold tracking-tight">{t("title", { hostname: client.hostname })}</h1>
+      </div>
+
+      {matchedBans.length > 0 && (
+        <Alert variant="destructive">
+          <BanIcon className="h-4 w-4" />
+          <AlertDescription>
+            {tBans("clientBanned", {
+              rules: matchedBans.map((b) => `${tBans(`type.${b.ban_type}`)}: ${b.value}`).join(", "),
+            })}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Prefilled straight from the row being looked at - the identifiers
+          are right here, and retyping a HWID by hand is how you ban the
+          wrong machine. */}
+      <div className="flex flex-wrap gap-2">
+        <CreateBanDialog
+          compact
+          defaultType="hostname"
+          defaultValue={client.hostname}
+          label={tBans("banHostname")}
+        />
+        {client.hwid && (
+          <CreateBanDialog
+            compact
+            defaultType="hwid"
+            defaultValue={client.hwid}
+            label={tBans("banHwid")}
+          />
+        )}
+        {client.last_ip && (
+          <CreateBanDialog
+            compact
+            defaultType="ip"
+            defaultValue={client.last_ip}
+            label={tBans("banIp")}
+          />
+        )}
       </div>
 
       <Card>

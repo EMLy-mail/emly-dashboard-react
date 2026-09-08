@@ -536,6 +536,49 @@ export interface UpdaterClient {
   product?: string | null;
 }
 
+// ── Bans ───────────────────────────────────────────────────────────────────
+
+/** Which identifier a ban matches on. The three are independent. */
+export type BanType = "ip" | "hwid" | "hostname";
+
+export interface Ban {
+  id: number;
+  ban_type: BanType;
+  value: string;
+  reason?: string | null;
+  created_by?: string | null;
+  created_at: string;
+}
+
+export async function getBans() {
+  return apiFetch<Ban[]>(
+    "/bans/",
+    {},
+    { requiresAdmin: true, requiresApi: false, baseUrl: updatesBase() },
+  );
+}
+
+/**
+ * Creates a ban, or returns the existing one when that identifier is already
+ * banned - the API treats a repeat as the state the caller asked for rather
+ * than a conflict, so this never needs a "does it exist" round trip.
+ */
+export async function createBan(input: { ban_type: BanType; value: string; reason?: string }) {
+  return apiFetch<Ban>(
+    "/bans/",
+    { method: "POST", body: JSON.stringify(input) },
+    { requiresAdmin: true, requiresApi: false, baseUrl: updatesBase() },
+  );
+}
+
+export async function deleteBan(id: number) {
+  return apiFetch<{ status: string }>(
+    `/bans/${id}`,
+    { method: "DELETE" },
+    { requiresAdmin: true, requiresApi: false, baseUrl: updatesBase() },
+  );
+}
+
 export interface UpdaterEvent {
   id: number;
   client_id: number;

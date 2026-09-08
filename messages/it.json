@@ -6,7 +6,8 @@
       "users": "Utenti",
       "updates": "Aggiornamenti",
       "statistics": "Statistiche",
-      "config": "Config Remota"
+      "config": "Config Remota",
+      "bans": "Ban"
     },
     "signOut": "Esci",
     "toggleTheme": "Cambia tema",
@@ -383,6 +384,58 @@
         "download": "Download"
       },
       "noData": "Nessun evento in questo intervallo."
+    }
+  },
+  "bans": {
+    "title": "Ban",
+    "description": "Blocchi permanenti su IP, HWID o hostname. Applicati a ogni richiesta all'API.",
+    "effectNotice": "Un client bannato riceve 403 su tutti gli endpoint, aggiornamenti e configurazione compresi - non solo sulle statistiche. Le richieste con una admin key valida sono esenti, quindi bannare il proprio IP non puo' tagliare fuori questa dashboard.",
+    "createBan": "Aggiungi ban",
+    "banHostname": "Banna hostname",
+    "banHwid": "Banna HWID",
+    "banIp": "Banna ultimo IP",
+    "clientBanned": "Questa macchina e' attualmente bloccata ({rules}).",
+    "type": {
+      "ip": "IP",
+      "hwid": "HWID",
+      "hostname": "Hostname"
+    },
+    "filters": {
+      "search": "Cerca valore o motivo...",
+      "allTypes": "Tutti i tipi",
+      "reset": "Azzera",
+      "count": "{shown} di {total} ban"
+    },
+    "table": {
+      "type": "Tipo",
+      "value": "Valore",
+      "reason": "Motivo",
+      "createdBy": "Creato da",
+      "createdAt": "Creato il",
+      "remove": "Rimuovi ban",
+      "removed": "Ban rimosso.",
+      "noBans": "Nessun ban configurato.",
+      "noMatches": "Nessun ban corrisponde ai filtri."
+    },
+    "createDialog": {
+      "title": "Aggiungi un ban permanente",
+      "type": "Banna per",
+      "value": "Valore",
+      "reason": "Motivo (facoltativo)",
+      "submit": "Aggiungi ban",
+      "submitting": "Aggiungo...",
+      "success": "Ban aggiunto.",
+      "hint": {
+        "ip": "Indirizzo esatto da cui arriva la richiesta. Su DHCP puo' cambiare.",
+        "hwid": "ID firmware della macchina. Sopravvive a rinomine, cambi di IP e di dominio AD.",
+        "hostname": "Confrontato senza distinzione di maiuscole. Smette di valere se la macchina viene rinominata."
+      }
+    },
+    "removeDialog": {
+      "title": "Rimuovere questo ban?",
+      "description": "{value} tornera' a raggiungere l'API dalla prossima richiesta.",
+      "cancel": "Annulla",
+      "confirm": "Rimuovi"
     }
   },
   "config": {

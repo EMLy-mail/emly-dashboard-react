@@ -6,7 +6,8 @@
       "users": "Users",
       "updates": "Updates",
       "statistics": "Statistics",
-      "config": "Remote Config"
+      "config": "Remote Config",
+      "bans": "Bans"
     },
     "signOut": "Sign out",
     "toggleTheme": "Toggle dark mode",
@@ -383,6 +384,58 @@
         "download": "Download"
       },
       "noData": "No events in this range."
+    }
+  },
+  "bans": {
+    "title": "Bans",
+    "description": "Permanent blocks on IP, HWID or hostname. Applied to every API request.",
+    "effectNotice": "A banned client is refused with 403 on every endpoint, updates and configuration included - not just statistics. Requests carrying a valid admin key are exempt, so banning your own IP cannot lock this dashboard out.",
+    "createBan": "Add ban",
+    "banHostname": "Ban hostname",
+    "banHwid": "Ban HWID",
+    "banIp": "Ban last IP",
+    "clientBanned": "This machine is currently blocked ({rules}).",
+    "type": {
+      "ip": "IP",
+      "hwid": "HWID",
+      "hostname": "Hostname"
+    },
+    "filters": {
+      "search": "Search value or reason...",
+      "allTypes": "All types",
+      "reset": "Reset",
+      "count": "{shown} of {total} bans"
+    },
+    "table": {
+      "type": "Type",
+      "value": "Value",
+      "reason": "Reason",
+      "createdBy": "Created by",
+      "createdAt": "Created",
+      "remove": "Remove ban",
+      "removed": "Ban removed.",
+      "noBans": "No bans configured.",
+      "noMatches": "No bans match the filters."
+    },
+    "createDialog": {
+      "title": "Add a permanent ban",
+      "type": "Ban by",
+      "value": "Value",
+      "reason": "Reason (optional)",
+      "submit": "Add ban",
+      "submitting": "Adding...",
+      "success": "Ban added.",
+      "hint": {
+        "ip": "Exact peer address of the request. A machine on DHCP may change it.",
+        "hwid": "Firmware ID of the machine. Survives renames, re-IPs and AD domain changes.",
+        "hostname": "Matched case-insensitively. Stops applying if the machine is renamed."
+      }
+    },
+    "removeDialog": {
+      "title": "Remove this ban?",
+      "description": "{value} will be able to reach the API again on its next request.",
+      "cancel": "Cancel",
+      "confirm": "Remove"
     }
   },
   "config": {
