@@ -534,6 +534,10 @@ export interface UpdaterClient {
   serial?: string | null;
   /** Vendor product/SKU number - on HP the `8XXXXXXX#ABZ` on the chassis label. */
   product?: string | null;
+  /** Revision of the remote config document this client last pulled. */
+  config_revision?: number | null;
+  /** When that pull happened - null for a client that has never fetched config. */
+  config_fetched_at?: string | null;
 }
 
 // ── Bans ───────────────────────────────────────────────────────────────────
@@ -583,6 +587,14 @@ export interface UpdaterEvent {
   id: number;
   client_id: number;
   event_type: UpdaterEventType;
+  /**
+   * Which manifest the check was against - "updater" for the updater's own
+   * self-update feed, "emly" for the app's. Note `version` is the *updater's*
+   * version in both cases: the updater polls the app manifest on the app's
+   * behalf and stamps the event with its own build, so an "emly" event does
+   * not tell you which EMLy App build is actually installed.
+   */
+  product?: string | null;
   version?: string | null;
   ip_address?: string | null;
   created_at: string;

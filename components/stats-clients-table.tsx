@@ -226,7 +226,7 @@ export function StatsClientsTable({ data: rawData, windowMinutes }: StatsClients
           <Input
             placeholder={t("filters.ip")}
             value={filters.ip}
-            className="pl-8 font-mono"
+            className="pl-8"
             onChange={(e) => setFilter({ ip: e.target.value })}
           />
         </div>
@@ -246,7 +246,7 @@ export function StatsClientsTable({ data: rawData, windowMinutes }: StatsClients
           <Input
             placeholder={t("filters.serial")}
             value={filters.serial}
-            className="pl-8 font-mono"
+            className="pl-8"
             onChange={(e) => setFilter({ serial: e.target.value })}
           />
         </div>

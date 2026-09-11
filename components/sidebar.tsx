@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useTranslations } from "next-intl";
-import { Bug, Users, PackageOpen, BarChart3, SlidersHorizontal, Ban, LogOut, Sun, Moon, Menu, X } from "lucide-react";
+import { Bug, Users, PackageOpen, BarChart3, SlidersHorizontal, Ban, LogOut, Sun, Moon, Menu, X, MonitorSmartphone } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,7 @@ export function Sidebar({ user }: { user: AuthUser }) {
     { href: "/bug-reports", label: t("nav.bugReports"), icon: Bug },
     { href: "/users", label: t("nav.users"), icon: Users },
     { href: "/updates", label: t("nav.updates"), icon: PackageOpen },
+    { href: "/clients", label: t("nav.clients"), icon: MonitorSmartphone },
     { href: "/statistics", label: t("nav.statistics"), icon: BarChart3 },
     { href: "/config", label: t("nav.config"), icon: SlidersHorizontal },
     { href: "/bans", label: t("nav.bans"), icon: Ban },

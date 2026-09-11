@@ -7,7 +7,8 @@
       "updates": "Aggiornamenti",
       "statistics": "Statistiche",
       "config": "Config Remota",
-      "bans": "Ban"
+      "bans": "Ban",
+      "clients": "Client"
     },
     "signOut": "Esci",
     "toggleTheme": "Cambia tema",
@@ -291,6 +292,84 @@
         "saving": "Salvataggio...",
         "success": "Versione updater {version} aggiornata"
       }
+    }
+  },
+  "clients": {
+    "title": "Client",
+    "description": "Stato di salute della flotta: dominio, versioni, rete e ban per ogni dispositivo.",
+    "selectStates": "Seleziona stati:",
+    "searchPlaceholder": "Cerca per nome, utente, IP, seriale...",
+    "filters": {
+      "allStates": "Tutti gli stati",
+      "customStates": "Selezione personalizzata",
+      "allConnections": "Online e offline",
+      "reset": "Azzera"
+    },
+    "count": "{shown} di {total} dispositivi",
+    "showSensitive": "Mostra dati sensibili",
+    "hideSensitive": "Nascondi dati sensibili",
+    "online": "Online",
+    "offline": "Offline",
+    "rank": {
+      "ok": "OK",
+      "warning": "Avviso",
+      "critical": "Critico"
+    },
+    "reason": {
+      "outOfDomain": "Fuori dominio: la macchina non e' aggiunta ad Active Directory.",
+      "banned": "Sotto ban: la macchina riceve 403 su tutti gli endpoint.",
+      "updaterMinorBehind": "EMLy Updater indietro di almeno una minor release.",
+      "updaterPatchBehind": "EMLy Updater indietro di una patch.",
+      "appBehind": "EMLy App non aggiornata all'ultima versione.",
+      "offline": "Nessun contatto nella finestra di rilevazione.",
+      "publicIp": "Ultimo contatto da un indirizzo IP pubblico.",
+      "appVersionUnknown": "Versione EMLy App non riportata dall'API: la regola sulla versione app non viene applicata.",
+      "updaterVersionUnknown": "Versione EMLy Updater non riportata: la regola sulla versione updater non viene applicata."
+    },
+    "banType": {
+      "ip": "IP",
+      "hwid": "HWID",
+      "hostname": "Hostname"
+    },
+    "table": {
+      "status": "Stato",
+      "hostname": "Nome dispositivo",
+      "loggedUser": "Utente loggato",
+      "lastIp": "IP",
+      "connected": "Connesso",
+      "lastSeen": "Ultima connessione",
+      "noData": "Nessun dispositivo corrisponde ai filtri.",
+      "page": "Pagina {current} di {total}",
+      "previous": "Precedente",
+      "next": "Successivo"
+    },
+    "detail": {
+      "collapse": "Comprimi dettagli",
+      "expand": "Espandi dettagli",
+      "resize": "Ridimensiona il pannello dettagli",
+      "close": "Chiudi dettagli",
+      "hostname": "Nome dispositivo",
+      "ip": "IP",
+      "ipInternal": "Indirizzo interno.",
+      "ipPublic": "Indirizzo pubblico.",
+      "connected": "Connesso",
+      "loggedUser": "Utente loggato",
+      "loggedUserAsOf": "al {date}",
+      "serial": "Seriale",
+      "lastSeen": "Ultima connessione",
+      "createdAt": "Data creazione",
+      "os": "Sistema operativo",
+      "updaterVersion": "Versione EMLy Updater",
+      "appVersion": "Versione EMLy App",
+      "dc": "DC connessa",
+      "dcUnmapped": "L'indirizzo non rientra nelle subnet di nessun sito configurato.",
+      "banned": "Sotto ban",
+      "notBanned": "Nessun ban attivo",
+      "adDomain": "Dominio AD",
+      "upToDate": "Aggiornata.",
+      "latestIs": "Ultima disponibile: {version}.",
+      "notReported": "Non riportato dall'API.",
+      "openFull": "Apri scheda completa"
     }
   },
   "statistics": {

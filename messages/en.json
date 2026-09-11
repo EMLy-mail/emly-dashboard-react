@@ -7,7 +7,8 @@
       "updates": "Updates",
       "statistics": "Statistics",
       "config": "Remote Config",
-      "bans": "Bans"
+      "bans": "Bans",
+      "clients": "Clients"
     },
     "signOut": "Sign out",
     "toggleTheme": "Toggle dark mode",
@@ -291,6 +292,84 @@
         "saving": "Saving...",
         "success": "Updater release {version} updated"
       }
+    }
+  },
+  "clients": {
+    "title": "Clients",
+    "description": "Fleet health at a glance: domain, versions, network and bans for every device.",
+    "selectStates": "Select states:",
+    "searchPlaceholder": "Search by name, user, IP, serial...",
+    "filters": {
+      "allStates": "All states",
+      "customStates": "Custom selection",
+      "allConnections": "Online and offline",
+      "reset": "Reset"
+    },
+    "count": "{shown} of {total} devices",
+    "showSensitive": "Show sensitive data",
+    "hideSensitive": "Hide sensitive data",
+    "online": "Online",
+    "offline": "Offline",
+    "rank": {
+      "ok": "OK",
+      "warning": "Warning",
+      "critical": "Critical"
+    },
+    "reason": {
+      "outOfDomain": "Out of domain: the machine is not joined to Active Directory.",
+      "banned": "Banned: the machine gets a 403 on every endpoint.",
+      "updaterMinorBehind": "EMLy Updater is at least a minor release behind.",
+      "updaterPatchBehind": "EMLy Updater is a patch behind.",
+      "appBehind": "EMLy App is not on the latest version.",
+      "offline": "No contact within the detection window.",
+      "publicIp": "Last contact came from a public IP address.",
+      "appVersionUnknown": "EMLy App version is not reported by the API, so the app-version rule is not applied.",
+      "updaterVersionUnknown": "EMLy Updater version is not reported, so the updater-version rule is not applied."
+    },
+    "banType": {
+      "ip": "IP",
+      "hwid": "HWID",
+      "hostname": "Hostname"
+    },
+    "table": {
+      "status": "Status",
+      "hostname": "Device name",
+      "loggedUser": "Logged user",
+      "lastIp": "IP",
+      "connected": "Connected",
+      "lastSeen": "Last connection",
+      "noData": "No device matches the filters.",
+      "page": "Page {current} of {total}",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "detail": {
+      "collapse": "Collapse details",
+      "expand": "Expand details",
+      "resize": "Resize the details panel",
+      "close": "Close details",
+      "hostname": "Device name",
+      "ip": "IP",
+      "ipInternal": "Internal address.",
+      "ipPublic": "Public address.",
+      "connected": "Connected",
+      "loggedUser": "Logged user",
+      "loggedUserAsOf": "as of {date}",
+      "serial": "Serial",
+      "lastSeen": "Last connection",
+      "createdAt": "Created",
+      "os": "Operating system",
+      "updaterVersion": "EMLy Updater version",
+      "appVersion": "EMLy App version",
+      "dc": "Connected DC",
+      "dcUnmapped": "The address falls outside every configured site's subnets.",
+      "banned": "Banned",
+      "notBanned": "No active ban",
+      "adDomain": "AD domain",
+      "upToDate": "Up to date.",
+      "latestIs": "Latest available: {version}.",
+      "notReported": "Not reported by the API.",
+      "openFull": "Open full record"
     }
   },
   "statistics": {
