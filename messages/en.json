@@ -321,7 +321,7 @@
       "updaterMinorBehind": "EMLy Updater is at least a minor release behind.",
       "updaterPatchBehind": "EMLy Updater is a patch behind.",
       "appBehind": "EMLy App is not on the latest version.",
-      "offline": "No contact within the detection window.",
+      "offline": "Currently offline: no contact within the detection window. Does not affect the status.",
       "publicIp": "Last contact came from a public IP address.",
       "appVersionUnknown": "EMLy App version is not reported by the API, so the app-version rule is not applied.",
       "updaterVersionUnknown": "EMLy Updater version is not reported, so the updater-version rule is not applied."
@@ -336,12 +336,14 @@
       "hostname": "Device name",
       "loggedUser": "Logged user",
       "lastIp": "IP",
+      "updaterVersion": "Updater version",
       "connected": "Connected",
       "lastSeen": "Last connection",
       "noData": "No device matches the filters.",
       "page": "Page {current} of {total}",
       "previous": "Previous",
-      "next": "Next"
+      "next": "Next",
+      "createdAt": "Created"
     },
     "detail": {
       "collapse": "Collapse details",

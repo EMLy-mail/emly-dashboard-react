@@ -10,10 +10,12 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import {
   AlertTriangle,
   ArrowDown,
+  Check,
+  CircleAlert,
   ArrowUp,
   ArrowUpDown,
   ArrowUpRight,
@@ -33,6 +35,7 @@ import type { Ban, UpdaterClient } from "@/lib/api";
 import {
   assessDevice,
   compareIps,
+  compareVersions,
   maskIp,
   maskSerial,
   maskUser,
@@ -42,7 +45,6 @@ import {
 } from "@/lib/device-status";
 import { useLiveStatsClients } from "@/hooks/use-stats-stream";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -80,7 +82,53 @@ const MIN_PANEL_WIDTH = 300;
 const MAX_PANEL_WIDTH = 720;
 const DEFAULT_PANEL_WIDTH = 400;
 
-type SortColumn = "rank" | "hostname" | "loggedUser" | "lastIp" | "connected" | "lastSeen";
+type SortColumn =
+  | "rank"
+  | "hostname"
+  | "lastSeen"
+  | "connected"
+  | "loggedUser"
+  | "lastIp"
+  | "updaterVersion"
+  | "createdAt";
+
+const MINUTE_MS = 60_000;
+const HOUR_MS = 60 * MINUTE_MS;
+const DAY_MS = 24 * HOUR_MS;
+const WEEK_MS = 7 * DAY_MS;
+// Past this, "2 mesi fa" stops being useful and an actual date is what you
+// want, so the columns switch over to a plain calendar date.
+const ABSOLUTE_AFTER_MS = 30 * DAY_MS;
+
+/**
+ * "un minuto fa" / "due settimane fa" for anything inside the last month, a
+ * calendar date beyond it. Localised through Intl rather than a hand-written
+ * word list, so it follows whichever locale the cookie selected.
+ */
+function formatWhen(iso: string, now: number, locale: string): string {
+  const then = new Date(iso).getTime();
+  if (!Number.isFinite(then)) return "\u2014";
+
+  // Clock skew can put a sighting slightly in the future; clamp so it never
+  // renders as "tra 3 secondi".
+  const elapsed = Math.max(1000, now - then);
+  if (elapsed >= ABSOLUTE_AFTER_MS) {
+    return new Date(then).toLocaleDateString(locale, {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  }
+
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "always" });
+  // floor, not round, so 90 seconds reads "1 minuto fa" and never "2 minuti fa"
+  // while the clock still says one.
+  if (elapsed < MINUTE_MS) return rtf.format(-Math.floor(elapsed / 1000), "second");
+  if (elapsed < HOUR_MS) return rtf.format(-Math.floor(elapsed / MINUTE_MS), "minute");
+  if (elapsed < DAY_MS) return rtf.format(-Math.floor(elapsed / HOUR_MS), "hour");
+  if (elapsed < WEEK_MS) return rtf.format(-Math.floor(elapsed / DAY_MS), "day");
+  return rtf.format(-Math.floor(elapsed / WEEK_MS), "week");
+}
 type SortState = { column: SortColumn; direction: "asc" | "desc" };
 
 /** Empty values sort last whichever way the column is pointing. */
@@ -118,6 +166,13 @@ const RANK_STYLES: Record<DeviceRank, { dot: string; text: string; bar: string; 
 };
 
 interface ClientsExplorerProps {
+  /**
+   * The server's clock at render time. Every rank depends on "is this machine
+   * still inside the online window", so calling Date.now() here instead would
+   * let SSR and hydration land on different sides of that threshold and
+   * disagree about the counts. The interval below takes over after mount.
+   */
+  renderedAt: number;
   bans: Ban[];
   latestUpdaterVersion: string | null;
   latestAppVersion: string | null;
@@ -131,6 +186,7 @@ interface ScoredClient {
 }
 
 export function ClientsExplorer({
+  renderedAt,
   bans,
   latestUpdaterVersion,
   latestAppVersion,
@@ -138,9 +194,10 @@ export function ClientsExplorer({
   windowMinutes,
 }: ClientsExplorerProps) {
   const t = useTranslations("clients");
+  const locale = useLocale();
   const { clients } = useLiveStatsClients();
 
-  const [now, setNow] = useState(() => Date.now());
+  const [now, setNow] = useState(renderedAt);
   const [query, setQuery] = useState("");
   const [activeRanks, setActiveRanks] = useState<DeviceRank[]>([...RANKS]);
   const [connection, setConnection] = useState<ConnectionFilter>(ANY);
@@ -226,12 +283,32 @@ export function ClientsExplorer({
             return dir * compareStrings(a.client.logged_user ?? "", b.client.logged_user ?? "");
           case "lastIp":
             return dir * compareIps(a.client.last_ip, b.client.last_ip);
+          case "updaterVersion": {
+            const av = a.client.updater_version ?? "";
+            const bv = b.client.updater_version ?? "";
+            // Unreported versions stay at the bottom either way round: it is
+            // missing telemetry, not a build that sorts below 1.0.
+            if (!av && !bv) return 0;
+            if (!av) return 1;
+            if (!bv) return -1;
+            // 1.6.1 must outrank 1.10.0 the way semver says, not the way text
+            // comparison would; fall back to text only if either is unparseable.
+            return dir * (compareVersions(av, bv) ?? compareStrings(av, bv));
+          }
           case "connected":
             return dir * (Number(a.assessment.online) - Number(b.assessment.online));
           case "lastSeen":
             return (
               dir *
               (new Date(a.client.last_seen_at).getTime() - new Date(b.client.last_seen_at).getTime())
+            );
+          // Sorts on the underlying instant, not the rendered label, so
+          // "2 settimane fa" and a calendar date still order against each other.
+          case "createdAt":
+            return (
+              dir *
+              (new Date(a.client.first_seen_at).getTime() -
+                new Date(b.client.first_seen_at).getTime())
             );
           default:
             return 0;
@@ -453,6 +530,12 @@ export function ClientsExplorer({
                   <SortableHead column="hostname" sort={sort} onSort={toggleSort}>
                     {t("table.hostname")}
                   </SortableHead>
+                  <SortableHead column="lastSeen" sort={sort} onSort={toggleSort}>
+                    {t("table.lastSeen")}
+                  </SortableHead>
+                  <SortableHead column="connected" sort={sort} onSort={toggleSort}>
+                    {t("table.connected")}
+                  </SortableHead>
                   <SortableHead
                     column="loggedUser"
                     sort={sort}
@@ -469,16 +552,21 @@ export function ClientsExplorer({
                   >
                     {t("table.lastIp")}
                   </SortableHead>
-                  <SortableHead column="connected" sort={sort} onSort={toggleSort}>
-                    {t("table.connected")}
-                  </SortableHead>
                   <SortableHead
-                    column="lastSeen"
+                    column="updaterVersion"
                     sort={sort}
                     onSort={toggleSort}
-                    className="hidden sm:table-cell"
+                    className="hidden lg:table-cell"
                   >
-                    {t("table.lastSeen")}
+                    {t("table.updaterVersion")}
+                  </SortableHead>
+                  <SortableHead
+                    column="createdAt"
+                    sort={sort}
+                    onSort={toggleSort}
+                    className="hidden xl:table-cell"
+                  >
+                    {t("table.createdAt")}
                   </SortableHead>
                 </TableRow>
 
@@ -486,7 +574,7 @@ export function ClientsExplorer({
               <TableBody>
                 {visible.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+                    <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">
                       {t("table.noData")}
                     </TableCell>
                   </TableRow>
@@ -511,6 +599,10 @@ export function ClientsExplorer({
                           TableBody resets the last row with border-0, which
                           would wipe a row-level border-l and leave the bottom
                           row of every page unmarked. */}
+                      {/* The rank bar rides the first cell, not the row:
+                          TableBody resets the last row with border-0, which
+                          would wipe a row-level border-l and leave the bottom
+                          row of every page unmarked. */}
                       <TableCell className={cn("border-l-2", style.bar)}>
                         <ConnectionIcon
                           className={cn("h-4 w-4", style.text)}
@@ -530,19 +622,63 @@ export function ClientsExplorer({
                           {client.hostname}
                         </button>
                       </TableCell>
+                      {/* title carries the exact timestamp the relative label
+                          rounds away. */}
+                      <TableCell
+                        className="text-sm text-muted-foreground"
+                        title={new Date(client.last_seen_at).toLocaleString(locale)}
+                        suppressHydrationWarning
+                      >
+                        {formatWhen(client.last_seen_at, now, locale)}
+                      </TableCell>
+                      <TableCell>
+                        {assessment.online ? (
+                          <Check
+                            className="h-4 w-4 text-emerald-600 dark:text-emerald-400"
+                            strokeWidth={3}
+                            role="img"
+                            aria-label={t("online")}
+                          />
+                        ) : (
+                          <CircleAlert
+                            className="h-4 w-4 text-red-600 dark:text-red-500"
+                            role="img"
+                            aria-label={t("offline")}
+                          />
+                        )}
+                      </TableCell>
                       <TableCell className="hidden text-sm md:table-cell">
                         {revealed ? client.logged_user ?? "—" : maskUser(client.logged_user)}
                       </TableCell>
                       <TableCell className="hidden font-mono text-sm lg:table-cell">
                         {revealed ? client.last_ip ?? "—" : maskIp(client.last_ip)}
                       </TableCell>
-                      <TableCell>
-                        <Badge variant={assessment.online ? "outline" : "secondary"}>
-                          {assessment.online ? t("online") : t("offline")}
-                        </Badge>
+                      {/* Tinted by how far behind the build is - the same gap
+                          that decides the rank, so a red version here explains
+                          the red bar at the start of the row. */}
+                      <TableCell
+                        className={cn(
+                          "hidden font-mono text-sm lg:table-cell",
+                          assessment.updaterGap === "minor" || assessment.updaterGap === "major"
+                            ? RANK_STYLES.critical.text
+                            : assessment.updaterGap === "patch"
+                              ? RANK_STYLES.warning.text
+                              : "text-muted-foreground",
+                        )}
+                        title={
+                          assessment.updaterGap === "none" || assessment.updaterGap === "unknown"
+                            ? undefined
+                            : t("detail.latestIs", { version: latestUpdaterVersion ?? "—" })
+                        }
+                      >
+                        {client.updater_version ?? "—"}
                       </TableCell>
-                      <TableCell className="hidden text-sm text-muted-foreground sm:table-cell">
-                        {new Date(client.last_seen_at).toLocaleString()}
+                      <TableCell
+                        className="hidden text-sm text-muted-foreground xl:table-cell"
+                        title={new Date(client.first_seen_at).toLocaleString(locale)}
+                        suppressHydrationWarning
+                      >
+                        {formatWhen(client.first_seen_at, now, locale)}
                       </TableCell>
                     </TableRow>
                   );
@@ -698,6 +834,7 @@ function DeviceDetail({
   onClose,
 }: DeviceDetailProps) {
   const t = useTranslations("clients");
+  const locale = useLocale();
   const { client, assessment } = entry;
   const style = RANK_STYLES[assessment.rank];
   const RankIcon = style.icon;
@@ -762,7 +899,7 @@ function DeviceDetail({
             // it stops that reading as "logged on right now".
             hint={
               client.logged_user
-                ? t("detail.loggedUserAsOf", { date: new Date(client.last_seen_at).toLocaleString() })
+                ? t("detail.loggedUserAsOf", { date: new Date(client.last_seen_at).toLocaleString(locale) })
                 : undefined
             }
           />
@@ -771,8 +908,8 @@ function DeviceDetail({
             value={revealed ? client.serial ?? "—" : maskSerial(client.serial)}
             mono
           />
-          <Field label={t("detail.lastSeen")} value={new Date(client.last_seen_at).toLocaleString()} />
-          <Field label={t("detail.createdAt")} value={new Date(client.first_seen_at).toLocaleString()} />
+          <Field label={t("detail.lastSeen")} value={new Date(client.last_seen_at).toLocaleString(locale)} />
+          <Field label={t("detail.createdAt")} value={new Date(client.first_seen_at).toLocaleString(locale)} />
           <Field label={t("detail.os")} value="—" hint={t("detail.notReported")} />
           <Field
             label={t("detail.updaterVersion")}

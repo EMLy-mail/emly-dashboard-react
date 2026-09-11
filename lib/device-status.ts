@@ -253,8 +253,10 @@ export function isOnlineAt(client: UpdaterClient, now: number, windowMinutes: nu
  * Critical: out of domain, banned, or an updater a whole minor release behind
  *   — each of these means the machine is not reachable by normal fleet policy.
  * Warning: in domain and unbanned, but drifting — a patch behind, an app
- *   behind, offline, or answering from a public address.
- * OK: domain-joined, online, internal, unbanned, both builds current.
+ *   behind, or answering from a public address.
+ * OK: domain-joined, internal, unbanned, both builds current.
+ *
+ * Reachability is reported but never scored — see the note on `offline` below.
  */
 export function assessDevice(input: AssessInput): DeviceAssessment {
   const { client, bans, windowMinutes, now } = input;
@@ -278,7 +280,6 @@ export function assessDevice(input: AssessInput): DeviceAssessment {
   if (!critical) {
     if (updaterGap === "patch") reasons.push("updaterPatchBehind");
     if (appGap === "patch" || appGap === "minor" || appGap === "major") reasons.push("appBehind");
-    if (!online) reasons.push("offline");
     // Only meaningful once we have an address at all; a client that has never
     // reported one is unknown, not externally connected.
     if (client.last_ip && !internalIp) reasons.push("publicIp");
@@ -286,9 +287,16 @@ export function assessDevice(input: AssessInput): DeviceAssessment {
 
   const rank: DeviceRank = critical ? "critical" : reasons.length > 0 ? "warning" : "ok";
 
-  // Recorded after the rank is settled: missing telemetry is something the
-  // detail panel should say out loud, but it must never by itself demote a
-  // machine that is otherwise healthy.
+  // Recorded after the rank is settled, so these describe a machine without
+  // demoting it.
+  //
+  // Being offline is deliberately not a demerit: most of this fleet is desks
+  // that get switched off at night, so scoring silence as a fault would turn
+  // the whole board amber every evening and bury the machines that are
+  // actually broken. It stays visible as a fact about the row instead. Note
+  // this runs outside the `critical` guard, so an offline machine that is
+  // also critical still says so.
+  if (!online) reasons.push("offline");
   if (updaterGap === "unknown") reasons.push("updaterVersionUnknown");
   if (appGap === "unknown") reasons.push("appVersionUnknown");
 

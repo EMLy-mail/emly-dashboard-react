@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { getTranslations } from "next-intl/server";
 import {
   getAllStatsClients,
@@ -15,6 +16,14 @@ import { readDcLookupMap, type DcLookupMap } from "@/lib/device-status";
 import { StatsStreamProvider } from "@/components/stats-stream-provider";
 import { StatsLiveBadge } from "@/components/stats-live-badge";
 import { ClientsExplorer } from "@/components/clients-explorer";
+
+/**
+ * One clock reading per request. Every rank turns on whether a machine is
+ * still inside the online window, so the browser has to score against the
+ * same instant the server did or it hydrates to different counts. cache()
+ * also keeps the value fixed if the tree renders more than once.
+ */
+const getRenderedAt = cache(() => Date.now());
 
 /**
  * Resolves the `dcLookupMap` the fleet is actually running on: the published
@@ -72,6 +81,7 @@ export default async function ClientsPage() {
         </div>
 
         <ClientsExplorer
+          renderedAt={getRenderedAt()}
           bans={bans}
           latestUpdaterVersion={latestUpdaterVersion}
           latestAppVersion={latestAppVersion}
