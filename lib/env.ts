@@ -36,3 +36,10 @@ export const env: Env = new Proxy({} as Env, {
     return _cached[key as keyof Env];
   },
 });
+
+/**
+ * User-Agent sent on every request this server makes to the EMLy API
+ * (HTTP and WebSocket alike). Node's fetch would otherwise announce itself
+ * as "node", which is useless in the API's access logs.
+ */
+export const SERVER_USER_AGENT = "EMLy-Dashboard";
