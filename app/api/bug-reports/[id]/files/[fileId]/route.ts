@@ -7,11 +7,12 @@ export async function GET(
 ) {
   const { id, fileId } = await params;
 
-  const res = await fetch(`${env.apiBaseUrl}/v1/api/bug-reports/${id}/files/${fileId}`, {
+  const res = await fetch(`${env.apiBaseUrl}/v2/api/bug-report/${id}/files/${fileId}`, {
     headers: {
       "X-API-Key": env.apiKey,
       "X-Admin-Key": env.adminKey,
       "User-Agent": SERVER_USER_AGENT,
+      ...(env.dashboardKey ? { "X-Dashboard-Key": env.dashboardKey } : {}),
     },
   });
   console.log(res)

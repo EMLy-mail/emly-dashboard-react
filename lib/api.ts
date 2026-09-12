@@ -109,7 +109,7 @@ async function apiFetch<T>(
     headers["Content-Type"] = "application/json";
   }
 
-  const base = opts.baseUrl ?? (env.apiBaseUrl + "/v1/api");
+  const base = opts.baseUrl ?? (env.apiBaseUrl + "/v2/api");
   const res = await fetch(`${base}${path}`, {
     ...init,
     headers,
@@ -161,17 +161,17 @@ export async function getBugReports(opts: {
   if (opts.page_size) params.set("page_size", String(opts.page_size));
   if (opts.search) params.set("search", opts.search);
   const qs = params.toString() ? `?${params}` : "";
-  return apiFetch<PaginatedBugReports>(`/bug-reports${qs}`, {}, { requiresApi: true, requiresAdmin: true });
+  return apiFetch<PaginatedBugReports>(`/bug-report${qs}`, {}, { requiresApi: true, requiresAdmin: true });
 }
 
 export async function getBugReportCount(status?: BugReportStatus) {
   const qs = status ? `?status=${status}` : "";
-  return apiFetch<{ count: number }>(`/bug-reports/count${qs}`, {}, { requiresApi: true });
+  return apiFetch<{ count: number }>(`/bug-report/count${qs}`, {}, { requiresApi: true });
 }
 
 export async function getBugReport(id: number) {
   return apiFetch<{ report: BugReport }>(
-    `/bug-reports/${id}`,
+    `/bug-report/${id}`,
     {},
     { requiresApi: true, requiresAdmin: true },
   );
@@ -179,7 +179,7 @@ export async function getBugReport(id: number) {
 
 export async function deleteBugReport(id: number) {
   return apiFetch<{ message: string }>(
-    `/bug-reports/${id}`,
+    `/bug-report/${id}`,
     { method: "DELETE" },
     { requiresApi: true, requiresAdmin: true },
   );
@@ -187,7 +187,7 @@ export async function deleteBugReport(id: number) {
 
 export async function updateBugReportStatus(id: number, status: BugReportStatus) {
   return apiFetch<{ message: string }>(
-    `/bug-reports/${id}/status`,
+    `/bug-report/${id}/status`,
     {
       method: "PATCH",
       headers: { "Content-Type": "text/plain" },
@@ -199,7 +199,7 @@ export async function updateBugReportStatus(id: number, status: BugReportStatus)
 
 export async function getBugReportFiles(id: number) {
   return apiFetch<BugReportFile[]>(
-    `/bug-reports/${id}/files`,
+    `/bug-report/${id}/files`,
     {},
     { requiresApi: true, requiresAdmin: true },
   );
