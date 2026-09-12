@@ -310,6 +310,13 @@
     "hideSensitive": "Nascondi dati sensibili",
     "online": "Online",
     "offline": "Offline",
+    "iconHint": {
+      "offline": "Offline: nessun contatto nella finestra di rilevazione",
+      "onlineInternal": "Online dalla rete interna",
+      "onlinePublicIp": "Online, ma l'ultimo contatto arriva da un indirizzo IP pubblico",
+      "noLoggedUser": "Nessun utente connesso su questa macchina",
+      "loggedUserUnknown": "Sconosciuto: EMLy Updater è precedente alla {version} e non riporta l'utente loggato"
+    },
     "rank": {
       "ok": "OK",
       "warning": "Avviso",
