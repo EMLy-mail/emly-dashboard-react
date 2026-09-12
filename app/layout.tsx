@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import NextTopLoader from "nextjs-toploader";
 import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
@@ -40,8 +41,13 @@ export default async function RootLayout({
         <NextTopLoader color="#3b82f6" height={2} showSpinner={false} />
         <NextIntlClientProvider messages={messages}>
           <ThemeProvider>
-            {children}
-            <Toaster richColors />
+            {/* Radix needs one provider above every Tooltip.Root; a single
+                one at the root also keeps the open/close delay consistent
+                wherever a tooltip turns up. */}
+            <TooltipProvider delayDuration={200}>
+              {children}
+              <Toaster richColors />
+            </TooltipProvider>
           </ThemeProvider>
         </NextIntlClientProvider>
       </body>
