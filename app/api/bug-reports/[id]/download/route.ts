@@ -1,4 +1,4 @@
-import { env } from "@/lib/env";
+import { env, SERVER_USER_AGENT } from "@/lib/env";
 import { notFound } from "next/navigation";
 
 export async function GET(
@@ -11,6 +11,7 @@ export async function GET(
     headers: {
       "X-API-Key": env.apiKey,
       "X-Admin-Key": env.adminKey,
+      "User-Agent": SERVER_USER_AGENT,
     },
   });
 

@@ -1,7 +1,7 @@
 import "server-only";
 import { EventEmitter } from "node:events";
 import WebSocket from "ws";
-import { env } from "@/lib/env";
+import { env, SERVER_USER_AGENT } from "@/lib/env";
 import type { StatsEventsResponse, StatsSummary, UpdaterClient } from "@/lib/api";
 
 // ── WS↔API wire protocol ────────────────────────────────────────────────────
@@ -117,7 +117,10 @@ class StatsHub extends EventEmitter {
   private connect(): void {
     this.setStatus(this.reconnectDelay === RECONNECT_MIN_MS ? "connecting" : "reconnecting");
 
-    const headers: Record<string, string> = { "X-Admin-Key": env.adminKey };
+    const headers: Record<string, string> = {
+      "X-Admin-Key": env.adminKey,
+      "User-Agent": SERVER_USER_AGENT,
+    };
     if (env.dashboardKey) headers["X-Dashboard-Key"] = env.dashboardKey;
 
     let socket: WebSocket;

@@ -1,5 +1,5 @@
 import "server-only";
-import { env } from "./env";
+import { env, SERVER_USER_AGENT } from "./env";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -90,6 +90,7 @@ async function apiFetch<T>(
 ): Promise<T> {
   const headers: Record<string, string> = {
     ...(init.headers as Record<string, string>),
+    "User-Agent": SERVER_USER_AGENT,
   };
 
   if (opts.requiresApi !== false) {
