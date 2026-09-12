@@ -12,7 +12,6 @@ import {
 } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import {
-  AlertTriangle,
   ArrowDown,
   Check,
   CircleAlert,
@@ -29,7 +28,12 @@ import {
   PanelRightOpen,
   Search,
   ShieldAlert,
+  TriangleAlert,
+  UserX,
   X,
+  Network,
+  Globe,
+  GlobeOff
 } from "lucide-react";
 import type { Ban, UpdaterClient } from "@/lib/api";
 import {
@@ -56,6 +60,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Table,
   TableBody,
@@ -76,6 +81,10 @@ type ConnectionFilter = "__any__" | "online" | "offline";
 // The online/offline split is time-based, so a list left open would slowly
 // drift out of date even while the stream keeps the rows themselves fresh.
 const CLOCK_REFRESH_MS = 30_000;
+// First updater build that reports the signed-in account. Anything older
+// simply never sends the field, so its blank logged-user cell says nothing
+// about the machine and has to be read as "unknown", not "nobody".
+const LOGGED_USER_MIN_UPDATER_VERSION = "1.6.1";
 // Panel width bounds, in px. The floor is what the widest label in the
 // detail list needs before it starts wrapping mid-word.
 const MIN_PANEL_WIDTH = 300;
@@ -129,6 +138,51 @@ function formatWhen(iso: string, now: number, locale: string): string {
   if (elapsed < WEEK_MS) return rtf.format(-Math.floor(elapsed / DAY_MS), "day");
   return rtf.format(-Math.floor(elapsed / WEEK_MS), "week");
 }
+/**
+ * An icon that carries its own explanation. `hint` is both the tooltip and
+ * the accessible name, so a screen reader hears the same sentence a pointer
+ * user reads instead of a bare "image". The wrapping span is what takes
+ * focus: an inline SVG is not tabbable, so without it the tooltip would be
+ * pointer-only. It is block-level (`flex`, not `inline-flex`) on purpose —
+ * an inline box gets a line box with room for descenders under it, which
+ * lifted the glyph a couple of pixels above the text in its neighbouring
+ * cells. As a block it is just the icon, which the cell's own `align-middle`
+ * then centres exactly.
+ */
+function HintedIcon({
+  icon: Icon,
+  hint,
+  className,
+}: {
+  icon: typeof CheckCircle2;
+  hint: string;
+  className?: string;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          className="flex w-fit rounded-xs outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          tabIndex={0}
+        >
+          <Icon className={cn("h-4 w-4", className)} role="img" aria-label={hint} />
+        </span>
+      </TooltipTrigger>
+      <TooltipContent>{hint}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+/**
+ * True only for a build we can read *and* that sits below the floor. A
+ * version the API never reported, or one that will not parse, is unknown
+ * rather than too old, so it falls through to the plain "no user" icon.
+ */
+function updaterTooOldForLoggedUser(version: string | null | undefined): boolean {
+  if (!version) return false;
+  return compareVersions(version, LOGGED_USER_MIN_UPDATER_VERSION) === -1;
+}
+
 type SortState = { column: SortColumn; direction: "asc" | "desc" };
 
 /** Empty values sort last whichever way the column is pointing. */
@@ -155,7 +209,7 @@ const RANK_STYLES: Record<DeviceRank, { dot: string; text: string; bar: string; 
     dot: "bg-amber-500",
     text: "text-amber-700 dark:text-amber-400",
     bar: "border-l-amber-500",
-    icon: AlertTriangle,
+    icon: TriangleAlert,
   },
   critical: {
     dot: "bg-red-500",
@@ -631,24 +685,56 @@ export function ClientsExplorer({
                       >
                         {formatWhen(client.last_seen_at, now, locale)}
                       </TableCell>
+                      {/* Three states, not two: a machine answering from
+                          outside the LAN is reachable but not on the network
+                          you can reach back on, so it gets its own amber globe
+                          rather than the green one. Same condition that raises
+                          the `publicIp` reason, so the icon and the rank
+                          tooltip always agree. */}
                       <TableCell>
-                        {assessment.online ? (
-                          <Check
-                            className="h-4 w-4 text-emerald-600 dark:text-emerald-400"
-                            strokeWidth={3}
-                            role="img"
-                            aria-label={t("online")}
+                        {!assessment.online ? (
+                          <HintedIcon
+                            icon={GlobeOff}
+                            hint={t("iconHint.offline")}
+                            className="text-red-600 dark:text-red-500"
+                          />
+                        ) : client.last_ip && !assessment.internalIp ? (
+                          <HintedIcon
+                            icon={Globe}
+                            hint={t("iconHint.onlinePublicIp")}
+                            className="text-amber-600 dark:text-amber-400"
                           />
                         ) : (
-                          <CircleAlert
-                            className="h-4 w-4 text-red-600 dark:text-red-500"
-                            role="img"
-                            aria-label={t("offline")}
+                          <HintedIcon
+                            icon={Network}
+                            hint={t("iconHint.onlineInternal")}
+                            className="text-emerald-600 dark:text-emerald-400"
                           />
                         )}
                       </TableCell>
+                      {/* An empty cell has two very different causes and one em
+                          dash hid the difference: nobody is signed in (amber,
+                          normal), or the updater is too old to report the user
+                          at all (red, so the blank says nothing about the
+                          machine — it is the updater that needs replacing). */}
                       <TableCell className="hidden text-sm md:table-cell">
-                        {revealed ? client.logged_user ?? "—" : maskUser(client.logged_user)}
+                        {client.logged_user?.trim() ? (
+                          revealed ? client.logged_user : maskUser(client.logged_user)
+                        ) : updaterTooOldForLoggedUser(client.updater_version) ? (
+                          <HintedIcon
+                            icon={TriangleAlert}
+                            hint={t("iconHint.loggedUserUnknown", {
+                              version: LOGGED_USER_MIN_UPDATER_VERSION,
+                            })}
+                            className="text-red-600 dark:text-red-500"
+                          />
+                        ) : (
+                          <HintedIcon
+                            icon={UserX}
+                            hint={t("iconHint.noLoggedUser")}
+                            className="text-amber-600 dark:text-amber-400"
+                          />
+                        )}
                       </TableCell>
                       <TableCell className="hidden font-mono text-sm lg:table-cell">
                         {revealed ? client.last_ip ?? "—" : maskIp(client.last_ip)}
