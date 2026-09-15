@@ -525,10 +525,11 @@ export interface UpdaterClient {
   /**
    * Interactive user seen on the machine - console or RDP alike - at the last
    * sighting that reported one, as `DOMAIN\user`. It is a snapshot, not a
-   * history: the API overwrites it on every request carrying
-   * X-EMLy-LoggedUser and never clears it, so always read it next to
-   * `last_seen_at`. Null for a client that has never reported one (an updater
-   * too old to send the header).
+   * history, so always read it next to `last_seen_at`. The API overwrites it
+   * on every request carrying X-EMLy-LoggedUser and clears it when an updater
+   * 1.6.2+ reports nobody logged on. Older updaters never clear it, so their
+   * rows can still show a user who has since signed out. Null for a client
+   * that has never reported one, or one with nobody logged on.
    */
   logged_user?: string | null;
   /**

@@ -1008,9 +1008,10 @@ function DeviceDetail({
                 maskUser(client.logged_user)
               )
             }
-            // The API overwrites this on every sighting and never clears it, so
-            // a machine idle for weeks still shows its last known user. Dating
-            // it stops that reading as "logged on right now".
+            // A snapshot from the last sighting: a machine that stopped checking
+            // in (or runs an updater older than 1.6.2, which never clears it)
+            // still shows its last known user. Dating it stops that reading as
+            // "logged on right now".
             hint={
               client.logged_user
                 ? t("detail.loggedUserAsOf", { date: new Date(client.last_seen_at).toLocaleString(locale) })

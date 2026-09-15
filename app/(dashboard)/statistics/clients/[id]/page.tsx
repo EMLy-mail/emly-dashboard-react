@@ -150,9 +150,10 @@ export default async function StatsClientDetailPage({ params }: PageProps) {
                 "—"
               )}
             </p>
-            {/* The API never clears this field, so a machine nobody has used
-                in weeks still shows its last known user. Spelling out when it
-                was observed keeps that from reading as "logged on now". */}
+            {/* A snapshot from the last sighting: a machine that stopped
+                checking in (or runs an updater older than 1.6.2, which never
+                clears it) still shows its last known user. Spelling out when
+                it was observed keeps that from reading as "logged on now". */}
             {client.logged_user && (
               <p className="text-xs text-muted-foreground">
                 {t("info.loggedUserAsOf", { date: new Date(client.last_seen_at).toLocaleString() })}
