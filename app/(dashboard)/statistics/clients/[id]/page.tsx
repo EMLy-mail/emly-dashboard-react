@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { getStatsClientDetail, getBans, ApiError, type Ban } from "@/lib/api";
 import { CreateBanDialog } from "@/components/create-ban-dialog";
+import { LoggedUserName, isSessionDisconnected } from "@/components/logged-user-name";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Ban as BanIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,10 +36,11 @@ export default async function StatsClientDetailPage({ params }: PageProps) {
     throw e;
   }
 
-  const [t, tEvents, tBans] = await Promise.all([
+  const [t, tEvents, tBans, tHint] = await Promise.all([
     getTranslations("statistics.clientDetail"),
     getTranslations("statistics.events"),
     getTranslations("bans"),
+    getTranslations("clients.iconHint"),
   ]);
   const { client, events } = detail;
 
@@ -131,7 +133,23 @@ export default async function StatsClientDetailPage({ params }: PageProps) {
           </div>
           <div>
             <p className="text-xs font-medium text-muted-foreground">{t("info.loggedUser")}</p>
-            <p className="font-medium">{client.logged_user ?? "—"}</p>
+            <p className="font-medium">
+              {client.logged_user ? (
+                <LoggedUserName
+                  name={client.logged_user}
+                  disconnected={isSessionDisconnected(client)}
+                  hint={
+                    client.logged_user_disconnected_at
+                      ? tHint("sessionDisconnectedSince", {
+                          date: new Date(client.logged_user_disconnected_at).toLocaleString(),
+                        })
+                      : tHint("sessionDisconnected")
+                  }
+                />
+              ) : (
+                "—"
+              )}
+            </p>
             {/* The API never clears this field, so a machine nobody has used
                 in weeks still shows its last known user. Spelling out when it
                 was observed keeps that from reading as "logged on now". */}

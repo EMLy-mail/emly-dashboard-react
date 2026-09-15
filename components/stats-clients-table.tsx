@@ -24,6 +24,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { LoggedUserName, isSessionDisconnected } from "@/components/logged-user-name";
 
 const PAGE_SIZE = 20;
 // Sentinel values for the select filters: Radix reserves "" as an item value.
@@ -84,6 +85,7 @@ function compareStrings(a: string, b: string) {
 export function StatsClientsTable({ data: rawData, windowMinutes }: StatsClientsTableProps) {
   const data = useMemo(() => rawData ?? [], [rawData]);
   const t = useTranslations("statistics.clients");
+  const tHint = useTranslations("clients.iconHint");
   // Captured once per mount rather than read live during render, per React's
   // component-purity rules (no impure calls like Date.now() in the render body).
   const [now] = useState(() => Date.now());
@@ -346,7 +348,23 @@ export function StatsClientsTable({ data: rawData, windowMinutes }: StatsClients
                     </Link>
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">{client.ad_domain}</TableCell>
-                  <TableCell className="text-sm">{client.logged_user ?? "—"}</TableCell>
+                  <TableCell className="text-sm">
+                    {client.logged_user ? (
+                      <LoggedUserName
+                        name={client.logged_user}
+                        disconnected={isSessionDisconnected(client)}
+                        hint={
+                          client.logged_user_disconnected_at
+                            ? tHint("sessionDisconnectedSince", {
+                                date: new Date(client.logged_user_disconnected_at).toLocaleString(),
+                              })
+                            : tHint("sessionDisconnected")
+                        }
+                      />
+                    ) : (
+                      "—"
+                    )}
+                  </TableCell>
                   <TableCell className="font-mono text-sm">{client.updater_version ?? "—"}</TableCell>
                   <TableCell className="font-mono text-sm">{client.last_ip ?? "—"}</TableCell>
                   <TableCell>

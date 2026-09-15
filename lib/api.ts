@@ -531,6 +531,15 @@ export interface UpdaterClient {
    * too old to send the header).
    */
   logged_user?: string | null;
+  /**
+   * How `logged_user` was attached at that sighting: at the console, over an
+   * attached RDP client, or `disconnected` - still logged on with programs
+   * running but no client attached (an RDP window closed without signing
+   * out). Null for an updater too old to report it.
+   */
+  logged_user_state?: "active-console" | "active-rdp" | "disconnected" | null;
+  /** When a `disconnected` session lost its client; null for any other state. */
+  logged_user_disconnected_at?: string | null;
   /** Chassis serial number from the BIOS. */
   serial?: string | null;
   /** Vendor product/SKU number - on HP the `8XXXXXXX#ABZ` on the chassis label. */

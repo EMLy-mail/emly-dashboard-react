@@ -48,6 +48,7 @@ import {
   type DeviceRank,
 } from "@/lib/device-status";
 import { useLiveStatsClients } from "@/hooks/use-stats-stream";
+import { LoggedUserName, isSessionDisconnected } from "@/components/logged-user-name";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -181,6 +182,19 @@ function HintedIcon({
 function updaterTooOldForLoggedUser(version: string | null | undefined): boolean {
   if (!version) return false;
   return compareVersions(version, LOGGED_USER_MIN_UPDATER_VERSION) === -1;
+}
+
+/** Tooltip for a disconnected session, dated when the API knows since when. */
+function disconnectedSessionHint(
+  client: UpdaterClient,
+  t: ReturnType<typeof useTranslations<"clients">>,
+  locale: string,
+): string {
+  return client.logged_user_disconnected_at
+    ? t("iconHint.sessionDisconnectedSince", {
+        date: new Date(client.logged_user_disconnected_at).toLocaleString(locale),
+      })
+    : t("iconHint.sessionDisconnected");
 }
 
 type SortState = { column: SortColumn; direction: "asc" | "desc" };
@@ -719,7 +733,11 @@ export function ClientsExplorer({
                           machine — it is the updater that needs replacing). */}
                       <TableCell className="hidden text-sm md:table-cell">
                         {client.logged_user?.trim() ? (
-                          revealed ? client.logged_user : maskUser(client.logged_user)
+                          <LoggedUserName
+                            name={revealed ? client.logged_user : maskUser(client.logged_user)}
+                            disconnected={isSessionDisconnected(client)}
+                            hint={disconnectedSessionHint(client, t, locale)}
+                          />
                         ) : updaterTooOldForLoggedUser(client.updater_version) ? (
                           <HintedIcon
                             icon={TriangleAlert}
@@ -979,7 +997,17 @@ function DeviceDetail({
           />
           <Field
             label={t("detail.loggedUser")}
-            value={revealed ? client.logged_user ?? "—" : maskUser(client.logged_user)}
+            value={
+              client.logged_user ? (
+                <LoggedUserName
+                  name={revealed ? client.logged_user : maskUser(client.logged_user)}
+                  disconnected={isSessionDisconnected(client)}
+                  hint={disconnectedSessionHint(client, t, locale)}
+                />
+              ) : (
+                maskUser(client.logged_user)
+              )
+            }
             // The API overwrites this on every sighting and never clears it, so
             // a machine idle for weeks still shows its last known user. Dating
             // it stops that reading as "logged on right now".
@@ -1067,7 +1095,7 @@ function Field({
   mono,
 }: {
   label: string;
-  value: string;
+  value: ReactNode;
   hint?: string;
   mono?: boolean;
 }) {

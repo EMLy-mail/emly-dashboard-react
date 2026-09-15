@@ -315,7 +315,9 @@
       "onlineInternal": "Online dalla rete interna",
       "onlinePublicIp": "Online, ma l'ultimo contatto arriva da un indirizzo IP pubblico",
       "noLoggedUser": "Nessun utente connesso su questa macchina",
-      "loggedUserUnknown": "Sconosciuto: EMLy Updater è precedente alla {version} e non riporta l'utente loggato"
+      "loggedUserUnknown": "Sconosciuto: EMLy Updater è precedente alla {version} e non riporta l'utente loggato",
+      "sessionDisconnected": "Sessione ancora aperta, ma l'utente al momento è disconnesso",
+      "sessionDisconnectedSince": "Sessione ancora aperta, ma l'utente è disconnesso dal {date}"
     },
     "rank": {
       "ok": "OK",
