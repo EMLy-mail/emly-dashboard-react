@@ -1,18 +1,8 @@
 "use client";
 
 import { Unplug } from "lucide-react";
-import type { UpdaterClient } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-
-/**
- * True when the user is still logged on but no client is attached to their
- * session - typically an RDP window closed without signing out. The account
- * is still the machine's user, just not someone who is at it right now.
- */
-export function isSessionDisconnected(client: Pick<UpdaterClient, "logged_user_state">): boolean {
-  return client.logged_user_state === "disconnected";
-}
 
 /**
  * The logged-user string, marked when its session is disconnected: an

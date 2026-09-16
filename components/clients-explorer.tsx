@@ -40,6 +40,7 @@ import {
   assessDevice,
   compareIps,
   compareVersions,
+  isSessionDisconnected,
   maskIp,
   maskSerial,
   maskUser,
@@ -48,7 +49,7 @@ import {
   type DeviceRank,
 } from "@/lib/device-status";
 import { useLiveStatsClients } from "@/hooks/use-stats-stream";
-import { LoggedUserName, isSessionDisconnected } from "@/components/logged-user-name";
+import { LoggedUserName } from "@/components/logged-user-name";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";

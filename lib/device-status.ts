@@ -178,6 +178,15 @@ export function isDomainJoined(adDomain: string | null | undefined): boolean {
   return domain.toUpperCase() !== "WORKGROUP";
 }
 
+/**
+ * True when the user is still logged on but no client is attached to their
+ * session - typically an RDP window closed without signing out. The account
+ * is still the machine's user, just not someone who is at it right now.
+ */
+export function isSessionDisconnected(client: Pick<UpdaterClient, "logged_user_state">): boolean {
+  return client.logged_user_state === "disconnected";
+}
+
 // ── Bans ───────────────────────────────────────────────────────────────────
 
 /**

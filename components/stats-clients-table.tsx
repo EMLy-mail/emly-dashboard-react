@@ -24,7 +24,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { LoggedUserName, isSessionDisconnected } from "@/components/logged-user-name";
+import { LoggedUserName } from "@/components/logged-user-name";
+import { isSessionDisconnected } from "@/lib/device-status";
 
 const PAGE_SIZE = 20;
 // Sentinel values for the select filters: Radix reserves "" as an item value.
