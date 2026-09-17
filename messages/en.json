@@ -346,6 +346,7 @@
       "loggedUser": "Logged user",
       "lastIp": "IP",
       "updaterVersion": "Updater version",
+      "emlyVersion": "EMLy version",
       "connected": "Connected",
       "lastSeen": "Last connection",
       "noData": "No device matches the filters.",

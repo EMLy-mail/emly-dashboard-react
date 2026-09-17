@@ -105,6 +105,7 @@ type SortColumn =
   | "loggedUser"
   | "lastIp"
   | "updaterVersion"
+  | "emlyVersion"
   | "createdAt";
 
 const MINUTE_MS = 60_000;
@@ -370,6 +371,14 @@ export function ClientsExplorer({
             if (!bv) return -1;
             // 1.6.1 must outrank 1.10.0 the way semver says, not the way text
             // comparison would; fall back to text only if either is unparseable.
+            return dir * (compareVersions(av, bv) ?? compareStrings(av, bv));
+          }
+          case "emlyVersion": {
+            const av = a.client.emly_version ?? "";
+            const bv = b.client.emly_version ?? "";
+            if (!av && !bv) return 0;
+            if (!av) return 1;
+            if (!bv) return -1;
             return dir * (compareVersions(av, bv) ?? compareStrings(av, bv));
           }
           case "connected":
@@ -638,6 +647,14 @@ export function ClientsExplorer({
                     {t("table.updaterVersion")}
                   </SortableHead>
                   <SortableHead
+                    column="emlyVersion"
+                    sort={sort}
+                    onSort={toggleSort}
+                    className="hidden lg:table-cell"
+                  >
+                    {t("table.emlyVersion")}
+                  </SortableHead>
+                  <SortableHead
                     column="createdAt"
                     sort={sort}
                     onSort={toggleSort}
@@ -651,7 +668,7 @@ export function ClientsExplorer({
               <TableBody>
                 {visible.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">
+                    <TableCell colSpan={9} className="py-8 text-center text-muted-foreground">
                       {t("table.noData")}
                     </TableCell>
                   </TableRow>
@@ -785,6 +802,25 @@ export function ClientsExplorer({
                         }
                       >
                         {client.updater_version ?? "—"}
+                      </TableCell>
+                      {/* Same gap coloring as the updater column, but keyed off
+                          appGap - the two builds move independently. */}
+                      <TableCell
+                        className={cn(
+                          "hidden font-mono text-sm lg:table-cell",
+                          assessment.appGap === "minor" || assessment.appGap === "major"
+                            ? RANK_STYLES.critical.text
+                            : assessment.appGap === "patch"
+                              ? RANK_STYLES.warning.text
+                              : "text-muted-foreground",
+                        )}
+                        title={
+                          assessment.appGap === "none" || assessment.appGap === "unknown"
+                            ? undefined
+                            : t("detail.latestIs", { version: latestAppVersion ?? "—" })
+                        }
+                      >
+                        {client.emly_version ?? "—"}
                       </TableCell>
                       <TableCell
                         className="hidden text-sm text-muted-foreground xl:table-cell"
