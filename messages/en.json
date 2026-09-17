@@ -350,8 +350,10 @@
       "lastSeen": "Last connection",
       "noData": "No device matches the filters.",
       "page": "Page {current} of {total}",
+      "first": "First",
       "previous": "Previous",
       "next": "Next",
+      "last": "Last",
       "createdAt": "Created"
     },
     "detail": {
@@ -379,7 +381,7 @@
       "adDomain": "AD domain",
       "upToDate": "Up to date.",
       "latestIs": "Latest available: {version}.",
-      "notReported": "Not reported by the API.",
+      "notReported": "Not reported by this client yet.",
       "openFull": "Open full record"
     }
   },
@@ -410,6 +412,7 @@
         "ip": "Filter by IP...",
         "loggedUser": "Filter by user...",
         "serial": "Filter by serial / product...",
+        "os": "Filter by operating system...",
         "allVersions": "All versions",
         "allDomains": "All AD domains",
         "allStatuses": "All statuses",
@@ -422,6 +425,8 @@
         "adDomain": "AD Domain",
         "loggedUser": "Logged User",
         "version": "Version",
+        "emlyVersion": "EMLy version",
+        "osVersion": "Operating system",
         "lastIp": "Last IP",
         "firstSeen": "First Seen",
         "lastSeen": "Last Seen",
@@ -430,8 +435,10 @@
         "offline": "Offline",
         "noData": "No clients found.",
         "page": "Page {current} of {total}",
+        "first": "First",
         "previous": "Previous",
-        "next": "Next"
+        "next": "Next",
+        "last": "Last"
       }
     },
     "clientDetail": {
@@ -446,6 +453,8 @@
         "serial": "Serial Number",
         "product": "Product Number",
         "version": "Version",
+        "emlyVersion": "EMLy App version",
+        "osVersion": "Operating system",
         "contact": "Contact",
         "lastIp": "Last IP",
         "firstSeen": "First Seen",

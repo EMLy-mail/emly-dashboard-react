@@ -545,6 +545,21 @@ export interface UpdaterClient {
   serial?: string | null;
   /** Vendor product/SKU number - on HP the `8XXXXXXX#ABZ` on the chassis label. */
   product?: string | null;
+  /**
+   * The Windows release the machine runs, as one human-readable string the
+   * updater renders from the registry: `Windows 11 24H2 Professional (Build
+   * 26100.4652)`. Opaque - never parse it, its shape is the updater's to
+   * change. Null for a client too old to report it.
+   */
+  os_version?: string | null;
+  /**
+   * The EMLy release installed on the machine, read from EMLy's own
+   * `config.ini` on every check-in. Null when EMLy is not installed, or when
+   * the updater is too old to report it - the two are indistinguishable here.
+   * This is not `updater_version`: the updater self-updates on its own
+   * schedule, so one current updater version spans several EMLy releases.
+   */
+  emly_version?: string | null;
   /** Revision of the remote config document this client last pulled. */
   config_revision?: number | null;
   /** When that pull happened - null for a client that has never fetched config. */

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
-import { ArrowDown, ArrowUp, ArrowUpDown, Search, X } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Search, X, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight } from "lucide-react";
 import type { UpdaterClient } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import {
@@ -48,6 +48,10 @@ interface Filters {
   // near-unique per machine, so a dropdown would list one entry per client.
   loggedUser: string;
   serial: string;
+  // Free text for a different reason: the OS string is shared across the
+  // fleet, but people search a fragment of it ("24H2", "Server", a build
+  // number), which a select over whole values cannot do.
+  os: string;
   version: string;
   adDomain: string;
   status: string;
@@ -58,6 +62,7 @@ const EMPTY_FILTERS: Filters = {
   ip: "",
   loggedUser: "",
   serial: "",
+  os: "",
   version: ANY,
   adDomain: ANY,
   status: ANY,
@@ -68,6 +73,8 @@ type SortColumn =
   | "adDomain"
   | "loggedUser"
   | "version"
+  | "emlyVersion"
+  | "osVersion"
   | "lastIp"
   | "status"
   | "firstSeen"
@@ -134,11 +141,13 @@ export function StatsClientsTable({ data: rawData, windowMinutes }: StatsClients
     // either the serial or the product number off the chassis label in front
     // of them and should not have to know which field it belongs to.
     const serial = filters.serial.trim().toLowerCase();
+    const os = filters.os.trim().toLowerCase();
 
     return data.filter((client) => {
       if (hostname && !client.hostname.toLowerCase().includes(hostname)) return false;
       if (ip && !(client.last_ip ?? "").toLowerCase().includes(ip)) return false;
       if (loggedUser && !(client.logged_user ?? "").toLowerCase().includes(loggedUser)) return false;
+      if (os && !(client.os_version ?? "").toLowerCase().includes(os)) return false;
       if (
         serial &&
         !(client.serial ?? "").toLowerCase().includes(serial) &&
@@ -173,6 +182,12 @@ export function StatsClientsTable({ data: rawData, windowMinutes }: StatsClients
           return dir * compareStrings(a.logged_user ?? "", b.logged_user ?? "");
         case "version":
           return dir * compareStrings(a.updater_version ?? "", b.updater_version ?? "");
+        // Numeric-aware, like every other string column here, so 1.10 sorts
+        // after 1.9 instead of before it.
+        case "emlyVersion":
+          return dir * compareStrings(a.emly_version ?? "", b.emly_version ?? "");
+        case "osVersion":
+          return dir * compareStrings(a.os_version ?? "", b.os_version ?? "");
         case "lastIp":
           return dir * compareStrings(a.last_ip ?? "", b.last_ip ?? "");
         case "status": {
@@ -200,6 +215,7 @@ export function StatsClientsTable({ data: rawData, windowMinutes }: StatsClients
     filters.ip !== "" ||
     filters.loggedUser !== "" ||
     filters.serial !== "" ||
+    filters.os !== "" ||
     filters.version !== ANY ||
     filters.adDomain !== ANY ||
     filters.status !== ANY;
@@ -251,6 +267,16 @@ export function StatsClientsTable({ data: rawData, windowMinutes }: StatsClients
             value={filters.serial}
             className="pl-8"
             onChange={(e) => setFilter({ serial: e.target.value })}
+          />
+        </div>
+
+        <div className="relative w-full sm:w-48">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder={t("filters.os")}
+            value={filters.os}
+            className="pl-8"
+            onChange={(e) => setFilter({ os: e.target.value })}
           />
         </div>
 
@@ -317,6 +343,12 @@ export function StatsClientsTable({ data: rawData, windowMinutes }: StatsClients
               <SortableTableHead column="version" sort={sort} onSort={toggleSort}>
                 {t("table.version")}
               </SortableTableHead>
+              <SortableTableHead column="emlyVersion" sort={sort} onSort={toggleSort}>
+                {t("table.emlyVersion")}
+              </SortableTableHead>
+              <SortableTableHead column="osVersion" sort={sort} onSort={toggleSort}>
+                {t("table.osVersion")}
+              </SortableTableHead>
               <SortableTableHead column="lastIp" sort={sort} onSort={toggleSort}>
                 {t("table.lastIp")}
               </SortableTableHead>
@@ -334,7 +366,7 @@ export function StatsClientsTable({ data: rawData, windowMinutes }: StatsClients
           <TableBody>
             {visible.length === 0 && (
               <TableRow>
-                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
                   {t("table.noData")}
                 </TableCell>
               </TableRow>
@@ -367,6 +399,12 @@ export function StatsClientsTable({ data: rawData, windowMinutes }: StatsClients
                     )}
                   </TableCell>
                   <TableCell className="font-mono text-sm">{client.updater_version ?? "—"}</TableCell>
+                  <TableCell className="font-mono text-sm">{client.emly_version ?? "—"}</TableCell>
+                  {/* Wrapped rather than truncated: the tail of the string is
+                      the build number, which is the part being looked up. */}
+                  <TableCell className="text-sm text-muted-foreground">
+                    {client.os_version ?? "—"}
+                  </TableCell>
                   <TableCell className="font-mono text-sm">{client.last_ip ?? "—"}</TableCell>
                   <TableCell>
                     <Badge variant={online ? "outline" : "secondary"}>
@@ -396,8 +434,18 @@ export function StatsClientsTable({ data: rawData, windowMinutes }: StatsClients
               variant="outline"
               size="sm"
               disabled={currentPage <= 1}
+              onClick={() => setPage(1)}
+            >
+              <ChevronsLeft data-icon="inline-start" />
+              {t("table.first")}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage <= 1}
               onClick={() => setPage(currentPage - 1)}
             >
+              <ChevronLeft data-icon="inline-start" />
               {t("table.previous")}
             </Button>
             <Button
@@ -407,6 +455,16 @@ export function StatsClientsTable({ data: rawData, windowMinutes }: StatsClients
               onClick={() => setPage(currentPage + 1)}
             >
               {t("table.next")}
+              <ChevronRight data-icon="inline-end" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage >= totalPages}
+              onClick={() => setPage(totalPages)}
+            >
+              {t("table.last")}
+              <ChevronsRight data-icon="inline-end" />
             </Button>
           </div>
         </div>

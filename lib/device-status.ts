@@ -239,10 +239,11 @@ export interface AssessInput {
   /** `stableVersion` from the EMLy app manifest. */
   latestAppVersion: string | null;
   /**
-   * Installed EMLy App build. The stats API does not report this today (see
-   * `UpdaterEvent.product`), so callers pass null and the app-version rules
-   * sit out rather than guessing — wiring a real value here is the only
-   * change needed once the API carries it.
+   * Installed EMLy App build, from `client.emly_version`. Kept as its own
+   * input rather than read off the client so a caller can score a machine
+   * against a version it does not carry in that field yet; pass null and the
+   * app-version rules sit out instead of guessing, which is what a client too
+   * old to report it (or one with EMLy not installed) amounts to.
    */
   appVersion: string | null;
   dcLookupMap: DcLookupMap | null;

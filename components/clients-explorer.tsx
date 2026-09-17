@@ -33,7 +33,11 @@ import {
   X,
   Network,
   Globe,
-  GlobeOff
+  GlobeOff,
+  ChevronsLeft,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsRight
 } from "lucide-react";
 import type { Ban, UpdaterClient } from "@/lib/api";
 import {
@@ -291,10 +295,12 @@ export function ClientsExplorer({
           bans,
           latestUpdaterVersion,
           latestAppVersion,
-          // Not reported per client by the stats API today - see
-          // AssessInput.appVersion. Passing null keeps the app-version rules
-          // inert instead of inventing a verdict.
-          appVersion: null,
+          // Reported per client since updater 1.6.3 (X-EMLy-AppVersion). A
+          // machine that does not send it - an older updater, or one where
+          // EMLy is not installed - still passes null here, which keeps the
+          // app-version rules inert for that row instead of scoring it
+          // against a version nobody reported.
+          appVersion: client.emly_version ?? null,
           dcLookupMap,
           windowMinutes,
           now,
@@ -329,6 +335,8 @@ export function ClientsExplorer({
           client.serial,
           client.product,
           client.updater_version,
+          client.emly_version,
+          client.os_version,
         ].some((field) => (field ?? "").toLowerCase().includes(needle));
       })
       .sort((a, b) => {
@@ -802,8 +810,18 @@ export function ClientsExplorer({
                   variant="outline"
                   size="sm"
                   disabled={currentPage <= 1}
+                  onClick={() => setPage(1)}
+                >
+                  <ChevronsLeft data-icon="inline-start" />
+                  {t("table.first")}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage <= 1}
                   onClick={() => setPage(currentPage - 1)}
                 >
+                  <ChevronLeft data-icon="inline-start" />
                   {t("table.previous")}
                 </Button>
                 <Button
@@ -813,6 +831,16 @@ export function ClientsExplorer({
                   onClick={() => setPage(currentPage + 1)}
                 >
                   {t("table.next")}
+                  <ChevronRight data-icon="inline-end" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setPage(totalPages)}
+                >
+                  {t("table.last")}
+                  <ChevronsRight data-icon="inline-end" />
                 </Button>
               </div>
             </div>
@@ -1026,7 +1054,13 @@ function DeviceDetail({
           />
           <Field label={t("detail.lastSeen")} value={new Date(client.last_seen_at).toLocaleString(locale)} />
           <Field label={t("detail.createdAt")} value={new Date(client.first_seen_at).toLocaleString(locale)} />
-          <Field label={t("detail.os")} value="—" hint={t("detail.notReported")} />
+          {/* Reported since updater 1.6.3; the hint tells a machine that has
+              not said yet from one whose value is simply blank. */}
+          <Field
+            label={t("detail.os")}
+            value={client.os_version ?? "—"}
+            hint={client.os_version ? undefined : t("detail.notReported")}
+          />
           <Field
             label={t("detail.updaterVersion")}
             value={client.updater_version ?? "—"}
@@ -1039,14 +1073,23 @@ function DeviceDetail({
                   : undefined
             }
           />
+          {/* The EMLy build on the machine, not this updater's own - the two
+              move independently, so they sit as separate fields and the hint
+              names the release the app manifest is currently serving. */}
           <Field
             label={t("detail.appVersion")}
-            value="—"
+            value={client.emly_version ?? "—"}
             mono
             hint={
-              latestAppVersion
-                ? `${t("detail.notReported")} · ${t("detail.latestIs", { version: latestAppVersion })}`
-                : t("detail.notReported")
+              !client.emly_version
+                ? latestAppVersion
+                  ? `${t("detail.notReported")} · ${t("detail.latestIs", { version: latestAppVersion })}`
+                  : t("detail.notReported")
+                : assessment.appGap === "none"
+                  ? t("detail.upToDate")
+                  : latestAppVersion
+                    ? t("detail.latestIs", { version: latestAppVersion })
+                    : undefined
             }
           />
           <Field

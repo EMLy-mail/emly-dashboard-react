@@ -173,6 +173,17 @@ export default async function StatsClientDetailPage({ params }: PageProps) {
             <p className="text-xs font-medium text-muted-foreground">{t("info.version")}</p>
             <p className="font-mono font-medium">{client.updater_version ?? "—"}</p>
           </div>
+          {/* The EMLy build on the machine, separate from the updater's own
+              version above it: the updater self-updates on its own schedule,
+              so the two say different things about the same machine. */}
+          <div>
+            <p className="text-xs font-medium text-muted-foreground">{t("info.emlyVersion")}</p>
+            <p className="font-mono font-medium">{client.emly_version ?? "—"}</p>
+          </div>
+          <div>
+            <p className="text-xs font-medium text-muted-foreground">{t("info.osVersion")}</p>
+            <p className="font-medium">{client.os_version ?? "—"}</p>
+          </div>
           <div>
             <p className="text-xs font-medium text-muted-foreground">{t("info.contact")}</p>
             <p className="font-medium">{client.contact ?? "—"}</p>

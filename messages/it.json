@@ -350,8 +350,10 @@
       "lastSeen": "Ultima connessione",
       "noData": "Nessun dispositivo corrisponde ai filtri.",
       "page": "Pagina {current} di {total}",
+      "first": "Prima",
       "previous": "Precedente",
       "next": "Successivo",
+      "last": "Ultima",
       "createdAt": "Data creazione"
     },
     "detail": {
@@ -379,7 +381,7 @@
       "adDomain": "Dominio AD",
       "upToDate": "Aggiornata.",
       "latestIs": "Ultima disponibile: {version}.",
-      "notReported": "Non riportato dall'API.",
+      "notReported": "Non ancora riportato da questo client.",
       "openFull": "Apri scheda completa"
     }
   },
@@ -410,6 +412,7 @@
         "ip": "Filtra per IP...",
         "loggedUser": "Filtra per utente...",
         "serial": "Filtra per seriale o product...",
+        "os": "Filtra per sistema operativo...",
         "allVersions": "Tutte le versioni",
         "allDomains": "Tutti i domini AD",
         "allStatuses": "Tutti gli stati",
@@ -422,6 +425,8 @@
         "adDomain": "Dominio AD",
         "loggedUser": "Utente collegato",
         "version": "Versione",
+        "emlyVersion": "Versione EMLy",
+        "osVersion": "Sistema operativo",
         "lastIp": "Ultimo IP",
         "firstSeen": "Prima Rilevazione",
         "lastSeen": "Ultima Rilevazione",
@@ -430,8 +435,10 @@
         "offline": "Offline",
         "noData": "Nessun client trovato.",
         "page": "Pagina {current} di {total}",
+        "first": "Prima",
         "previous": "Precedente",
-        "next": "Successivo"
+        "next": "Successivo",
+        "last": "Ultima"
       }
     },
     "clientDetail": {
@@ -446,6 +453,8 @@
         "serial": "Numero di serie",
         "product": "Product number",
         "version": "Versione",
+        "emlyVersion": "Versione EMLy App",
+        "osVersion": "Sistema operativo",
         "contact": "Contatto",
         "lastIp": "Ultimo IP",
         "firstSeen": "Prima Rilevazione",
