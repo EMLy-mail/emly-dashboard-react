@@ -25,15 +25,20 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LoggedUserName } from "@/components/logged-user-name";
-import { isSessionDisconnected } from "@/lib/device-status";
+import { PresenceDot } from "@/components/presence-dot";
+import { isSessionDisconnected, presenceState } from "@/lib/device-status";
 
 const PAGE_SIZE = 20;
 // Sentinel values for the select filters: Radix reserves "" as an item value.
 const ANY = "__any__";
 const UNKNOWN = "__unknown__";
 
+// "Online" here means either signal fired: presenceState already prefers the
+// live WebSocket bit over the last_seen_at estimate whenever both apply, so
+// filtering/sorting stay a single boolean while each row separately renders
+// which of the two it actually was (see PresenceDot below).
 function isOnlineAt(client: UpdaterClient, now: number, windowMinutes: number) {
-  return now - new Date(client.last_seen_at).getTime() <= windowMinutes * 60_000;
+  return presenceState(client, now, windowMinutes) !== "offline";
 }
 
 interface StatsClientsTableProps {
@@ -372,7 +377,8 @@ export function StatsClientsTable({ data: rawData, windowMinutes }: StatsClients
               </TableRow>
             )}
             {visible.map((client) => {
-              const online = isOnlineAt(client, now, windowMinutes);
+              const presence = presenceState(client, now, windowMinutes);
+              const online = presence !== "offline";
               return (
                 <TableRow key={client.id}>
                   <TableCell>
@@ -407,9 +413,19 @@ export function StatsClientsTable({ data: rawData, windowMinutes }: StatsClients
                   </TableCell>
                   <TableCell className="font-mono text-sm">{client.last_ip ?? "—"}</TableCell>
                   <TableCell>
-                    <Badge variant={online ? "outline" : "secondary"}>
-                      {online ? t("table.online") : t("table.offline")}
-                    </Badge>
+                    <div className="flex items-center gap-1.5">
+                      <Badge variant={online ? "outline" : "secondary"}>
+                        {online ? t("table.online") : t("table.offline")}
+                      </Badge>
+                      <PresenceDot
+                        state={presence}
+                        hint={
+                          presence === "live"
+                            ? tHint("presenceLive")
+                            : tHint("presenceEstimated", { minutes: windowMinutes })
+                        }
+                      />
+                    </div>
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {new Date(client.first_seen_at).toLocaleString()}

@@ -317,7 +317,9 @@
       "noLoggedUser": "Nobody is signed in on this machine",
       "loggedUserUnknown": "Unknown: EMLy Updater is older than {version} and does not report the logged user",
       "sessionDisconnected": "Session still open, but the user is currently disconnected",
-      "sessionDisconnectedSince": "Session still open, but the user has been disconnected since {date}"
+      "sessionDisconnectedSince": "Session still open, but the user has been disconnected since {date}",
+      "presenceLive": "Online right now: an active presence WebSocket connection",
+      "presenceEstimated": "Online (estimated): last contact within {minutes} minutes, no live connection"
     },
     "rank": {
       "ok": "OK",
