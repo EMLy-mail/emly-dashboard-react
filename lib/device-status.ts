@@ -223,6 +223,8 @@ export interface DeviceAssessment {
   /** Every rule that fired, in the order the rank was decided. */
   reasons: DeviceReason[];
   online: boolean;
+  /** Which of the two signals `online` is actually resting on - see `presenceState`. */
+  presence: PresenceState;
   domainJoined: boolean;
   internalIp: boolean;
   dcSites: string[];
@@ -253,8 +255,41 @@ export interface AssessInput {
   now: number;
 }
 
-export function isOnlineAt(client: UpdaterClient, now: number, windowMinutes: number): boolean {
+export function isOnlineAt(
+  client: Pick<UpdaterClient, "last_seen_at">,
+  now: number,
+  windowMinutes: number,
+): boolean {
   return now - new Date(client.last_seen_at).getTime() <= windowMinutes * 60_000;
+}
+
+/**
+ * Three states, not a boolean, because "online" has always meant two
+ * different things this fleet conflates: an estimate from the last poll
+ * (`last_seen_at` inside `windowMinutes`, up to N minutes stale by
+ * construction) and, since the client's presence WebSocket
+ * (`GET /v2/client/ws`), a fact reported in real time. `live` beats
+ * `estimated` whenever both would apply - the poll can be temporarily behind
+ * a machine whose WS connection is already up (a resumed connection after a
+ * brief drop, say), never the other way around, so there is no case where
+ * trusting the live signal over the estimate is the wrong call.
+ *
+ * `estimated` therefore does not mean "not live" - it means "no live signal
+ * to go on", which covers three real situations this fleet has today and
+ * will keep having for a while: a machine on an updater built before this
+ * channel existed, a site whose remote-config document hasn't turned
+ * `clientWs.enabled` on yet, and the up-to-`windowMinutes` lag between an API
+ * restart (which drops every open connection) and a machine reconnecting.
+ */
+export type PresenceState = "live" | "estimated" | "offline";
+
+export function presenceState(
+  client: Pick<UpdaterClient, "online" | "last_seen_at">,
+  now: number,
+  windowMinutes: number,
+): PresenceState {
+  if (client.online) return "live";
+  return isOnlineAt(client, now, windowMinutes) ? "estimated" : "offline";
 }
 
 /**
@@ -271,7 +306,8 @@ export function isOnlineAt(client: UpdaterClient, now: number, windowMinutes: nu
 export function assessDevice(input: AssessInput): DeviceAssessment {
   const { client, bans, windowMinutes, now } = input;
 
-  const online = isOnlineAt(client, now, windowMinutes);
+  const presence = presenceState(client, now, windowMinutes);
+  const online = presence !== "offline";
   const domainJoined = isDomainJoined(client.ad_domain);
   const internalIp = isInternalIp(client.last_ip);
   const dcSites = matchDcSites(client.last_ip, input.dcLookupMap);
@@ -310,7 +346,7 @@ export function assessDevice(input: AssessInput): DeviceAssessment {
   if (updaterGap === "unknown") reasons.push("updaterVersionUnknown");
   if (appGap === "unknown") reasons.push("appVersionUnknown");
 
-  return { rank, reasons, online, domainJoined, internalIp, dcSites, bans: matchedBans, updaterGap, appGap };
+  return { rank, reasons, online, presence, domainJoined, internalIp, dcSites, bans: matchedBans, updaterGap, appGap };
 }
 
 // ── Masking ────────────────────────────────────────────────────────────────

@@ -564,6 +564,19 @@ export interface UpdaterClient {
   config_revision?: number | null;
   /** When that pull happened - null for a client that has never fetched config. */
   config_fetched_at?: string | null;
+  /**
+   * Live presence from the API's in-memory hub (`internal/presencehub`): true
+   * exactly while this client holds an open `GET /v2/client/ws` connection.
+   * Always present in the API's JSON (`json:"online"`, no `omitempty`), so
+   * this is never undefined for a response from an upgraded API - but it is
+   * still `false`, not "unknown", for a client that has never opened the
+   * channel: an updater built before this field existed, or one whose site
+   * hasn't turned `clientWs.enabled` on. `lib/device-status.ts`'s
+   * `presenceState` is what turns this bit and `last_seen_at` into the
+   * three-state signal the UI shows - never read this field alone to decide
+   * whether a machine is reachable.
+   */
+  online: boolean;
 }
 
 // ── Bans ───────────────────────────────────────────────────────────────────

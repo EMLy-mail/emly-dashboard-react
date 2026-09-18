@@ -54,6 +54,7 @@ import {
 } from "@/lib/device-status";
 import { useLiveStatsClients } from "@/hooks/use-stats-stream";
 import { LoggedUserName } from "@/components/logged-user-name";
+import { PresenceDot } from "@/components/presence-dot";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -698,13 +699,23 @@ export function ClientsExplorer({
                           would wipe a row-level border-l and leave the bottom
                           row of every page unmarked. */}
                       <TableCell className={cn("border-l-2", style.bar)}>
-                        <ConnectionIcon
-                          className={cn("h-4 w-4", style.text)}
-                          role="img"
-                          aria-label={`${t(`rank.${assessment.rank}`)} · ${
-                            assessment.online ? t("online") : t("offline")
-                          }`}
-                        />
+                        <div className="flex items-center gap-1.5">
+                          <ConnectionIcon
+                            className={cn("h-4 w-4", style.text)}
+                            role="img"
+                            aria-label={`${t(`rank.${assessment.rank}`)} · ${
+                              assessment.online ? t("online") : t("offline")
+                            }`}
+                          />
+                          <PresenceDot
+                            state={assessment.presence}
+                            hint={
+                              assessment.presence === "live"
+                                ? t("iconHint.presenceLive")
+                                : t("iconHint.presenceEstimated", { minutes: windowMinutes })
+                            }
+                          />
+                        </div>
                       </TableCell>
                       <TableCell>
                         <button
