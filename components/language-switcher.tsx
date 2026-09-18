@@ -10,7 +10,7 @@ export function LanguageSwitcher() {
   const t = useTranslations("sidebar");
 
   function toggle() {
-    const next = locale === "en" ? "it" : "en";
+    const next = locale === "it" ? "en" : "it";
     document.cookie = `locale=${next}; path=/; max-age=31536000; SameSite=Lax`;
     router.refresh();
   }

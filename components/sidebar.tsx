@@ -18,11 +18,13 @@ export function Sidebar({ user }: { user: AuthUser }) {
   const { theme, setTheme } = useTheme();
   const t = useTranslations("sidebar");
   const [open, setOpen] = useState(false);
+  const [prevPathname, setPrevPathname] = useState(pathname);
 
   // Close the mobile drawer on navigation (covers back/forward, not just link clicks).
-  useEffect(() => {
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname);
     setOpen(false);
-  }, [pathname]);
+  }
 
   // Prevent the page behind the drawer from scrolling while it's open on mobile.
   useEffect(() => {

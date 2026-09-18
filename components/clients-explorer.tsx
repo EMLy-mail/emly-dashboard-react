@@ -92,6 +92,7 @@ const CLOCK_REFRESH_MS = 30_000;
 // simply never sends the field, so its blank logged-user cell says nothing
 // about the machine and has to be read as "unknown", not "nobody".
 const LOGGED_USER_MIN_UPDATER_VERSION = "1.6.1";
+const EMLY_VERSION_MIN_UPDATER_VERSION = "1.6.3";
 // Panel width bounds, in px. The floor is what the widest label in the
 // detail list needs before it starts wrapping mid-word.
 const MIN_PANEL_WIDTH = 300;
@@ -189,6 +190,11 @@ function HintedIcon({
 function updaterTooOldForLoggedUser(version: string | null | undefined): boolean {
   if (!version) return false;
   return compareVersions(version, LOGGED_USER_MIN_UPDATER_VERSION) === -1;
+}
+
+function updaterTooOldForEmlyVersion(version: string | null | undefined): boolean {
+  if (!version) return false;
+  return compareVersions(version, EMLY_VERSION_MIN_UPDATER_VERSION) === -1;
 }
 
 /** Tooltip for a disconnected session, dated when the API knows since when. */
@@ -831,7 +837,17 @@ export function ClientsExplorer({
                             : t("detail.latestIs", { version: latestAppVersion ?? "—" })
                         }
                       >
-                        {client.emly_version ?? "—"}
+                        {updaterTooOldForEmlyVersion(client.updater_version) ? (
+                          <HintedIcon
+                            icon={TriangleAlert}
+                            hint={t("iconHint.emlyVersionUnknown", {
+                              version: EMLY_VERSION_MIN_UPDATER_VERSION,
+                            })}
+                            className="text-red-600 dark:text-red-500"
+                          />
+                        ) : (
+                          client.emly_version ?? "—"
+                        )}
                       </TableCell>
                       <TableCell
                         className="hidden text-sm text-muted-foreground xl:table-cell"
