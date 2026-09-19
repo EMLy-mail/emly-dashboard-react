@@ -419,11 +419,13 @@ export function StatsClientsTable({ data: rawData, windowMinutes }: StatsClients
                       </Badge>
                       <PresenceDot
                         state={presence}
-                        hint={
+                        hintOkWS={
                           presence === "live"
                             ? tHint("presenceLive")
                             : tHint("presenceEstimated", { minutes: windowMinutes })
                         }
+                        hintNoWS={t("iconHint.presenceNoWS")}
+                        updaterVersion={client.updater_version ?? ""}
                       />
                     </div>
                   </TableCell>
