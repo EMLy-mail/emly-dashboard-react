@@ -715,11 +715,13 @@ export function ClientsExplorer({
                           />
                           <PresenceDot
                             state={assessment.presence}
-                            hint={
+                            hintOkWS={
                               assessment.presence === "live"
                                 ? t("iconHint.presenceLive")
                                 : t("iconHint.presenceEstimated", { minutes: windowMinutes })
                             }
+                            hintNoWS={t("iconHint.presenceNoWS")}
+                            updaterVersion={client.updater_version ?? ""}
                           />
                         </div>
                       </TableCell>

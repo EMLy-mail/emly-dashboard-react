@@ -17,28 +17,33 @@ import type { PresenceState } from "@/lib/device-status";
  * that immediacy legible at a glance, next to a plain filled dot for
  * "estimated" that has no such claim to make.
  */
-export function PresenceDot({ state, hint }: { state: PresenceState; hint: string }) {
+export function PresenceDot({ state, hintOkWS, updaterVersion, hintNoWS }: { state: PresenceState; hintOkWS: string, updaterVersion: string, hintNoWS: string }) {
   if (state === "offline") return null;
 
   const live = state === "live";
+  const pulse = live || (state === "estimated" && updaterVersion === "1.7.0");
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <span className="relative flex h-2 w-2 shrink-0 rounded-xs outline-none focus-visible:ring-2 focus-visible:ring-ring" tabIndex={0}>
-          {live && (
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
-          )}
+          <span
+            className={cn(
+              "absolute inline-flex h-full w-full rounded-full opacity-75",
+              pulse && "animate-ping",
+              live ? "bg-emerald-500" : "bg-yellow-500",
+            )}
+          />
           <span
             role="img"
-            aria-label={hint}
+            aria-label={live ? hintOkWS : hintNoWS}
             className={cn(
               "relative inline-flex h-2 w-2 rounded-full",
-              live ? "bg-emerald-500" : "bg-muted-foreground/40",
+              live ? "bg-emerald-500" : "bg-yellow-500",
             )}
           />
         </span>
       </TooltipTrigger>
-      <TooltipContent>{hint}</TooltipContent>
+      <TooltipContent>{live ? hintOkWS : hintNoWS}</TooltipContent>
     </Tooltip>
   );
 }

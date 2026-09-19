@@ -320,7 +320,8 @@
       "sessionDisconnected": "Sessione ancora aperta, ma l'utente al momento è disconnesso",
       "sessionDisconnectedSince": "Sessione ancora aperta, ma l'utente è disconnesso dal {date}",
       "presenceLive": "Online in tempo reale: connessione WebSocket di presenza attiva in questo momento",
-      "presenceEstimated": "Online stimato: ultimo contatto negli ultimi {minutes} minuti, nessuna connessione in tempo reale"
+      "presenceEstimated": "Online stimato: ultimo contatto negli ultimi {minutes} minuti, nessuna connessione in tempo reale",
+      "presenceNoWS": "Online, ma nessuna connessione WebSocket"
     },
     "rank": {
       "ok": "OK",
