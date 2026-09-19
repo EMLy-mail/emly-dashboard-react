@@ -31,13 +31,15 @@ export function CreateUserDialog() {
   const [role, setRole] = useState("user");
   const [state, formAction, isPending] = useActionState(createUserAction, initialState);
   const t = useTranslations("users");
+  const [lastHandledState, setLastHandledState] = useState(state);
 
-  useEffect(() => {
+  if (state !== lastHandledState) {
+    setLastHandledState(state);
     if (state.success) {
       setOpen(false);
       toast.success(t("createDialog.success"));
     }
-  }, [state.success, t]);
+  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
