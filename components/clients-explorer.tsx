@@ -706,6 +706,14 @@ export function ClientsExplorer({
                     {t("table.lastIp")}
                   </SortableHead>
                   <SortableHead
+                    column="os"
+                    sort={sort}
+                    onSort={toggleSort}
+                    className="hidden xl:table-cell"
+                  >
+                    {t("table.os")}
+                  </SortableHead>
+                  <SortableHead
                     column="updaterVersion"
                     sort={sort}
                     onSort={toggleSort}
@@ -720,14 +728,6 @@ export function ClientsExplorer({
                     className="hidden lg:table-cell"
                   >
                     {t("table.emlyVersion")}
-                  </SortableHead>
-                  <SortableHead
-                    column="os"
-                    sort={sort}
-                    onSort={toggleSort}
-                    className="hidden xl:table-cell"
-                  >
-                    {t("table.os")}
                   </SortableHead>
                   <SortableHead
                     column="createdAt"
@@ -870,6 +870,25 @@ export function ClientsExplorer({
                       <TableCell className="hidden font-mono text-sm lg:table-cell">
                         {revealed ? client.last_ip ?? "—" : maskIp(client.last_ip)}
                       </TableCell>
+                      <TableCell
+                        className="hidden text-sm text-muted-foreground xl:table-cell"
+                        title={client.os_version ?? undefined}
+                      >
+                        {!client.os_version && updaterTooOldForEmlyVersion(client.updater_version) ? (
+                          <HintedIcon
+                            icon={CircleQuestionMark}
+                            hint={t("iconHint.osUnknown", {
+                              version: EMLY_VERSION_MIN_UPDATER_VERSION,
+                            })}
+                            className="text-red-600 dark:text-red-500"
+                          />
+                        ) : (
+                          <div className="flex items-center gap-1.5">
+                            <OsIcon osVersion={client.os_version} />
+                            {shortOsLabel(client.os_version) ?? "—"}
+                          </div>
+                        )}
+                      </TableCell>
                       {/* Tinted by how far behind the build is - the same gap
                           that decides the rank, so a red version here explains
                           the red bar at the start of the row. */}
@@ -932,15 +951,6 @@ export function ClientsExplorer({
                             />
                           </div>
                         )}
-                      </TableCell>
-                      <TableCell
-                        className="hidden text-sm text-muted-foreground xl:table-cell"
-                        title={client.os_version ?? undefined}
-                      >
-                        <div className="flex items-center gap-1.5">
-                          <OsIcon osVersion={client.os_version} />
-                          {shortOsLabel(client.os_version) ?? "—"}
-                        </div>
                       </TableCell>
                       <TableCell
                         className="hidden text-sm text-muted-foreground xl:table-cell"

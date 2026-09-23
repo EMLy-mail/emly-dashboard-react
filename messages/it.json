@@ -321,6 +321,7 @@
       "loggedUserUnknown": "Sconosciuto: EMLy Updater è precedente alla {version} e non riporta l'utente loggato",
       "versionOutdatedCritical": "Versione di {name} molto obsoleta, funzionalità importanti sono mancanti e/o potrebbe smettere di funzionare",
       "versionOutdatedWarning": "Versione di {name} da aggiornare, alcune funzionalità sono impattate",
+      "osUnknown": "Sconosciuto: EMLy Updater è precedente alla {version} e non riporta il sistema operativo",
       "emlyVersionUnknown": "Sconosciuto: EMLy Updater è precedente alla {version} e non riporta la versione di EMLy",
       "sessionDisconnected": "Sessione ancora aperta, ma l'utente al momento è disconnesso",
       "sessionDisconnectedSince": "Sessione ancora aperta, ma l'utente è disconnesso dal {date}",
