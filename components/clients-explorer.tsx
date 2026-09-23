@@ -315,7 +315,8 @@ export function ClientsExplorer({
   const [activeRanks, setActiveRanks] = useState<DeviceRank[]>([...RANKS]);
   const [connection, setConnection] = useState<ConnectionFilter>(ANY);
   const [wsFilter, setWsFilter] = useState<WsFilter>(ANY);
-  const [sort, setSort] = useState<SortState | null>(null);
+  // Most recently seen first by default; the header arrow reflects it.
+  const [sort, setSort] = useState<SortState | null>({ column: "lastSeen", direction: "desc" });
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [collapsed, setCollapsed] = useState(false);
   const [panelWidth, setPanelWidth] = useState(DEFAULT_PANEL_WIDTH);
