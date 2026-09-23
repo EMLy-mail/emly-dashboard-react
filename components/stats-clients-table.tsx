@@ -27,6 +27,9 @@ import { Input } from "@/components/ui/input";
 import { LoggedUserName } from "@/components/logged-user-name";
 import { PresenceDot } from "@/components/presence-dot";
 import { isSessionDisconnected, presenceState } from "@/lib/device-status";
+import { formatDateTime } from "@/lib/format-date";
+import { shortOsLabel } from "@/lib/os-label";
+import { OsIcon } from "@/components/os-icon";
 
 const PAGE_SIZE = 20;
 // Sentinel values for the select filters: Radix reserves "" as an item value.
@@ -395,7 +398,7 @@ export function StatsClientsTable({ data: rawData, windowMinutes }: StatsClients
                         hint={
                           client.logged_user_disconnected_at
                             ? tHint("sessionDisconnectedSince", {
-                                date: new Date(client.logged_user_disconnected_at).toLocaleString(),
+                                date: formatDateTime(client.logged_user_disconnected_at),
                               })
                             : tHint("sessionDisconnected")
                         }
@@ -408,8 +411,11 @@ export function StatsClientsTable({ data: rawData, windowMinutes }: StatsClients
                   <TableCell className="font-mono text-sm">{client.emly_version ?? "—"}</TableCell>
                   {/* Wrapped rather than truncated: the tail of the string is
                       the build number, which is the part being looked up. */}
-                  <TableCell className="text-sm text-muted-foreground">
-                    {client.os_version ?? "—"}
+                  <TableCell className="text-sm text-muted-foreground" title={client.os_version ?? undefined}>
+                    <div className="flex items-center gap-1.5">
+                      <OsIcon osVersion={client.os_version} />
+                      {shortOsLabel(client.os_version) ?? "—"}
+                    </div>
                   </TableCell>
                   <TableCell className="font-mono text-sm">{client.last_ip ?? "—"}</TableCell>
                   <TableCell>
@@ -424,16 +430,16 @@ export function StatsClientsTable({ data: rawData, windowMinutes }: StatsClients
                             ? tHint("presenceLive")
                             : tHint("presenceEstimated", { minutes: windowMinutes })
                         }
-                        hintNoWS={t("iconHint.presenceNoWS")}
+                        hintNoWS={tHint("presenceNoWS")}
                         updaterVersion={client.updater_version ?? ""}
                       />
                     </div>
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {new Date(client.first_seen_at).toLocaleString()}
+                    {formatDateTime(client.first_seen_at)}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {new Date(client.last_seen_at).toLocaleString()}
+                    {formatDateTime(client.last_seen_at)}
                   </TableCell>
                 </TableRow>
               );

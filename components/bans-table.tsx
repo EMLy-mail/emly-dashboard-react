@@ -34,6 +34,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Search, Trash2, X } from "lucide-react";
+import { formatDateTime } from "@/lib/format-date";
 
 // Radix reserves "" as an item value, same sentinel the stats filters use.
 const ANY = "__any__";
@@ -148,7 +149,7 @@ export function BansTable({ bans, isAdmin }: { bans: Ban[]; isAdmin: boolean }) 
                   {ban.created_by ?? "—"}
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
-                  {new Date(ban.created_at).toLocaleString()}
+                  {formatDateTime(ban.created_at)}
                 </TableCell>
                 {isAdmin && (
                   <TableCell>

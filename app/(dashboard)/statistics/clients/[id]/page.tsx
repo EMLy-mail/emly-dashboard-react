@@ -18,6 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { formatDateTime } from "@/lib/format-date";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -142,7 +143,7 @@ export default async function StatsClientDetailPage({ params }: PageProps) {
                   hint={
                     client.logged_user_disconnected_at
                       ? tHint("sessionDisconnectedSince", {
-                          date: new Date(client.logged_user_disconnected_at).toLocaleString(),
+                          date: formatDateTime(client.logged_user_disconnected_at),
                         })
                       : tHint("sessionDisconnected")
                   }
@@ -157,7 +158,7 @@ export default async function StatsClientDetailPage({ params }: PageProps) {
                 it was observed keeps that from reading as "logged on now". */}
             {client.logged_user && (
               <p className="text-xs text-muted-foreground">
-                {t("info.loggedUserAsOf", { date: new Date(client.last_seen_at).toLocaleString() })}
+                {t("info.loggedUserAsOf", { date: formatDateTime(client.last_seen_at) })}
               </p>
             )}
           </div>
@@ -194,11 +195,11 @@ export default async function StatsClientDetailPage({ params }: PageProps) {
           </div>
           <div>
             <p className="text-xs font-medium text-muted-foreground">{t("info.firstSeen")}</p>
-            <p className="font-medium">{new Date(client.first_seen_at).toLocaleString()}</p>
+            <p className="font-medium">{formatDateTime(client.first_seen_at)}</p>
           </div>
           <div>
             <p className="text-xs font-medium text-muted-foreground">{t("info.lastSeen")}</p>
-            <p className="font-medium">{new Date(client.last_seen_at).toLocaleString()}</p>
+            <p className="font-medium">{formatDateTime(client.last_seen_at)}</p>
           </div>
         </CardContent>
       </Card>
@@ -231,7 +232,7 @@ export default async function StatsClientDetailPage({ params }: PageProps) {
                   <TableCell className="font-mono text-sm">{event.version ?? "—"}</TableCell>
                   <TableCell className="font-mono text-sm">{event.ip_address ?? "—"}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {new Date(event.created_at).toLocaleString()}
+                    {formatDateTime(event.created_at)}
                   </TableCell>
                 </TableRow>
               ))}

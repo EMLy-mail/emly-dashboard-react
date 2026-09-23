@@ -15,6 +15,7 @@ import {
   ArrowDown,
   Check,
   CircleAlert,
+  CircleQuestionMark,
   ArrowUp,
   ArrowUpDown,
   ArrowUpRight,
@@ -55,6 +56,8 @@ import {
 import { useLiveStatsClients } from "@/hooks/use-stats-stream";
 import { LoggedUserName } from "@/components/logged-user-name";
 import { PresenceDot } from "@/components/presence-dot";
+import { OsIcon } from "@/components/os-icon";
+import { shortOsLabel } from "@/lib/os-label";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -85,6 +88,7 @@ const ANY = "__any__";
 // combination that is neither "all" nor a single rank.
 const CUSTOM = "__custom__";
 type ConnectionFilter = "__any__" | "online" | "offline";
+type WsFilter = "__any__" | "connected" | "disconnected";
 // The online/offline split is time-based, so a list left open would slowly
 // drift out of date even while the stream keeps the rows themselves fresh.
 const CLOCK_REFRESH_MS = 30_000;
@@ -108,6 +112,7 @@ type SortColumn =
   | "lastIp"
   | "updaterVersion"
   | "emlyVersion"
+  | "os"
   | "createdAt";
 
 const MINUTE_MS = 60_000;
@@ -210,6 +215,33 @@ function disconnectedSessionHint(
     : t("iconHint.sessionDisconnected");
 }
 
+/**
+ * Triangle next to a version that is behind: red where the string itself is
+ * red (minor/major gap), amber where it is amber (patch gap). Nothing for an
+ * up-to-date or unreported version.
+ */
+function VersionGapIcon({
+  gap,
+  name,
+  latest,
+}: {
+  gap: DeviceAssessment["updaterGap"];
+  name: string;
+  latest: string | null;
+}) {
+  const t = useTranslations("clients");
+  if (gap !== "minor" && gap !== "major" && gap !== "patch") return null;
+  const critical = gap !== "patch";
+  const message = t(critical ? "iconHint.versionOutdatedCritical" : "iconHint.versionOutdatedWarning", { name });
+  return (
+    <HintedIcon
+      icon={TriangleAlert}
+      hint={`${message} · ${t("detail.latestIs", { version: latest ?? "—" })}`}
+      className={critical ? "text-red-600 dark:text-red-500" : "text-amber-600 dark:text-amber-400"}
+    />
+  );
+}
+
 type SortState = { column: SortColumn; direction: "asc" | "desc" };
 
 /** Empty values sort last whichever way the column is pointing. */
@@ -282,6 +314,7 @@ export function ClientsExplorer({
   const [query, setQuery] = useState("");
   const [activeRanks, setActiveRanks] = useState<DeviceRank[]>([...RANKS]);
   const [connection, setConnection] = useState<ConnectionFilter>(ANY);
+  const [wsFilter, setWsFilter] = useState<WsFilter>(ANY);
   const [sort, setSort] = useState<SortState | null>(null);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [collapsed, setCollapsed] = useState(false);
@@ -332,6 +365,12 @@ export function ClientsExplorer({
       .filter(({ assessment }) => {
         if (connection === ANY) return true;
         return connection === "online" ? assessment.online : !assessment.online;
+      })
+      .filter(({ assessment }) => {
+        if (wsFilter === ANY) return true;
+        // "live" is the presence WebSocket being up right now; "estimated"
+        // and "offline" both mean no WS connection.
+        return wsFilter === "connected" ? assessment.presence === "live" : assessment.presence !== "live";
       })
       .filter(({ client }) => {
         if (!needle) return true;
@@ -388,6 +427,8 @@ export function ClientsExplorer({
             if (!bv) return -1;
             return dir * (compareVersions(av, bv) ?? compareStrings(av, bv));
           }
+          case "os":
+            return dir * compareStrings(a.client.os_version ?? "", b.client.os_version ?? "");
           case "connected":
             return dir * (Number(a.assessment.online) - Number(b.assessment.online));
           case "lastSeen":
@@ -407,7 +448,7 @@ export function ClientsExplorer({
             return 0;
         }
       });
-  }, [scored, activeRanks, connection, query, sort]);
+  }, [scored, activeRanks, connection, wsFilter, query, sort]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -495,11 +536,13 @@ export function ClientsExplorer({
     setPage(1);
   }
 
-  const isFiltered = query !== "" || connection !== ANY || activeRanks.length !== RANKS.length;
+  const isFiltered =
+    query !== "" || connection !== ANY || wsFilter !== ANY || activeRanks.length !== RANKS.length;
 
   function resetFilters() {
     setQuery("");
     setConnection(ANY);
+    setWsFilter(ANY);
     setActiveRanks([...RANKS]);
     setPage(1);
   }
@@ -588,6 +631,23 @@ export function ClientsExplorer({
           </SelectContent>
         </Select>
 
+        <Select
+          value={wsFilter}
+          onValueChange={(v) => {
+            setWsFilter(v as WsFilter);
+            setPage(1);
+          }}
+        >
+          <SelectTrigger className="w-full sm:w-48">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ANY}>{t("filters.allWs")}</SelectItem>
+            <SelectItem value="connected">{t("filters.wsConnected")}</SelectItem>
+            <SelectItem value="disconnected">{t("filters.wsDisconnected")}</SelectItem>
+          </SelectContent>
+        </Select>
+
         {isFiltered && (
           <Button variant="ghost" size="sm" onClick={resetFilters}>
             <X className="h-4 w-4" />
@@ -662,6 +722,14 @@ export function ClientsExplorer({
                     {t("table.emlyVersion")}
                   </SortableHead>
                   <SortableHead
+                    column="os"
+                    sort={sort}
+                    onSort={toggleSort}
+                    className="hidden xl:table-cell"
+                  >
+                    {t("table.os")}
+                  </SortableHead>
+                  <SortableHead
                     column="createdAt"
                     sort={sort}
                     onSort={toggleSort}
@@ -675,7 +743,7 @@ export function ClientsExplorer({
               <TableBody>
                 {visible.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={9} className="py-8 text-center text-muted-foreground">
+                    <TableCell colSpan={10} className="py-8 text-center text-muted-foreground">
                       {t("table.noData")}
                     </TableCell>
                   </TableRow>
@@ -820,7 +888,14 @@ export function ClientsExplorer({
                             : t("detail.latestIs", { version: latestUpdaterVersion ?? "—" })
                         }
                       >
-                        {client.updater_version ?? "—"}
+                        <div className="flex items-center gap-1.5">
+                          {client.updater_version ?? "—"}
+                          <VersionGapIcon
+                            gap={assessment.updaterGap}
+                            name="EMLy Updater"
+                            latest={latestUpdaterVersion}
+                          />
+                        </div>
                       </TableCell>
                       {/* Same gap coloring as the updater column, but keyed off
                           appGap - the two builds move independently. */}
@@ -841,15 +916,31 @@ export function ClientsExplorer({
                       >
                         {updaterTooOldForEmlyVersion(client.updater_version) ? (
                           <HintedIcon
-                            icon={TriangleAlert}
+                            icon={CircleQuestionMark}
                             hint={t("iconHint.emlyVersionUnknown", {
                               version: EMLY_VERSION_MIN_UPDATER_VERSION,
                             })}
                             className="text-red-600 dark:text-red-500"
                           />
                         ) : (
-                          client.emly_version ?? "—"
+                          <div className="flex items-center gap-1.5">
+                            {client.emly_version ?? "—"}
+                            <VersionGapIcon
+                              gap={assessment.appGap}
+                              name="EMLy"
+                              latest={latestAppVersion}
+                            />
+                          </div>
                         )}
+                      </TableCell>
+                      <TableCell
+                        className="hidden text-sm text-muted-foreground xl:table-cell"
+                        title={client.os_version ?? undefined}
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <OsIcon osVersion={client.os_version} />
+                          {shortOsLabel(client.os_version) ?? "—"}
+                        </div>
                       </TableCell>
                       <TableCell
                         className="hidden text-sm text-muted-foreground xl:table-cell"

@@ -18,6 +18,7 @@ import { UpdatesTabs } from "@/components/updates-tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatDate } from "@/lib/format-date";
 
 export default async function UpdatesPage() {
   const t = await getTranslations("updates");
@@ -206,7 +207,7 @@ export default async function UpdatesPage() {
               <CardContent>
                 <p className="text-2xl font-bold">
                   {updaterManifest?.publishedAt
-                    ? new Date(updaterManifest.publishedAt).toLocaleDateString()
+                    ? formatDate(updaterManifest.publishedAt)
                     : "—"}
                 </p>
                 <p className="text-xs text-muted-foreground">

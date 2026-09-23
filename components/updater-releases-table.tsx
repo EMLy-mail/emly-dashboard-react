@@ -46,6 +46,7 @@ import {
   Pencil,
 } from "lucide-react";
 import { EditUpdaterReleaseDialog } from "@/components/edit-updater-release-dialog";
+import { formatDate } from "@/lib/format-date";
 
 interface UpdaterReleasesTableProps {
   releases: UpdaterRelease[];
@@ -135,7 +136,7 @@ export function UpdaterReleasesTable({
                   {release.sha256_checksum ? `${release.sha256_checksum.slice(0, 12)}…` : "—"}
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
-                  {new Date(release.published_at).toLocaleDateString()}
+                  {formatDate(release.published_at)}
                 </TableCell>
                 <TableCell>
                   {isAdmin && (

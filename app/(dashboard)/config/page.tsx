@@ -7,6 +7,7 @@ import { CreateConfigRevisionDialog } from "@/components/create-config-revision-
 import { ConfigPreviewDialog } from "@/components/config-preview-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { formatDateTime } from "@/lib/format-date";
 
 interface PageProps {
   searchParams: Promise<{ page?: string; status?: string }>;
@@ -73,7 +74,7 @@ export default async function ConfigPage({ searchParams }: PageProps) {
               </CardHeader>
               <CardContent>
                 <p className="text-2xl font-bold">
-                  {published.published_at ? new Date(published.published_at).toLocaleString() : "—"}
+                  {published.published_at ? formatDateTime(published.published_at) : "—"}
                 </p>
               </CardContent>
             </Card>

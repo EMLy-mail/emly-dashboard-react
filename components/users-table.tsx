@@ -34,6 +34,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { MoreHorizontal, Trash2, KeyRound, ToggleLeft, ToggleRight } from "lucide-react";
+import { formatDate } from "@/lib/format-date";
 
 export function UsersTable({ users, isAdmin }: { users: User[]; isAdmin: boolean }) {
   const [resetTarget, setResetTarget] = useState<User | null>(null);
@@ -95,7 +96,7 @@ export function UsersTable({ users, isAdmin }: { users: User[]; isAdmin: boolean
                   </Badge>
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
-                  {new Date(user.created_at).toLocaleDateString()}
+                  {formatDate(user.created_at)}
                 </TableCell>
                 <TableCell>
                   {isAdmin && (

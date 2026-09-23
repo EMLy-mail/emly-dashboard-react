@@ -38,6 +38,7 @@ import {
   FileCode,
   FileIcon,
 } from "lucide-react";
+import { formatDateTime } from "@/lib/format-date";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -287,11 +288,11 @@ export function BugReportDetail({ report, files, reportId, isAdmin }: Props) {
             <div className="text-sm space-y-1">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t("detail.created")}</span>
-                <span>{new Date(report.created_at).toLocaleString()}</span>
+                <span>{formatDateTime(report.created_at)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t("detail.updated")}</span>
-                <span>{new Date(report.updated_at).toLocaleString()}</span>
+                <span>{formatDateTime(report.updated_at)}</span>
               </div>
             </div>
           </CardContent>

@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { MoreHorizontal, ArrowUpCircle, Archive, AlertTriangle, Trash2, Pencil } from "lucide-react";
 import { EditReleaseDialog } from "@/components/edit-release-dialog";
+import { formatDate } from "@/lib/format-date";
 
 function ChannelBadges({ isStable, isBeta }: { isStable: boolean; isBeta: boolean }) {
   if (!isStable && !isBeta) return <Badge variant="outline">archived</Badge>;
@@ -132,7 +133,7 @@ export function ReleasesTable({ releases, isAdmin }: { releases: Release[]; isAd
                   {release.min_required_version ?? "—"}
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
-                  {new Date(release.released_at).toLocaleDateString()}
+                  {formatDate(release.released_at)}
                 </TableCell>
                 <TableCell>
                   {isAdmin && (

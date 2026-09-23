@@ -24,6 +24,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal, Trash2, Eye } from "lucide-react";
+import { formatDate } from "@/lib/format-date";
 
 interface BugReportsTableProps {
   data: BugReportListItem[] | null;
@@ -99,7 +100,7 @@ export function BugReportsTable({ data: rawData, totalPages, currentPage, search
                 </TableCell>
                 <TableCell>{report.file_count}</TableCell>
                 <TableCell className="text-sm text-muted-foreground">
-                  {new Date(report.created_at).toLocaleDateString()}
+                  {formatDate(report.created_at)}
                 </TableCell>
                 <TableCell>
                   <DropdownMenu>

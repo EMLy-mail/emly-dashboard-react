@@ -36,6 +36,7 @@ import {
 import { MoreHorizontal, Eye, UploadCloud, RotateCcw, Trash2 } from "lucide-react";
 import { ConfigRevisionViewDialog } from "@/components/config-revision-view-dialog";
 import { ConfigRollbackDialog } from "@/components/config-rollback-dialog";
+import { formatDateTime } from "@/lib/format-date";
 
 function StatusBadge({ status }: { status: RemoteConfigStatus }) {
   const t = useTranslations("config");
@@ -140,7 +141,7 @@ export function ConfigRevisionsTable({
                     {r.based_on != null ? `#${r.based_on}` : "—"}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {new Date(r.generated_at).toLocaleString()}
+                    {formatDateTime(r.generated_at)}
                   </TableCell>
                   <TableCell className="text-sm">{r.clients_on_revision}</TableCell>
                   <TableCell>
