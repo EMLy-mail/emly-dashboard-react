@@ -1005,10 +1005,6 @@ export interface ClientEventRecord {
   truncated?: boolean;
 }
 
-export function isClientCommandFinal(status: ClientCommandStatus): boolean {
-  return status === "done" || status === "failed" || status === "rejected" || status === "timeout";
-}
-
 const clientOpts = () => ({ requiresAdmin: true, requiresApi: false, baseUrl: clientBase() });
 
 export async function issueClientCommand(

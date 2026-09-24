@@ -15,13 +15,12 @@ import {
   Search,
   ShieldCheck,
 } from "lucide-react";
-import {
-  isClientCommandFinal,
-  type ClientCommandName,
-  type ClientCommandRecord,
-  type ClientCommandStatus,
-  type ClientEventRecord,
-  type UpdaterClient,
+import type {
+  ClientCommandName,
+  ClientCommandRecord,
+  ClientCommandStatus,
+  ClientEventRecord,
+  UpdaterClient,
 } from "@/lib/api";
 import {
   issueCommandAction,
@@ -77,6 +76,12 @@ const SAFE_COMMANDS: { name: ClientCommandName; icon: typeof Info }[] = [
   { name: "updater.manifest.check", icon: Download },
   { name: "apps.list_upgradable", icon: Package },
 ];
+
+// Defined here, not in lib/api.ts: that module is server-only, so a client
+// component may import types from it but never a value.
+function isClientCommandFinal(status: ClientCommandStatus): boolean {
+  return status === "done" || status === "failed" || status === "rejected" || status === "timeout";
+}
 
 function statusVariant(s: ClientCommandStatus): "default" | "secondary" | "destructive" | "outline" {
   switch (s) {
