@@ -8,7 +8,8 @@
       "statistics": "Statistics",
       "config": "Remote Config",
       "bans": "Bans",
-      "clients": "Clients"
+      "clients": "Clients",
+      "remote": "Remote control"
     },
     "signOut": "Sign out",
     "toggleTheme": "Toggle dark mode",
@@ -658,5 +659,71 @@
       "none": "none",
       "effectiveDocument": "Effective document"
     }
+  },
+  "remote": {
+    "title": "Remote control",
+    "description": "Send commands to machines that are connected right now over the client channel.",
+    "machines": {
+      "title": "Connected machines",
+      "search": "Search by name, user, IP...",
+      "empty": "No machine can take commands right now.",
+      "hidden": "{count, plural, one {# offline machine hidden} other {# offline machines hidden}}",
+      "tooOld": "{count, plural, one {# machine hidden: updater older than {version}} other {# machines hidden: updater older than {version}}}"
+    },
+    "selectPrompt": "Pick a machine on the left. Only machines connected over WebSocket with EMLy Updater {version} or newer can take commands.",
+    "connected": "Connected",
+    "disconnected": "Not connected",
+    "groups": {
+      "read": "Read-only",
+      "destructive": "Disruptive",
+      "destructiveHint": "These act on the user's machine. The client only runs them if its remote configuration allows it, and only over a secure (wss) connection."
+    },
+    "commands": {
+      "machineInfo": "Machine info",
+      "emlyManifest": "Check EMLy update",
+      "updaterManifest": "Check Updater update",
+      "appsUpgradable": "List app updates",
+      "serviceRestart": "Restart service",
+      "machineReboot": "Reboot PC"
+    },
+    "status": {
+      "sent": "Sent",
+      "acked": "Running",
+      "done": "Done",
+      "failed": "Failed",
+      "rejected": "Rejected",
+      "timeout": "Timed out"
+    },
+    "sent": "Command sent",
+    "errors": {
+      "offline": "The machine is no longer connected."
+    },
+    "history": {
+      "title": "Commands (this session)",
+      "empty": "No command sent to this machine yet.",
+      "result": "Result"
+    },
+    "events": {
+      "title": "Recent events",
+      "hint": "The last events the machine pushed. Kept in memory by the API, lost when it restarts.",
+      "empty": "No events.",
+      "refresh": "Refresh events",
+      "truncated": "truncated"
+    },
+    "restart": {
+      "title": "Restart the updater service?",
+      "description": "The EMLy Updater service on {host} will restart. It reconnects on its own within a few seconds."
+    },
+    "reboot": {
+      "title": "Reboot the PC?",
+      "description": "{host} will reboot. The user gets a countdown from Windows.",
+      "delay": "Delay (seconds)",
+      "whenActive": "If a user is logged on",
+      "warn": "Warn and reboot",
+      "skip": "Do not reboot",
+      "invalidDelay": "Delay must be a whole number from 0 to 3600."
+    },
+    "cancel": "Cancel",
+    "confirm": "Confirm"
   }
 }

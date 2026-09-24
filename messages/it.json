@@ -8,7 +8,8 @@
       "statistics": "Statistiche",
       "config": "Config Remota",
       "bans": "Ban",
-      "clients": "Client"
+      "clients": "Client",
+      "remote": "Controllo remoto"
     },
     "signOut": "Esci",
     "toggleTheme": "Cambia tema",
@@ -658,5 +659,71 @@
       "none": "nessuno",
       "effectiveDocument": "Documento effettivo"
     }
+  },
+  "remote": {
+    "title": "Controllo remoto",
+    "description": "Invia comandi alle macchine connesse in questo momento sul canale client.",
+    "machines": {
+      "title": "Macchine connesse",
+      "search": "Cerca per nome, utente, IP...",
+      "empty": "Nessuna macchina può ricevere comandi al momento.",
+      "hidden": "{count, plural, one {# macchina offline nascosta} other {# macchine offline nascoste}}",
+      "tooOld": "{count, plural, one {# macchina nascosta: updater precedente alla {version}} other {# macchine nascoste: updater precedente alla {version}}}"
+    },
+    "selectPrompt": "Scegli una macchina a sinistra. Ricevono comandi solo le macchine connesse via WebSocket con EMLy Updater {version} o superiore.",
+    "connected": "Connessa",
+    "disconnected": "Non connessa",
+    "groups": {
+      "read": "Sola lettura",
+      "destructive": "Impattanti",
+      "destructiveHint": "Agiscono sulla macchina dell'utente. Il client li esegue solo se la sua configurazione remota lo consente, e solo su connessione sicura (wss)."
+    },
+    "commands": {
+      "machineInfo": "Info macchina",
+      "emlyManifest": "Controlla update EMLy",
+      "updaterManifest": "Controlla update Updater",
+      "appsUpgradable": "Elenca update app",
+      "serviceRestart": "Riavvia servizio",
+      "machineReboot": "Riavvia PC"
+    },
+    "status": {
+      "sent": "Inviato",
+      "acked": "In esecuzione",
+      "done": "Completato",
+      "failed": "Fallito",
+      "rejected": "Rifiutato",
+      "timeout": "Scaduto"
+    },
+    "sent": "Comando inviato",
+    "errors": {
+      "offline": "La macchina non è più connessa."
+    },
+    "history": {
+      "title": "Comandi (questa sessione)",
+      "empty": "Nessun comando inviato a questa macchina.",
+      "result": "Risultato"
+    },
+    "events": {
+      "title": "Eventi recenti",
+      "hint": "Gli ultimi eventi inviati dalla macchina. Tenuti in memoria dall'API, persi al riavvio.",
+      "empty": "Nessun evento.",
+      "refresh": "Aggiorna eventi",
+      "truncated": "troncato"
+    },
+    "restart": {
+      "title": "Riavviare il servizio updater?",
+      "description": "Il servizio EMLy Updater su {host} verrà riavviato. Si riconnette da solo in pochi secondi."
+    },
+    "reboot": {
+      "title": "Riavviare il PC?",
+      "description": "{host} verrà riavviato. L'utente vede il conto alla rovescia di Windows.",
+      "delay": "Ritardo (secondi)",
+      "whenActive": "Se un utente è collegato",
+      "warn": "Avvisa e riavvia",
+      "skip": "Non riavviare",
+      "invalidDelay": "Il ritardo deve essere un intero da 0 a 3600."
+    },
+    "cancel": "Annulla",
+    "confirm": "Conferma"
   }
 }

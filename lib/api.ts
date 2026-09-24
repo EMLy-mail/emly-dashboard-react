@@ -941,3 +941,95 @@ export async function previewConfig(data: {
     { requiresAdmin: true, requiresApi: false, baseUrl: configBase() },
   );
 }
+
+// ── Client channel (remote commands) ───────────────────────────────────────
+// Admin half of `GET /v2/client/ws`: the API keeps the machines' WebSockets,
+// this issues commands to them and reads back what they answered. Protocol in
+// emly-go-api/CLIENT_WS_PROTOCOL.md. Mounted at /v2/client, not /v2/api.
+
+function clientBase(): string {
+  return env.apiBaseUrl + "/v2/client";
+}
+
+export type ClientCommandName =
+  | "machine.info"
+  | "emly.manifest.check"
+  | "updater.manifest.check"
+  | "apps.list_upgradable"
+  | "service.restart"
+  | "machine.reboot";
+
+/** Lifecycle of a command on the API: sent -> acked -> done/failed, or rejected/timeout. */
+export type ClientCommandStatus =
+  | "sent"
+  | "acked"
+  | "rejected"
+  | "done"
+  | "failed"
+  | "timeout";
+
+export interface ClientProtoError {
+  code: string;
+  message?: string;
+}
+
+export interface ClientCommandRecord {
+  id: string;
+  client_id: number;
+  name: ClientCommandName;
+  args?: Record<string, unknown>;
+  issued_by?: string;
+  issued_at: string;
+  expires_at: string;
+  status: ClientCommandStatus;
+  acked_at?: string;
+  finished_at?: string;
+  error?: ClientProtoError;
+  result?: {
+    status: string;
+    duration_ms?: number;
+    payload?: unknown;
+    error?: ClientProtoError;
+    truncated?: boolean;
+  };
+}
+
+/** One event a machine pushed. The API keeps the last 50 per machine, in memory only. */
+export interface ClientEventRecord {
+  id?: string;
+  client_id: number;
+  name: string;
+  received_at: string;
+  client_ts?: string;
+  payload?: unknown;
+  truncated?: boolean;
+}
+
+export function isClientCommandFinal(status: ClientCommandStatus): boolean {
+  return status === "done" || status === "failed" || status === "rejected" || status === "timeout";
+}
+
+const clientOpts = () => ({ requiresAdmin: true, requiresApi: false, baseUrl: clientBase() });
+
+export async function issueClientCommand(
+  clientId: number,
+  input: { name: ClientCommandName; args?: Record<string, unknown>; issued_by?: string },
+) {
+  return apiFetch<ClientCommandRecord>(
+    `/${clientId}/commands`,
+    { method: "POST", body: JSON.stringify(input) },
+    clientOpts(),
+  );
+}
+
+export async function getClientCommand(commandId: string) {
+  return apiFetch<ClientCommandRecord>(
+    `/commands/${encodeURIComponent(commandId)}`,
+    {},
+    clientOpts(),
+  );
+}
+
+export async function getClientEvents(clientId: number) {
+  return apiFetch<{ events: ClientEventRecord[] }>(`/${clientId}/events`, {}, clientOpts());
+}
