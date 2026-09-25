@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { login, logoutSession, resetUserPassword, ApiError } from "@/lib/api";
+import { endSessionUrl, getOidcConfig } from "@/lib/oidc";
 import { setSessionToken, clearSessionToken, getSessionToken, getCurrentUser } from "@/lib/auth";
 
 export type LoginActionState = {
@@ -38,11 +39,17 @@ export async function loginAction(
 
 export async function logoutAction(): Promise<void> {
   const token = await getSessionToken();
+  const user = await getCurrentUser();
   if (token) {
     await logoutSession(token).catch(() => {});
   }
   await clearSessionToken();
-  redirect("/login");
+
+  // An SSO user also has a session at the identity provider; end it too, or the
+  // next "Sign in with SSO" would log straight back in.
+  const oidc = user?.auth_provider === "oidc" ? getOidcConfig() : null;
+  const providerLogout = oidc ? await endSessionUrl(oidc) : null;
+  redirect(providerLogout ?? "/login");
 }
 
 // Codes rather than text: the dialog translates them.

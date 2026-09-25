@@ -41,12 +41,21 @@
     }
   },
   "login": {
-    "title": "EMLy Admin",
+    "title": "Aryx Console",
     "description": "Sign in to manage bug reports",
     "username": "Username",
     "password": "Password",
     "signIn": "Sign in",
-    "signingIn": "Signing in..."
+    "signingIn": "Signing in...",
+    "or": "or",
+    "signInSso": "Sign in with Aryx SSO",
+    "errors": {
+      "ssoUnavailable": "Single sign-on is not available right now. Use your username and password.",
+      "ssoDenied": "Single sign-on was cancelled or refused.",
+      "ssoForbidden": "Your account is not allowed to access this console.",
+      "ssoConflict": "A local account with your username already exists. Ask an administrator.",
+      "ssoFailed": "Single sign-on failed. Please try again."
+    }
   },
   "bugReports": {
     "title": "Bug Reports",

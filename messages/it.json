@@ -41,12 +41,21 @@
     }
   },
   "login": {
-    "title": "EMLy Admin",
+    "title": "Aryx Console",
     "description": "Accedi per gestire le segnalazioni bug",
     "username": "Nome utente",
     "password": "Password",
     "signIn": "Accedi",
-    "signingIn": "Accesso in corso..."
+    "signingIn": "Accesso in corso...",
+    "or": "oppure",
+    "signInSso": "Accedi con Aryx SSO",
+    "errors": {
+      "ssoUnavailable": "Il single sign-on non è disponibile al momento. Usa username e password.",
+      "ssoDenied": "Il single sign-on è stato annullato o rifiutato.",
+      "ssoForbidden": "Il tuo account non è autorizzato ad accedere a questa console.",
+      "ssoConflict": "Esiste già un account locale con il tuo username. Rivolgiti a un amministratore.",
+      "ssoFailed": "Single sign-on non riuscito. Riprova."
+    }
   },
   "bugReports": {
     "title": "Segnalazioni Bug",
