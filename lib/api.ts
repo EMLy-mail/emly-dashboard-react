@@ -4,7 +4,10 @@ import { env, SERVER_USER_AGENT } from "./env";
 // ── Types ──────────────────────────────────────────────────────────────────
 
 export type BugReportStatus = "new" | "in_review" | "resolved" | "closed";
-export type UserRole = "admin" | "user";
+export type UserRole = "owner" | "admin" | "user";
+
+// "oidc" accounts come from single sign-on: no password to change or reset.
+export type AuthProvider = "local" | "oidc";
 
 export interface BugReport {
   id: number;
