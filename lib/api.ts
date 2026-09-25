@@ -49,6 +49,7 @@ export interface User {
   displayname: string;
   role: UserRole;
   enabled: boolean;
+  auth_provider: AuthProvider;
   created_at: string;
 }
 
@@ -58,6 +59,7 @@ export interface AuthUser {
   displayname: string;
   role: UserRole;
   enabled: boolean;
+  auth_provider: AuthProvider;
 }
 
 // ── Error ──────────────────────────────────────────────────────────────────
