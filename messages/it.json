@@ -1,6 +1,9 @@
 {
   "sidebar": {
-    "title": "EMLy Admin",
+    "title": "Aryx Console",
+    "groups": {
+      "emly": "EMLy"
+    },
     "nav": {
       "bugReports": "Segnalazioni Bug",
       "users": "Utenti",
