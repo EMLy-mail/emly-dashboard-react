@@ -7,6 +7,7 @@ import { statsHub } from "@/lib/realtime/stats-hub";
 import { StatsStreamProvider } from "@/components/stats-stream-provider";
 import { StatsLiveBadge } from "@/components/stats-live-badge";
 import { RemoteControl } from "@/components/remote-control";
+import { RemoteBetaDialog } from "@/components/remote-beta-dialog";
 
 export default async function RemotePage() {
   const user = await getCurrentUser();
@@ -38,6 +39,7 @@ export default async function RemotePage() {
           <StatsLiveBadge />
         </div>
         <RemoteControl />
+        <RemoteBetaDialog />
       </div>
     </StatsStreamProvider>
   );

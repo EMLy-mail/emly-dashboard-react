@@ -15,7 +15,27 @@
     "toggleTheme": "Cambia tema",
     "toggleLanguage": "Cambia lingua",
     "openMenu": "Apri menu",
-    "closeMenu": "Chiudi menu"
+    "closeMenu": "Chiudi menu",
+    "changePassword": "Cambia password"
+  },
+  "changePassword": {
+    "title": "Cambia password",
+    "description": "Inserisci la password attuale e scegli quella nuova.",
+    "currentPassword": "Password attuale",
+    "newPassword": "Nuova password",
+    "confirmPassword": "Conferma nuova password",
+    "cancel": "Annulla",
+    "save": "Cambia password",
+    "saving": "Salvataggio...",
+    "success": "Password cambiata con successo",
+    "errors": {
+      "unauthorized": "Sessione scaduta: effettua di nuovo l'accesso.",
+      "required": "Compila tutti i campi.",
+      "mismatch": "Le due nuove password non coincidono.",
+      "unchanged": "La nuova password deve essere diversa da quella attuale.",
+      "wrongCurrent": "La password attuale non è corretta.",
+      "failed": "Impossibile cambiare la password. Riprova."
+    }
   },
   "login": {
     "title": "EMLy Admin",
@@ -663,6 +683,11 @@
   "remote": {
     "title": "Controllo remoto",
     "description": "Invia comandi alle macchine connesse in questo momento sul canale client.",
+    "beta": {
+      "title": "Funzionalità in beta",
+      "description": "Il controllo remoto è ancora in beta. I comandi vengono eseguiti sulle macchine reali degli utenti: usalo con cautela.",
+      "confirm": "Ho capito"
+    },
     "machines": {
       "title": "Macchine connesse",
       "search": "Cerca per nome, utente, IP...",

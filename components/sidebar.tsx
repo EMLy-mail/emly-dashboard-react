@@ -1,16 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useTranslations } from "next-intl";
-import { Bug, Users, PackageOpen, BarChart3, SlidersHorizontal, Ban, LogOut, Sun, Moon, Menu, X, MonitorSmartphone, TerminalSquare } from "lucide-react";
+import { Bug, Users, PackageOpen, BarChart3, SlidersHorizontal, Ban, KeyRound, LogOut, Sun, Moon, Menu, X, MonitorSmartphone, TerminalSquare } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { logoutAction } from "@/lib/actions/auth";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { ChangePasswordDialog } from "@/components/change-password-dialog";
 import type { AuthUser } from "@/lib/api";
 
 export function Sidebar({ user }: { user: AuthUser }) {
@@ -18,6 +19,8 @@ export function Sidebar({ user }: { user: AuthUser }) {
   const { theme, setTheme } = useTheme();
   const t = useTranslations("sidebar");
   const [open, setOpen] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
+  const closePasswordDialog = useCallback(() => setPasswordOpen(false), []);
   const [prevPathname, setPrevPathname] = useState(pathname);
 
   // Close the mobile drawer on navigation (covers back/forward, not just link clicks).
@@ -130,6 +133,16 @@ export function Sidebar({ user }: { user: AuthUser }) {
               </p>
               <p className="text-xs text-muted-foreground capitalize">{user.role}</p>
             </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 shrink-0"
+              onClick={() => setPasswordOpen(true)}
+              aria-label={t("changePassword")}
+              title={t("changePassword")}
+            >
+              <KeyRound className="h-4 w-4" />
+            </Button>
           </div>
           <div className="flex gap-2">
             <Button
@@ -152,6 +165,8 @@ export function Sidebar({ user }: { user: AuthUser }) {
           </div>
         </div>
       </div>
+
+      <ChangePasswordDialog open={passwordOpen} onClose={closePasswordDialog} />
     </>
   );
 }
