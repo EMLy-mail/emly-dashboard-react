@@ -3,10 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { createUser, updateUser, deleteUser, resetUserPassword, ApiError, type UserRole } from "@/lib/api";
 import { getCurrentUser } from "@/lib/auth";
+import { isAdminRole } from "@/lib/roles";
 
 async function requireAdmin() {
   const user = await getCurrentUser();
-  if (!user || user.role !== "admin") throw new Error("Unauthorized");
+  if (!user || !isAdminRole(user.role)) throw new Error("Unauthorized");
 }
 
 export type UserActionState = { error?: string; success?: boolean };

@@ -12,13 +12,14 @@ import {
 } from "@/lib/api";
 import { getCurrentUser } from "@/lib/auth";
 import { MIN_COMMAND_UPDATER_VERSION, supportsRemoteCommands } from "@/lib/device-status";
+import { isAdminRole } from "@/lib/roles";
 
 // Commands run on a user's machine (restart the service, reboot the PC), so
 // this is admin-only: the same bar the API sets on the routes, re-checked
 // here so a non-admin session cannot drive the action directly.
 async function requireAdmin() {
   const user = await getCurrentUser();
-  if (!user || user.role !== "admin") throw new Error("Unauthorized");
+  if (!user || !isAdminRole(user.role)) throw new Error("Unauthorized");
   return user;
 }
 

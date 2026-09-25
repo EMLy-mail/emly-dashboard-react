@@ -44,17 +44,31 @@ export function Sidebar({ user }: { user: AuthUser }) {
     };
   }, [open]);
 
-  const navItems = [
-    { href: "/bug-reports", label: t("nav.bugReports"), icon: Bug },
-    { href: "/users", label: t("nav.users"), icon: Users },
-    { href: "/updates", label: t("nav.updates"), icon: PackageOpen },
-    { href: "/clients", label: t("nav.clients"), icon: MonitorSmartphone },
-    ...(user.role === "admin"
-      ? [{ href: "/remote", label: t("nav.remote"), icon: TerminalSquare }]
-      : []),
-    { href: "/statistics", label: t("nav.statistics"), icon: BarChart3 },
-    { href: "/config", label: t("nav.config"), icon: SlidersHorizontal },
-    { href: "/bans", label: t("nav.bans"), icon: Ban },
+  const navGroups = [
+    {
+      key: "fleet",
+      label: null,
+      logo: null,
+      items: [
+        { href: "/clients", label: t("nav.clients"), icon: MonitorSmartphone },
+        ...(isAdminRole(user.role)
+          ? [{ href: "/remote", label: t("nav.remote"), icon: TerminalSquare }]
+          : []),
+        { href: "/statistics", label: t("nav.statistics"), icon: BarChart3 },
+      ],
+    },
+    {
+      key: "emly",
+      label: t("groups.emly"),
+      logo: "/emly-logo.png",
+      items: [
+        { href: "/bug-reports", label: t("nav.bugReports"), icon: Bug },
+        { href: "/users", label: t("nav.users"), icon: Users },
+        { href: "/updates", label: t("nav.updates"), icon: PackageOpen },
+        { href: "/config", label: t("nav.config"), icon: SlidersHorizontal },
+        { href: "/bans", label: t("nav.bans"), icon: Ban },
+      ],
+    },
   ];
 
   const initials = (user.displayname || user.username)

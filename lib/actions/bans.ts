@@ -3,13 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { createBan, deleteBan, ApiError, type BanType } from "@/lib/api";
 import { getCurrentUser } from "@/lib/auth";
+import { isAdminRole } from "@/lib/roles";
 
 // Banning decides who can reach the API at all, so it is admin-only - the
 // same bar the API puts on the routes themselves, re-checked here so a
 // non-admin session cannot drive the action directly.
 async function requireAdmin() {
   const user = await getCurrentUser();
-  if (!user || user.role !== "admin") throw new Error("Unauthorized");
+  if (!user || !isAdminRole(user.role)) throw new Error("Unauthorized");
 }
 
 export type BanActionState = { error?: string; success?: boolean };

@@ -15,10 +15,11 @@ import {
   type RemoteConfigProblem,
 } from "@/lib/api";
 import { getCurrentUser, getSessionToken } from "@/lib/auth";
+import { isAdminRole } from "@/lib/roles";
 
 async function requireAdmin() {
   const user = await getCurrentUser();
-  if (!user || user.role !== "admin") throw new Error("Unauthorized");
+  if (!user || !isAdminRole(user.role)) throw new Error("Unauthorized");
 }
 
 /** JSON.parse with an error message shaped for display, not a stack trace. */

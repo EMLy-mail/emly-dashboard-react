@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getBugReport, getBugReportFiles } from "@/lib/api";
 import { getCurrentUser } from "@/lib/auth";
 import { BugReportDetail } from "@/components/bug-report-detail";
+import { isAdminRole } from "@/lib/roles";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -24,7 +25,7 @@ export default async function BugReportDetailPage({ params }: PageProps) {
   }
 
   const currentUser = await getCurrentUser();
-  const isAdmin = currentUser?.role === "admin";
+  const isAdmin = isAdminRole(currentUser?.role);
 
   return <BugReportDetail report={report} files={files} reportId={reportId} isAdmin={isAdmin} />;
 }
