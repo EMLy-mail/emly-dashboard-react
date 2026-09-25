@@ -127,7 +127,8 @@
       "toggledDisabled": "Utente disabilitato",
       "deleteTitle": "Eliminare l'utente \"{username}\"?",
       "deleteDescription": "Questa azione non può essere annullata. L'utente perderà immediatamente l'accesso alla dashboard.",
-      "cancel": "Annulla"
+      "cancel": "Annulla",
+      "sso": "SSO"
     },
     "createDialog": {
       "title": "Crea Nuovo Utente",

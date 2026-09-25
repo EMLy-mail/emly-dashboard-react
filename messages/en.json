@@ -127,7 +127,8 @@
       "toggledDisabled": "User disabled",
       "deleteTitle": "Delete user \"{username}\"?",
       "deleteDescription": "This action cannot be undone. The user will lose access to the dashboard immediately.",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "sso": "SSO"
     },
     "createDialog": {
       "title": "Create New User",

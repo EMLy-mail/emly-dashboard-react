@@ -170,16 +170,18 @@ export function Sidebar({ user }: { user: AuthUser }) {
               </p>
               <p className="text-xs text-muted-foreground capitalize">{user.role}</p>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 shrink-0"
-              onClick={() => setPasswordOpen(true)}
-              aria-label={t("changePassword")}
-              title={t("changePassword")}
-            >
-              <KeyRound className="h-4 w-4" />
-            </Button>
+            {user.auth_provider !== "oidc" && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 shrink-0"
+                onClick={() => setPasswordOpen(true)}
+                aria-label={t("changePassword")}
+                title={t("changePassword")}
+              >
+                <KeyRound className="h-4 w-4" />
+              </Button>
+            )}
           </div>
           <div className="flex gap-2">
             <Button

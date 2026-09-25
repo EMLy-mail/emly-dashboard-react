@@ -83,10 +83,17 @@ export function UsersTable({ users, isAdmin }: { users: User[]; isAdmin: boolean
             )}
             {users.map((user) => (
               <TableRow key={user.id}>
-                <TableCell className="font-mono text-sm">{user.username}</TableCell>
+                <TableCell className="font-mono text-sm">
+                  {user.username}
+                  {user.auth_provider === "oidc" && (
+                    <Badge variant="outline" className="ml-2 align-middle text-[10px]">
+                      {t("table.sso")}
+                    </Badge>
+                  )}
+                </TableCell>
                 <TableCell>{user.displayname}</TableCell>
                 <TableCell>
-                  <Badge variant={user.role === "admin" ? "default" : "secondary"}>
+                  <Badge variant={user.role === "owner" || user.role === "admin" ? "default" : "secondary"}>
                     {user.role}
                   </Badge>
                 </TableCell>
@@ -118,10 +125,12 @@ export function UsersTable({ users, isAdmin }: { users: User[]; isAdmin: boolean
                           )}
                           {user.enabled ? t("table.disable") : t("table.enable")}
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setResetTarget(user)}>
-                          <KeyRound className="mr-2 h-4 w-4" />
-                          {t("table.resetPassword")}
-                        </DropdownMenuItem>
+                        {user.auth_provider !== "oidc" && (
+                          <DropdownMenuItem onClick={() => setResetTarget(user)}>
+                            <KeyRound className="mr-2 h-4 w-4" />
+                            {t("table.resetPassword")}
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           className="text-destructive"
