@@ -57,6 +57,7 @@ import { useLiveStatsClients } from "@/hooks/use-stats-stream";
 import { LoggedUserName } from "@/components/logged-user-name";
 import { PresenceDot } from "@/components/presence-dot";
 import { OsIcon } from "@/components/os-icon";
+import { BrandMark } from "@/components/brand-mark";
 import { shortOsLabel } from "@/lib/os-label";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -909,10 +910,16 @@ export function ClientsExplorer({
                         }
                       >
                         <div className="flex items-center gap-1.5">
+                          {client.updater_version &&
+                            (compareVersions(client.updater_version, ARYX_BRAND_MIN_UPDATER_VERSION) === -1 ? (
+                              <BrandMark src="/emly-logo.png" className="mx-0.5 h-4 w-4" />
+                            ) : (
+                              <BrandMark src="/aryx-logo.png" className="h-5 w-5" />
+                            ))}
                           {client.updater_version ?? "—"}
                           <VersionGapIcon
                             gap={assessment.updaterGap}
-                            name="EMLy Updater"
+                            name="AryxD Agent"
                             latest={latestUpdaterVersion}
                           />
                         </div>
