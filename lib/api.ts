@@ -135,6 +135,18 @@ export async function login(username: string, password: string) {
   );
 }
 
+/**
+ * Exchanges the ID token the identity provider issued for an API session. The
+ * API verifies the token itself; the nonce proves it was minted for this login.
+ */
+export async function loginOidc(idToken: string, nonce: string) {
+  return apiFetch<{ session_id: string; user: AuthUser }>(
+    "/admin/auth/oidc",
+    { method: "POST", body: JSON.stringify({ id_token: idToken, nonce }) },
+    { requiresApi: false, requiresAdmin: true },
+  );
+}
+
 export async function validateSession(token: string) {
   return apiFetch<{ success: boolean; user: AuthUser }>(
     "/admin/auth/validate",
