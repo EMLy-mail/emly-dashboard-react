@@ -252,10 +252,10 @@
     },
     "tabs": {
       "emly": "EMLy",
-      "updater": "EMLy Updater"
+      "updater": "AryxD Agent"
     },
     "updater": {
-      "description": "Canale di auto-aggiornamento dello stesso EMLy Updater. Viene distribuita una sola build alla volta; i client la applicano in silenzio e non tornano mai a versioni precedenti.",
+      "description": "Canale di auto-aggiornamento dello stesso AryxD Agent. Viene distribuita una sola build alla volta; i client la applicano in silenzio e non tornano mai a versioni precedenti.",
       "showManifest": "Mostra manifest",
       "newRelease": "Nuova Versione Updater",
       "notesHelp": "Le note finiscono solo nel log e nel Registro eventi — non vengono mai mostrate all'utente.",
@@ -352,11 +352,11 @@
       "onlineInternal": "Online dalla rete interna",
       "onlinePublicIp": "Online, ma l'ultimo contatto arriva da un indirizzo IP pubblico",
       "noLoggedUser": "Nessun utente connesso su questa macchina",
-      "loggedUserUnknown": "Sconosciuto: EMLy Updater è precedente alla {version} e non riporta l'utente loggato",
+      "loggedUserUnknown": "Sconosciuto: AryxD Agent è precedente alla {version} e non riporta l'utente loggato",
       "versionOutdatedCritical": "Versione di {name} molto obsoleta, funzionalità importanti sono mancanti e/o potrebbe smettere di funzionare",
       "versionOutdatedWarning": "Versione di {name} da aggiornare, alcune funzionalità sono impattate",
-      "osUnknown": "Sconosciuto: EMLy Updater è precedente alla {version} e non riporta il sistema operativo",
-      "emlyVersionUnknown": "Sconosciuto: EMLy Updater è precedente alla {version} e non riporta la versione di EMLy",
+      "osUnknown": "Sconosciuto: AryxD Agent è precedente alla {version} e non riporta il sistema operativo",
+      "emlyVersionUnknown": "Sconosciuto: AryxD Agent è precedente alla {version} e non riporta la versione di EMLy",
       "sessionDisconnected": "Sessione ancora aperta, ma l'utente al momento è disconnesso",
       "sessionDisconnectedSince": "Sessione ancora aperta, ma l'utente è disconnesso dal {date}",
       "presenceLive": "Online in tempo reale: connessione WebSocket di presenza attiva in questo momento",
@@ -371,13 +371,13 @@
     "reason": {
       "outOfDomain": "Fuori dominio: la macchina non e' aggiunta ad Active Directory.",
       "banned": "Sotto ban: la macchina riceve 403 su tutti gli endpoint.",
-      "updaterMinorBehind": "EMLy Updater indietro di almeno una minor release.",
-      "updaterPatchBehind": "EMLy Updater indietro di una patch.",
+      "updaterMinorBehind": "AryxD Agent indietro di almeno una minor release.",
+      "updaterPatchBehind": "AryxD Agent indietro di una patch.",
       "appBehind": "EMLy App non aggiornata all'ultima versione.",
       "offline": "Attualmente offline: nessun contatto nella finestra di rilevazione. Non influisce sullo stato.",
       "publicIp": "Ultimo contatto da un indirizzo IP pubblico.",
       "appVersionUnknown": "Versione EMLy App non riportata dall'API: la regola sulla versione app non viene applicata.",
-      "updaterVersionUnknown": "Versione EMLy Updater non riportata: la regola sulla versione updater non viene applicata."
+      "updaterVersionUnknown": "Versione AryxD Agent non riportata: la regola sulla versione updater non viene applicata."
     },
     "banType": {
       "ip": "IP",
@@ -389,7 +389,7 @@
       "hostname": "Nome dispositivo",
       "loggedUser": "Utente loggato",
       "lastIp": "IP",
-      "updaterVersion": "Versione Updater",
+      "updaterVersion": "Aryx Agent",
       "emlyVersion": "Versione EMLy",
       "os": "Sistema operativo",
       "connected": "Connesso",
@@ -418,7 +418,7 @@
       "lastSeen": "Ultima connessione",
       "createdAt": "Data creazione",
       "os": "Sistema operativo",
-      "updaterVersion": "Versione EMLy Updater",
+      "updaterVersion": "Versione AryxD Agent",
       "appVersion": "Versione EMLy App",
       "dc": "DC connessa",
       "dcUnmapped": "L'indirizzo non rientra nelle subnet di nessun sito configurato.",
@@ -433,7 +433,7 @@
   },
   "statistics": {
     "title": "Statistiche",
-    "description": "Statistiche della flotta di client EMLy Updater.",
+    "description": "Statistiche della flotta di client AryxD Agent.",
     "live": {
       "on": "In diretta",
       "off": "Non aggiornato in tempo reale"
@@ -585,7 +585,7 @@
   },
   "config": {
     "title": "Config Remota",
-    "description": "Il documento di policy per tutta la fleet, servito a EMLy Updater ed EMLy da GET /v2/config.",
+    "description": "Il documento di policy per tutta la fleet, servito a AryxD Agent ed EMLy da GET /v2/config.",
     "preview": "Anteprima",
     "newRevision": "Nuova Revisione",
     "status": {
@@ -708,7 +708,7 @@
       "hidden": "{count, plural, one {# macchina offline nascosta} other {# macchine offline nascoste}}",
       "tooOld": "{count, plural, one {# macchina nascosta: updater precedente alla {version}} other {# macchine nascoste: updater precedente alla {version}}}"
     },
-    "selectPrompt": "Scegli una macchina a sinistra. Ricevono comandi solo le macchine connesse via WebSocket con EMLy Updater {version} o superiore.",
+    "selectPrompt": "Scegli una macchina a sinistra. Ricevono comandi solo le macchine connesse via WebSocket con AryxD Agent {version} o superiore.",
     "connected": "Connessa",
     "disconnected": "Non connessa",
     "groups": {
@@ -750,7 +750,7 @@
     },
     "restart": {
       "title": "Riavviare il servizio updater?",
-      "description": "Il servizio EMLy Updater su {host} verrà riavviato. Si riconnette da solo in pochi secondi."
+      "description": "Il servizio AryxD Agent su {host} verrà riavviato. Si riconnette da solo in pochi secondi."
     },
     "reboot": {
       "title": "Riavviare il PC?",

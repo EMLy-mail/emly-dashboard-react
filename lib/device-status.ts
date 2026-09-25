@@ -388,7 +388,7 @@ export function maskSerial(serial: string | null | undefined): string {
 }
 
 /**
- * First EMLy Updater release that speaks the client channel's command
+ * First AryxD Agent release that speaks the client channel's command
  * protocol (CLIENT_WS_PROTOCOL.md). An older updater holds the presence
  * socket open but does not understand a command frame.
  */

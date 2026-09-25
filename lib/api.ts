@@ -420,7 +420,7 @@ export async function setReleaseChannels(
 // ── Updater self-update ────────────────────────────────────────────────────
 
 /**
- * Self-update contract for the EMLy Updater. Deliberately poorer than
+ * Self-update contract for the AryxD Agent. Deliberately poorer than
  * `UpdateManifest`: no channels, no criticality, no downgrade. An empty (or
  * absent) `version` means "nothing to distribute" — the kill-switch state.
  */
@@ -771,7 +771,7 @@ export async function getStatsEvents(opts: {
 
 // ── Remote Config ──────────────────────────────────────────────────────────
 //
-// The fleet-wide policy document served to the EMLy Updater and EMLy at
+// The fleet-wide policy document served to the AryxD Agent and EMLy at
 // GET /v2/config. See emly-api-go's
 // docs/superpowers/specs/2026-09-04-remote-config-api-design.md (storage,
 // revisions, admin routes) and emly-updater's

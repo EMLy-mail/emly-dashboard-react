@@ -113,7 +113,7 @@ export async function deleteReleaseAction(version: string) {
   revalidatePath("/updates");
 }
 
-// ── EMLy Updater self-update releases ──────────────────────────────────────
+// ── AryxD Agent self-update releases ──────────────────────────────────────
 
 /** `datetime-local` value -> RFC 3339, or undefined when left blank. */
 function toRfc3339(value: FormDataEntryValue | null): string | undefined {

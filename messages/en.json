@@ -252,10 +252,10 @@
     },
     "tabs": {
       "emly": "EMLy",
-      "updater": "EMLy Updater"
+      "updater": "AryxD Agent"
     },
     "updater": {
-      "description": "Self-update channel for the EMLy Updater itself. Exactly one build is served at a time; clients apply it silently and never downgrade.",
+      "description": "Self-update channel for the AryxD Agent itself. Exactly one build is served at a time; clients apply it silently and never downgrade.",
       "showManifest": "Show manifest",
       "newRelease": "New Updater Release",
       "notesHelp": "Notes go to the log and the Event Log only — they are never shown to the user.",
@@ -352,11 +352,11 @@
       "onlineInternal": "Online from the internal network",
       "onlinePublicIp": "Online, but the last contact came from a public IP address",
       "noLoggedUser": "Nobody is signed in on this machine",
-      "loggedUserUnknown": "Unknown: EMLy Updater is older than {version} and does not report the logged user",
+      "loggedUserUnknown": "Unknown: AryxD Agent is older than {version} and does not report the logged user",
       "versionOutdatedCritical": "{name} version is severely outdated: important features are missing and/or it may stop working",
       "versionOutdatedWarning": "{name} version needs updating: some features are affected",
-      "osUnknown": "Unable to determine the operating system: this is not supported by the running EMLy Updater version {version}",
-      "emlyVersionUnknown": "Unable to determine the EMLy version: this is not supported by the running EMLy Updater version {version}",
+      "osUnknown": "Unable to determine the operating system: this is not supported by the running AryxD Agent version {version}",
+      "emlyVersionUnknown": "Unable to determine the EMLy version: this is not supported by the running AryxD Agent version {version}",
       "sessionDisconnected": "Session still open, but the user is currently disconnected",
       "sessionDisconnectedSince": "Session still open, but the user has been disconnected since {date}",
       "presenceLive": "Online right now: an active presence WebSocket connection",
@@ -371,13 +371,13 @@
     "reason": {
       "outOfDomain": "Out of domain: the machine is not joined to Active Directory.",
       "banned": "Banned: the machine gets a 403 on every endpoint.",
-      "updaterMinorBehind": "EMLy Updater is at least a minor release behind.",
-      "updaterPatchBehind": "EMLy Updater is a patch behind.",
+      "updaterMinorBehind": "AryxD Agent is at least a minor release behind.",
+      "updaterPatchBehind": "AryxD Agent is a patch behind.",
       "appBehind": "EMLy App is not on the latest version.",
       "offline": "Currently offline: no contact within the detection window. Does not affect the status.",
       "publicIp": "Last contact came from a public IP address.",
       "appVersionUnknown": "EMLy App version is not reported by the API, so the app-version rule is not applied.",
-      "updaterVersionUnknown": "EMLy Updater version is not reported, so the updater-version rule is not applied."
+      "updaterVersionUnknown": "AryxD Agent version is not reported, so the updater-version rule is not applied."
     },
     "banType": {
       "ip": "IP",
@@ -389,7 +389,7 @@
       "hostname": "Device name",
       "loggedUser": "Logged user",
       "lastIp": "IP",
-      "updaterVersion": "Updater version",
+      "updaterVersion": "Aryx Agent",
       "emlyVersion": "EMLy version",
       "os": "Operating system",
       "connected": "Connected",
@@ -418,7 +418,7 @@
       "lastSeen": "Last connection",
       "createdAt": "Created",
       "os": "Operating system",
-      "updaterVersion": "EMLy Updater version",
+      "updaterVersion": "AryxD Agent version",
       "appVersion": "EMLy App version",
       "dc": "Connected DC",
       "dcUnmapped": "The address falls outside every configured site's subnets.",
@@ -433,7 +433,7 @@
   },
   "statistics": {
     "title": "Statistics",
-    "description": "Fleet-wide statistics for EMLy Updater clients.",
+    "description": "Fleet-wide statistics for AryxD Agent clients.",
     "live": {
       "on": "Live",
       "off": "Not updating in real time"
@@ -585,7 +585,7 @@
   },
   "config": {
     "title": "Remote Config",
-    "description": "The fleet-wide policy document served to the EMLy Updater and EMLy at GET /v2/config.",
+    "description": "The fleet-wide policy document served to the AryxD Agent and EMLy at GET /v2/config.",
     "preview": "Preview",
     "newRevision": "New Revision",
     "status": {
@@ -708,7 +708,7 @@
       "hidden": "{count, plural, one {# offline machine hidden} other {# offline machines hidden}}",
       "tooOld": "{count, plural, one {# machine hidden: updater older than {version}} other {# machines hidden: updater older than {version}}}"
     },
-    "selectPrompt": "Pick a machine on the left. Only machines connected over WebSocket with EMLy Updater {version} or newer can take commands.",
+    "selectPrompt": "Pick a machine on the left. Only machines connected over WebSocket with AryxD Agent {version} or newer can take commands.",
     "connected": "Connected",
     "disconnected": "Not connected",
     "groups": {
@@ -750,7 +750,7 @@
     },
     "restart": {
       "title": "Restart the updater service?",
-      "description": "The EMLy Updater service on {host} will restart. It reconnects on its own within a few seconds."
+      "description": "The AryxD Agent service on {host} will restart. It reconnects on its own within a few seconds."
     },
     "reboot": {
       "title": "Reboot the PC?",

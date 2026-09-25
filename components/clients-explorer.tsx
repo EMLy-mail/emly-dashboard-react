@@ -97,6 +97,8 @@ const CLOCK_REFRESH_MS = 30_000;
 // simply never sends the field, so its blank logged-user cell says nothing
 // about the machine and has to be read as "unknown", not "nobody".
 const LOGGED_USER_MIN_UPDATER_VERSION = "1.6.1";
+// First agent release shipped under the Aryx brand; older ones are still EMLy Updater.
+const ARYX_BRAND_MIN_UPDATER_VERSION = "1.7.2";
 const EMLY_VERSION_MIN_UPDATER_VERSION = "1.6.3";
 // Panel width bounds, in px. The floor is what the widest label in the
 // detail list needs before it starts wrapping mid-word.
