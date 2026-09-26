@@ -10,3 +10,9 @@ services:
       - ADMIN_KEY=${ADMIN_KEY}
       - DASHBOARD_KEY=${DASHBOARD_KEY}
       - FACING_URL=${FACING_URL}
+      # Single sign-on (optional): the button shows only when all three of
+      # OIDC_ISSUER, OIDC_CLIENT_ID and PUBLIC_URL are set.
+      - OIDC_ISSUER=${OIDC_ISSUER:-}
+      - OIDC_CLIENT_ID=${OIDC_CLIENT_ID:-}
+      - OIDC_CLIENT_SECRET=${OIDC_CLIENT_SECRET:-}
+      - PUBLIC_URL=${PUBLIC_URL:-}
