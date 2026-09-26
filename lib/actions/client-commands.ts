@@ -10,16 +10,17 @@ import {
   type ClientCommandRecord,
   type ClientEventRecord,
 } from "@/lib/api";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, getSessionToken } from "@/lib/auth";
 import { MIN_COMMAND_UPDATER_VERSION, supportsRemoteCommands } from "@/lib/device-status";
-import { isAdminRole } from "@/lib/roles";
+import { canSeeBeta } from "@/lib/roles";
 
 // Commands run on a user's machine (restart the service, reboot the PC), so
 // this is admin-only: the same bar the API sets on the routes, re-checked
 // here so a non-admin session cannot drive the action directly.
-async function requireAdmin() {
+// Remote control is a beta page (see BETA_PATHS), so admins are refused too.
+async function requireOwner() {
   const user = await getCurrentUser();
-  if (!user || !isAdminRole(user.role)) throw new Error("Unauthorized");
+  if (!user || !canSeeBeta(user.role)) throw new Error("Unauthorized");
   return user;
 }
 
@@ -44,7 +45,7 @@ export async function issueCommandAction(
   args?: { delaySeconds?: number; whenUserActive?: "warn" | "skip" },
 ): Promise<CommandActionResult> {
   try {
-    const user = await requireAdmin();
+    const user = await requireOwner();
     if (!Number.isInteger(clientId) || clientId <= 0) return { ok: false, error: "Invalid client" };
     if (!COMMANDS.includes(name)) return { ok: false, error: "Unknown command" };
 
@@ -81,7 +82,7 @@ export async function issueCommandAction(
       name,
       args: apiArgs,
       issued_by: user.username.slice(0, 64),
-    });
+    }, await getSessionToken());
     return { ok: true, command };
   } catch (e) {
     if (e instanceof ApiError) return { ok: false, error: e.message, status: e.status };
@@ -91,8 +92,8 @@ export async function issueCommandAction(
 
 export async function pollCommandAction(commandId: string): Promise<CommandActionResult> {
   try {
-    await requireAdmin();
-    return { ok: true, command: await getClientCommand(commandId) };
+    await requireOwner();
+    return { ok: true, command: await getClientCommand(commandId, await getSessionToken()) };
   } catch (e) {
     if (e instanceof ApiError) return { ok: false, error: e.message, status: e.status };
     return { ok: false, error: "Failed to read command" };
@@ -105,9 +106,9 @@ export type EventsActionResult =
 
 export async function listEventsAction(clientId: number): Promise<EventsActionResult> {
   try {
-    await requireAdmin();
+    await requireOwner();
     if (!Number.isInteger(clientId) || clientId <= 0) return { ok: false, error: "Invalid client" };
-    const { events } = await getClientEvents(clientId);
+    const { events } = await getClientEvents(clientId, await getSessionToken());
     return { ok: true, events };
   } catch (e) {
     if (e instanceof ApiError) return { ok: false, error: e.message };

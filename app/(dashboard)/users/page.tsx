@@ -22,7 +22,11 @@ export default async function UsersPage() {
         </div>
         {isAdmin && <CreateUserDialog />}
       </div>
-      <UsersTable users={users} isAdmin={isAdmin} />
+      <UsersTable
+        users={users}
+        isAdmin={isAdmin}
+        actor={currentUser ? { id: currentUser.id, role: currentUser.role } : null}
+      />
     </div>
   );
 }

@@ -89,7 +89,7 @@ export async function changeOwnPasswordAction(
   }
 
   try {
-    await resetUserPassword(user.id, newPassword);
+    await resetUserPassword(user.id, newPassword, await getSessionToken());
     return { success: true };
   } catch {
     return { error: "failed" };

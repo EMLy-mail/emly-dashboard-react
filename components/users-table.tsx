@@ -35,8 +35,17 @@ import {
 } from "@/components/ui/alert-dialog";
 import { MoreHorizontal, Trash2, KeyRound, ToggleLeft, ToggleRight } from "lucide-react";
 import { formatDate } from "@/lib/format-date";
+import { canManageUser } from "@/lib/roles";
 
-export function UsersTable({ users, isAdmin }: { users: User[]; isAdmin: boolean }) {
+export function UsersTable({
+  users,
+  isAdmin,
+  actor,
+}: {
+  users: User[];
+  isAdmin: boolean;
+  actor: { id: string; role: User["role"] } | null;
+}) {
   const [resetTarget, setResetTarget] = useState<User | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -125,21 +134,25 @@ export function UsersTable({ users, isAdmin }: { users: User[]; isAdmin: boolean
                           )}
                           {user.enabled ? t("table.disable") : t("table.enable")}
                         </DropdownMenuItem>
-                        {user.auth_provider !== "oidc" && (
+                        {user.auth_provider !== "oidc" && canManageUser(actor, user) && (
                           <DropdownMenuItem onClick={() => setResetTarget(user)}>
                             <KeyRound className="mr-2 h-4 w-4" />
                             {t("table.resetPassword")}
                           </DropdownMenuItem>
                         )}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          className="text-destructive"
-                          onClick={() => setDeleteTarget(user)}
-                          disabled={isPending}
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          {t("table.delete")}
-                        </DropdownMenuItem>
+                        {canManageUser(actor, user) && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="text-destructive"
+                              onClick={() => setDeleteTarget(user)}
+                              disabled={isPending}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              {t("table.delete")}
+                            </DropdownMenuItem>
+                          </>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   )}

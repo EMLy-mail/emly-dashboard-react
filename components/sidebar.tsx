@@ -14,7 +14,7 @@ import { logoutAction } from "@/lib/actions/auth";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { ChangePasswordDialog } from "@/components/change-password-dialog";
 import type { AuthUser } from "@/lib/api";
-import { isAdminRole } from "@/lib/roles";
+import { canSeeBeta, isAdminRole, isBetaPath } from "@/lib/roles";
 
 export function Sidebar({ user }: { user: AuthUser }) {
   const pathname = usePathname();
@@ -44,7 +44,7 @@ export function Sidebar({ user }: { user: AuthUser }) {
     };
   }, [open]);
 
-  const navGroups = [
+  const navGroupsAll = [
     {
       key: "fleet",
       label: null,
@@ -70,6 +70,11 @@ export function Sidebar({ user }: { user: AuthUser }) {
       ],
     },
   ];
+  // Beta pages (see BETA_PATHS) are only shown to roles that can see beta.
+  const navGroups = navGroupsAll.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => canSeeBeta(user.role) || !isBetaPath(item.href)),
+  }));
 
   const initials = (user.displayname || user.username)
     .split(" ")

@@ -8,13 +8,13 @@ import { StatsStreamProvider } from "@/components/stats-stream-provider";
 import { StatsLiveBadge } from "@/components/stats-live-badge";
 import { RemoteControl } from "@/components/remote-control";
 import { RemoteBetaDialog } from "@/components/remote-beta-dialog";
-import { isAdminRole } from "@/lib/roles";
+import { canSeeBeta } from "@/lib/roles";
 
 export default async function RemotePage() {
   const user = await getCurrentUser();
-  // Every button here acts on a user's machine; a non-admin has nothing to do
-  // on this page (the actions re-check the role regardless).
-  if (!isAdminRole(user?.role)) redirect("/clients");
+  // Beta page (see BETA_PATHS): owners only. Every button here acts on a
+  // user's machine, and the actions re-check the role regardless.
+  if (!canSeeBeta(user?.role)) redirect("/clients");
 
   // Same warm-up as the clients page: the hub's snapshot stands in for REST
   // and, from then on, live presence arrives pushed.

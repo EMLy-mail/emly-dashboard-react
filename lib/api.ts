@@ -250,27 +250,34 @@ export async function createUser(data: {
   );
 }
 
-export async function updateUser(id: string, data: { displayname?: string; enabled?: boolean }) {
+// The three calls below act on an account. Passing the acting user's session
+// token lets the API enforce the role rules itself (an admin cannot touch
+// another admin); without it the call is treated as admin-key automation.
+export async function updateUser(
+  id: string,
+  data: { displayname?: string; enabled?: boolean },
+  sessionToken?: string,
+) {
   return apiFetch<{ updated: boolean }>(
     `/admin/users/${id}`,
     { method: "PATCH", body: JSON.stringify(data) },
-    { requiresAdmin: true, requiresApi: false },
+    { requiresAdmin: true, requiresApi: false, sessionToken },
   );
 }
 
-export async function deleteUser(id: string) {
+export async function deleteUser(id: string, sessionToken?: string) {
   return apiFetch<{ deleted: boolean }>(
     `/admin/users/${id}`,
     { method: "DELETE" },
-    { requiresAdmin: true, requiresApi: false },
+    { requiresAdmin: true, requiresApi: false, sessionToken },
   );
 }
 
-export async function resetUserPassword(id: string, password: string) {
+export async function resetUserPassword(id: string, password: string, sessionToken?: string) {
   return apiFetch<{ updated: boolean }>(
     `/admin/users/${id}/reset-password`,
     { method: "POST", body: JSON.stringify({ password }) },
-    { requiresAdmin: true, requiresApi: false },
+    { requiresAdmin: true, requiresApi: false, sessionToken },
   );
 }
 
@@ -1031,27 +1038,34 @@ export interface ClientEventRecord {
   truncated?: boolean;
 }
 
-const clientOpts = () => ({ requiresAdmin: true, requiresApi: false, baseUrl: clientBase() });
+// The session token lets the API refuse anyone who is not an owner (remote control is owner-only).
+const clientOpts = (sessionToken?: string) => ({
+  requiresAdmin: true,
+  requiresApi: false,
+  baseUrl: clientBase(),
+  sessionToken,
+});
 
 export async function issueClientCommand(
   clientId: number,
   input: { name: ClientCommandName; args?: Record<string, unknown>; issued_by?: string },
+  sessionToken?: string,
 ) {
   return apiFetch<ClientCommandRecord>(
     `/${clientId}/commands`,
     { method: "POST", body: JSON.stringify(input) },
-    clientOpts(),
+    clientOpts(sessionToken),
   );
 }
 
-export async function getClientCommand(commandId: string) {
+export async function getClientCommand(commandId: string, sessionToken?: string) {
   return apiFetch<ClientCommandRecord>(
     `/commands/${encodeURIComponent(commandId)}`,
     {},
-    clientOpts(),
+    clientOpts(sessionToken),
   );
 }
 
-export async function getClientEvents(clientId: number) {
-  return apiFetch<{ events: ClientEventRecord[] }>(`/${clientId}/events`, {}, clientOpts());
+export async function getClientEvents(clientId: number, sessionToken?: string) {
+  return apiFetch<{ events: ClientEventRecord[] }>(`/${clientId}/events`, {}, clientOpts(sessionToken));
 }
