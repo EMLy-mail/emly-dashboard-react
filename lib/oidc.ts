@@ -12,6 +12,8 @@ import { createHash, randomBytes } from "node:crypto";
  */
 
 export const OIDC_FLOW_COOKIE = "aryx_oidc";
+/** The ID token, kept only to prove to the provider who is signing out (id_token_hint). */
+export const OIDC_ID_TOKEN_COOKIE = "aryx_id_token";
 export const OIDC_FLOW_MAX_AGE = 60 * 10;
 
 export type OidcConfig = {
@@ -126,11 +128,17 @@ export async function exchangeCode(
  * drop the dashboard session and the next click on SSO would sign straight
  * back in.
  */
-export async function endSessionUrl(cfg: OidcConfig): Promise<string | null> {
+export async function endSessionUrl(
+  cfg: OidcConfig,
+  idTokenHint?: string,
+): Promise<string | null> {
   const disco = await discover(cfg).catch(() => null);
   if (!disco?.end_session_endpoint) return null;
   const url = new URL(disco.end_session_endpoint);
   url.searchParams.set("client_id", cfg.clientId);
+  // With the hint the provider signs the user out straight away; without it,
+  // it asks them to confirm first.
+  if (idTokenHint) url.searchParams.set("id_token_hint", idTokenHint);
   url.searchParams.set("post_logout_redirect_uri", `${cfg.publicUrl}/login`);
   return url.toString();
 }

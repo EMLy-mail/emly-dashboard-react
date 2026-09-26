@@ -3,7 +3,13 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { ApiError, loginOidc } from "@/lib/api";
 import { setSessionToken } from "@/lib/auth";
-import { exchangeCode, getOidcConfig, OIDC_FLOW_COOKIE, type OidcFlowState } from "@/lib/oidc";
+import {
+  exchangeCode,
+  getOidcConfig,
+  OIDC_FLOW_COOKIE,
+  OIDC_ID_TOKEN_COOKIE,
+  type OidcFlowState,
+} from "@/lib/oidc";
 
 type LoginError = "ssoUnavailable" | "ssoDenied" | "ssoForbidden" | "ssoConflict" | "ssoFailed";
 
@@ -37,6 +43,13 @@ export async function GET(request: NextRequest) {
     const { idToken } = await exchangeCode(cfg, code, flow.verifier);
     const { session_id } = await loginOidc(idToken, flow.nonce);
     await setSessionToken(session_id);
+    store.set(OIDC_ID_TOKEN_COOKIE, idToken, {
+      httpOnly: true,
+      secure: cfg.publicUrl.startsWith("https://"),
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 30,
+    });
   } catch (e) {
     if (e instanceof ApiError && e.status === 403) failure = "ssoForbidden";
     else if (e instanceof ApiError && e.status === 409) failure = "ssoConflict";

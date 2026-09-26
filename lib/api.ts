@@ -150,6 +150,15 @@ export async function loginOidc(idToken: string, nonce: string) {
   );
 }
 
+/** Hands the provider's back-channel logout token to the API, which verifies it and drops that user's sessions. */
+export async function backchannelLogoutOidc(logoutToken: string) {
+  return apiFetch<{ sessions_removed: number }>(
+    "/admin/auth/oidc/backchannel-logout",
+    { method: "POST", body: JSON.stringify({ logout_token: logoutToken }) },
+    { requiresApi: false, requiresAdmin: true },
+  );
+}
+
 export async function validateSession(token: string) {
   return apiFetch<{ success: boolean; user: AuthUser }>(
     "/admin/auth/validate",
