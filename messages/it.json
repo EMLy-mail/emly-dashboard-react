@@ -515,6 +515,15 @@
           "date": "Data",
           "noData": "Nessun evento registrato per questo client."
         }
+      },
+      "delete": {
+        "button": "Elimina client",
+        "title": "Eliminare il client {hostname}?",
+        "description": "Verranno cancellati il client e tutto il suo storico eventi. I grafici della flotta non cambiano. Se la macchina contatta di nuovo l'API ricomparirà da zero: per bloccarla usa un ban.",
+        "cancel": "Annulla",
+        "confirm": "Elimina",
+        "success": "Client eliminato ({events} eventi cancellati)",
+        "failed": "Impossibile eliminare il client"
       }
     },
     "eventsChart": {

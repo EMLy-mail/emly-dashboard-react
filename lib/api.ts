@@ -766,6 +766,24 @@ export async function getStatsClientDetail(id: number) {
   );
 }
 
+export interface DeleteStatsClientResult {
+  status: "deleted";
+  client_id: number;
+  /** Raw updater_events rows removed with the client; -1 if the API could not count them. */
+  events_deleted: number;
+}
+
+// Removes the client row and its whole event history (events first, then the
+// client, in one transaction on the API side). The fleet-wide hourly rollup is
+// deliberately left alone, so the charts do not change.
+export async function deleteStatsClient(id: number) {
+  return apiFetch<DeleteStatsClientResult>(
+    `/stats/clients/${id}`,
+    { method: "DELETE" },
+    { requiresAdmin: true, requiresApi: false, baseUrl: updatesBase() },
+  );
+}
+
 export async function getStatsEvents(opts: {
   bucket?: StatsEventBucket;
   event_type?: string;

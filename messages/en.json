@@ -515,6 +515,15 @@
           "date": "Date",
           "noData": "No events recorded for this client."
         }
+      },
+      "delete": {
+        "button": "Delete client",
+        "title": "Delete client {hostname}?",
+        "description": "This removes the client and its whole event history. Fleet-wide charts are not affected. If the machine contacts the API again it will reappear from scratch: use a ban to block it.",
+        "cancel": "Cancel",
+        "confirm": "Delete",
+        "success": "Client deleted ({events} events removed)",
+        "failed": "Failed to delete client"
       }
     },
     "eventsChart": {
