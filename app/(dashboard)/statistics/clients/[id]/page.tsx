@@ -3,7 +3,9 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { getStatsClientDetail, getBans, ApiError, type Ban } from "@/lib/api";
+import { getCurrentUser } from "@/lib/auth";
 import { CreateBanDialog } from "@/components/create-ban-dialog";
+import { DeleteClientButton } from "@/components/delete-client-button";
 import { LoggedUserName } from "@/components/logged-user-name";
 import { isSessionDisconnected } from "@/lib/device-status";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -38,12 +40,14 @@ export default async function StatsClientDetailPage({ params }: PageProps) {
     throw e;
   }
 
-  const [t, tEvents, tBans, tHint] = await Promise.all([
+  const [t, tEvents, tBans, tHint, currentUser] = await Promise.all([
     getTranslations("statistics.clientDetail"),
     getTranslations("statistics.events"),
     getTranslations("bans"),
     getTranslations("clients.iconHint"),
+    getCurrentUser(),
   ]);
+  const isAdmin = currentUser?.role === "admin";
   const { client, events } = detail;
 
   // A ban is by identifier, not by client row, so "is this machine blocked"
@@ -93,31 +97,36 @@ export default async function StatsClientDetailPage({ params }: PageProps) {
 
       {/* Prefilled straight from the row being looked at - the identifiers
           are right here, and retyping a HWID by hand is how you ban the
-          wrong machine. */}
-      <div className="flex flex-wrap gap-2">
-        <CreateBanDialog
-          compact
-          defaultType="hostname"
-          defaultValue={client.hostname}
-          label={tBans("banHostname")}
-        />
-        {client.hwid && (
+          wrong machine. Every button here is admin-only (the actions
+          re-check the role regardless), so the whole row is hidden for
+          anyone else rather than left as an empty container. */}
+      {isAdmin && (
+        <div className="flex flex-wrap gap-2">
           <CreateBanDialog
             compact
-            defaultType="hwid"
-            defaultValue={client.hwid}
-            label={tBans("banHwid")}
+            defaultType="hostname"
+            defaultValue={client.hostname}
+            label={tBans("banHostname")}
           />
-        )}
-        {client.last_ip && (
-          <CreateBanDialog
-            compact
-            defaultType="ip"
-            defaultValue={client.last_ip}
-            label={tBans("banIp")}
-          />
-        )}
-      </div>
+          {client.hwid && (
+            <CreateBanDialog
+              compact
+              defaultType="hwid"
+              defaultValue={client.hwid}
+              label={tBans("banHwid")}
+            />
+          )}
+          {client.last_ip && (
+            <CreateBanDialog
+              compact
+              defaultType="ip"
+              defaultValue={client.last_ip}
+              label={tBans("banIp")}
+            />
+          )}
+          <DeleteClientButton clientId={client.id} hostname={client.hostname} />
+        </div>
+      )}
 
       <Card>
         <CardContent className="grid gap-4 pt-6 sm:grid-cols-2 lg:grid-cols-3">
