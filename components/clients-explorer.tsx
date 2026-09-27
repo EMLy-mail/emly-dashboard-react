@@ -798,14 +798,13 @@ export function ClientsExplorer({
                         </div>
                       </TableCell>
                       <TableCell>
-                        <button
-                          type="button"
-                          aria-pressed={isSelected}
-                          onClick={() => selectDevice(client.id)}
+                        <Link
+                          href={`/clients/${client.id}`}
+                          onClick={(e) => e.stopPropagation()}
                           className="font-medium hover:underline"
                         >
                           {client.hostname}
-                        </button>
+                        </Link>
                       </TableCell>
                       {/* title carries the exact timestamp the relative label
                           rounds away. */}
@@ -1299,7 +1298,7 @@ function DeviceDetail({
         </dl>
 
         <Button variant="outline" size="sm" asChild className="w-full">
-          <Link href={`/statistics/clients/${client.id}`}>
+          <Link href={`/clients/${client.id}`}>
             {t("detail.openFull")}
             <ArrowUpRight className="h-4 w-4" />
           </Link>

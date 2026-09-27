@@ -55,6 +55,7 @@ export function Sidebar({ user }: { user: AuthUser }) {
           ? [{ href: "/remote", label: t("nav.remote"), icon: TerminalSquare }]
           : []),
         { href: "/statistics", label: t("nav.statistics"), icon: BarChart3 },
+        { href: "/users", label: t("nav.users"), icon: Users },
       ],
     },
     {
@@ -63,7 +64,6 @@ export function Sidebar({ user }: { user: AuthUser }) {
       logo: "/emly-logo.png",
       items: [
         { href: "/bug-reports", label: t("nav.bugReports"), icon: Bug },
-        { href: "/users", label: t("nav.users"), icon: Users },
         { href: "/updates", label: t("nav.updates"), icon: PackageOpen },
         { href: "/config", label: t("nav.config"), icon: SlidersHorizontal },
         { href: "/bans", label: t("nav.bans"), icon: Ban },

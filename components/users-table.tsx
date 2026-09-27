@@ -90,7 +90,9 @@ export function UsersTable({
                 </TableCell>
               </TableRow>
             )}
-            {users.map((user) => (
+            {users.map((user) => {
+              const isSelf = actor?.id === user.id;
+              return (
               <TableRow key={user.id}>
                 <TableCell className="font-mono text-sm">
                   {user.username}
@@ -115,7 +117,7 @@ export function UsersTable({
                   {formatDate(user.created_at)}
                 </TableCell>
                 <TableCell>
-                  {isAdmin && (
+                  {isAdmin && canManageUser(actor, user) && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon">
@@ -123,24 +125,26 @@ export function UsersTable({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => handleToggleEnabled(user)}
-                          disabled={isPending}
-                        >
-                          {user.enabled ? (
-                            <ToggleLeft className="mr-2 h-4 w-4" />
-                          ) : (
-                            <ToggleRight className="mr-2 h-4 w-4" />
-                          )}
-                          {user.enabled ? t("table.disable") : t("table.enable")}
-                        </DropdownMenuItem>
+                        {!isSelf && canManageUser(actor, user) && (
+                          <DropdownMenuItem
+                            onClick={() => handleToggleEnabled(user)}
+                            disabled={isPending}
+                          >
+                            {user.enabled ? (
+                              <ToggleLeft className="mr-2 h-4 w-4" />
+                            ) : (
+                              <ToggleRight className="mr-2 h-4 w-4" />
+                            )}
+                            {user.enabled ? t("table.disable") : t("table.enable")}
+                          </DropdownMenuItem>
+                        )}
                         {user.auth_provider !== "oidc" && canManageUser(actor, user) && (
                           <DropdownMenuItem onClick={() => setResetTarget(user)}>
                             <KeyRound className="mr-2 h-4 w-4" />
                             {t("table.resetPassword")}
                           </DropdownMenuItem>
                         )}
-                        {canManageUser(actor, user) && (
+                        {!isSelf && canManageUser(actor, user) && (
                           <>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
@@ -158,7 +162,8 @@ export function UsersTable({
                   )}
                 </TableCell>
               </TableRow>
-            ))}
+              );
+            })}
           </TableBody>
         </Table>
       </div>

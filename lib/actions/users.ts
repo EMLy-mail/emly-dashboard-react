@@ -20,6 +20,7 @@ async function requireCanManage(targetId: string) {
   const target = (await getUsers()).find((u) => u.id === targetId);
   if (!target) throw new Error("User not found");
   if (!canManageUser(actor, target)) throw new Error("Unauthorized");
+  return actor;
 }
 
 export type UserActionState = { error?: string; success?: boolean };
@@ -44,13 +45,15 @@ export async function createUserAction(
 }
 
 export async function updateUserAction(id: string, data: { displayname?: string; enabled?: boolean }) {
-  await requireCanManage(id);
+  const actor = await requireCanManage(id);
+  if (data.enabled === false && actor.id === id) throw new Error("Cannot disable your own account");
   await updateUser(id, data, await getSessionToken());
   revalidatePath("/users");
 }
 
 export async function deleteUserAction(id: string) {
-  await requireCanManage(id);
+  const actor = await requireCanManage(id);
+  if (actor.id === id) throw new Error("Cannot delete your own account");
   await deleteUser(id, await getSessionToken());
   revalidatePath("/users");
 }

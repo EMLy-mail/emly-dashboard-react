@@ -72,7 +72,7 @@ export default async function StatsClientDetailPage({ params }: PageProps) {
     <div className="space-y-6">
       <div>
         <Button variant="ghost" size="sm" asChild className="mb-2 -ml-2">
-          <Link href="/statistics">
+          <Link href="/clients">
             <ArrowLeft className="mr-2 h-4 w-4" />
             {t("back")}
           </Link>

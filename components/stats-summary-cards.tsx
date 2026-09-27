@@ -41,7 +41,7 @@ export function StatsSummaryCards({ summary }: { summary: StatsSummary }) {
           <CardTitle className="text-sm font-medium text-muted-foreground">{t("eventsLast24h")}</CardTitle>
         </CardHeader>
         <CardContent>
-          {summary.events_last_24h.length === 0 ? (
+          {(summary.events_last_24h ?? []).length === 0 ? (
             <p className="text-sm text-muted-foreground">{t("noData")}</p>
           ) : (
             <ul className="space-y-1">
@@ -61,7 +61,7 @@ export function StatsSummaryCards({ summary }: { summary: StatsSummary }) {
           <CardTitle className="text-sm font-medium text-muted-foreground">{t("clientsByVersion")}</CardTitle>
         </CardHeader>
         <CardContent>
-          {summary.clients_by_version.length === 0 ? (
+          {(summary.clients_by_version ?? []).length === 0 ? (
             <p className="text-sm text-muted-foreground">{t("noData")}</p>
           ) : (
             <ul className="flex flex-wrap gap-1.5">
