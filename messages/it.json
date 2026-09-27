@@ -352,6 +352,7 @@
       "onlineInternal": "Online dalla rete interna",
       "onlinePublicIp": "Online, ma l'ultimo contatto arriva da un indirizzo IP pubblico",
       "noLoggedUser": "Nessun utente connesso su questa macchina",
+      "loggedUserPcOffline": "Utente risultava collegato, ma il PC non è al momento raggiungibile",
       "loggedUserUnknown": "Sconosciuto: AryxD Agent è precedente alla {version} e non riporta l'utente loggato",
       "versionOutdatedCritical": "Versione di {name} molto obsoleta, funzionalità importanti sono mancanti e/o potrebbe smettere di funzionare",
       "versionOutdatedWarning": "Versione di {name} da aggiornare, alcune funzionalità sono impattate",

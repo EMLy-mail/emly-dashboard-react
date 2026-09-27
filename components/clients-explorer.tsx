@@ -15,6 +15,7 @@ import {
   ArrowDown,
   Check,
   CircleAlert,
+  PowerOff,
   CircleQuestionMark,
   ArrowUp,
   ArrowUpDown,
@@ -849,11 +850,24 @@ export function ClientsExplorer({
                           machine — it is the updater that needs replacing). */}
                       <TableCell className="hidden text-sm md:table-cell">
                         {client.logged_user?.trim() ? (
-                          <LoggedUserName
-                            name={revealed ? client.logged_user : maskUser(client.logged_user)}
-                            disconnected={isSessionDisconnected(client)}
-                            hint={disconnectedSessionHint(client, t, locale)}
-                          />
+                          !assessment.online ? (
+                            <span className="inline-flex items-center gap-1.5">
+                              <HintedIcon
+                                icon={PowerOff}
+                                hint={t("iconHint.loggedUserPcOffline")}
+                                className="text-amber-600 dark:text-amber-400"
+                              />
+                              <span className="opacity-70">
+                                {revealed ? client.logged_user : maskUser(client.logged_user)}
+                              </span>
+                            </span>
+                          ) : (
+                            <LoggedUserName
+                              name={revealed ? client.logged_user : maskUser(client.logged_user)}
+                              disconnected={isSessionDisconnected(client)}
+                              hint={disconnectedSessionHint(client, t, locale)}
+                            />
+                          )
                         ) : updaterTooOldForLoggedUser(client.updater_version) ? (
                           <HintedIcon
                             icon={TriangleAlert}
@@ -913,7 +927,7 @@ export function ClientsExplorer({
                         <div className="flex items-center gap-1.5">
                           {client.updater_version &&
                             (compareVersions(client.updater_version, ARYX_BRAND_MIN_UPDATER_VERSION) === -1 ? (
-                              <BrandMark src="/emly-logo.png" className="mx-0.5 h-4 w-4" />
+                              <BrandMark src="/emly-logo.png" className="mx-0.5 h-4 w-4 bg-[#b8860b]" />
                             ) : (
                               <BrandMark src="/aryx-logo.png" className="h-5 w-5" />
                             ))}

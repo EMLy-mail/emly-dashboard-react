@@ -17,7 +17,7 @@ export function OsIcon({ osVersion, className }: { osVersion: string | null | un
       viewBox="0 0 640 640"
       fill="currentColor"
       aria-hidden="true"
-      className={cn("h-5 w-5 shrink-0", className)}
+      className={cn("h-5 w-5 shrink-0", major === 11 && "text-[#3fc6ff]", className)}
     >
       <path d={major === 10 ? WINDOWS_PATH : MICROSOFT_PATH} />
     </svg>
