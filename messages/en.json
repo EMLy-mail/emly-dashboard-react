@@ -9,7 +9,8 @@
       "config": "Remote Config",
       "bans": "Bans",
       "clients": "Clients",
-      "remote": "Remote control"
+      "remote": "Remote control",
+      "downloadQueue": "Download queue"
     },
     "signOut": "Sign out",
     "toggleTheme": "Toggle dark mode",
@@ -763,5 +764,87 @@
     },
     "cancel": "Cancel",
     "confirm": "Confirm"
+  },
+  "downloadQueue": {
+    "title": "Download queue",
+    "description": "How many installers (EMLy and Updater, one shared pool) the API serves at the same time.",
+    "restartNotice": "Changes made here live only in the API's memory: they do not survive an API restart, after which the .env values come back. With several API replicas each has its own queue, and this page shows only the instance that answered.",
+    "saved": "Download queue updated.",
+    "seconds": "{value} s",
+    "status": {
+      "title": "Status",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "modified": "Modified",
+      "enabledHint": "When every slot is taken, new downloads get 429 with Retry-After and the Updater tries again later.",
+      "disabledHint": "In-flight downloads are still tracked, but nobody is refused.",
+      "usage": "{active} / {capacity} downloads in progress",
+      "available": "{available} free",
+      "overCapacity": "More downloads in progress than slots: new ones are refused until enough finish.",
+      "retryAfter": "Retry-After",
+      "acquired": "Accepted",
+      "rejected": "Refused (429)",
+      "evicted": "Stopped",
+      "sinceRestart": "Counters since the last API restart."
+    },
+    "controls": {
+      "title": "Controls",
+      "reset": "Restore .env",
+      "resetHint": ".env values: {enabled}, {capacity} slots, Retry-After {retry} s",
+      "resetDone": ".env values restored.",
+      "defaults": ".env values: {enabled}, {capacity} slots, Retry-After {retry} s.",
+      "enabled": "Queue",
+      "enabledHint": "Disabled, the queue refuses nothing.",
+      "enable": "Enable",
+      "disable": "Disable",
+      "capacity": "Capacity (slots)",
+      "retryAfter": "Retry-After",
+      "secondsUnit": "seconds",
+      "apply": "Apply",
+      "capacityRange": "Must be an integer between {min} and {max}.",
+      "retryRange": "Must be an integer between {min} and {max}."
+    },
+    "slots": {
+      "title": "Downloads in progress",
+      "description": "Oldest first. Stopping one hands the Updater a truncated file, which it discards and downloads again later.",
+      "evictAll": "Stop all",
+      "evict": "Stop",
+      "evicted": "Download stopped.",
+      "evictedAll": "{count, plural, =0 {No download was in progress.} one {# download stopped.} other {# downloads stopped.}}",
+      "product": "Product",
+      "version": "Version",
+      "hostname": "Hostname",
+      "ip": "IP",
+      "hwid": "HWID",
+      "started": "Started",
+      "startedAgo": "{elapsed} ago",
+      "empty": "No download in progress."
+    },
+    "product": {
+      "emly": "EMLy",
+      "updater": "Updater"
+    },
+    "elapsed": {
+      "seconds": "{s} s",
+      "minutes": "{m} min {s} s",
+      "hours": "{h} h {m} min"
+    },
+    "confirm": {
+      "cancel": "Cancel",
+      "capacityTitle": "Reduce capacity to {capacity}?",
+      "capacityDescription": "{active} downloads are in progress, more than {capacity}. Nobody is stopped, but new downloads will be refused until enough of them finish.",
+      "capacityConfirm": "Reduce",
+      "evictTitle": "Stop this download?",
+      "evictDescription": "{product} {version} for {host} is interrupted and its slot freed at once. The Updater discards the truncated file and downloads it again later.",
+      "evictAllTitle": "Stop {count, plural, one {# download} other {# downloads}} in progress?",
+      "evictAllDescription": "Every in-flight download is interrupted and every slot freed. The Updaters discard the truncated files and download them again later.",
+      "evictConfirm": "Stop"
+    },
+    "errors": {
+      "unauthorized": "The API refused the dashboard's keys (401): check ADMIN_KEY and DASHBOARD_KEY on the dashboard server and on the API.",
+      "unavailable": "Feature not available on this instance: the download queue is not configured on the API (503).",
+      "generic": "Could not read the download queue.",
+      "stale": "Update failed, the data shown may be out of date."
+    }
   }
 }

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useTranslations } from "next-intl";
-import { Bug, Users, PackageOpen, BarChart3, SlidersHorizontal, Ban, KeyRound, LogOut, Sun, Moon, Menu, X, MonitorSmartphone, TerminalSquare } from "lucide-react";
+import { Bug, Users, PackageOpen, BarChart3, SlidersHorizontal, Ban, KeyRound, LogOut, Sun, Moon, Menu, X, MonitorSmartphone, TerminalSquare, Download } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
@@ -43,6 +43,9 @@ export function Sidebar({ user }: { user: AuthUser }) {
     { href: "/bug-reports", label: t("nav.bugReports"), icon: Bug },
     { href: "/users", label: t("nav.users"), icon: Users },
     { href: "/updates", label: t("nav.updates"), icon: PackageOpen },
+    ...(user.role === "admin"
+      ? [{ href: "/download-queue", label: t("nav.downloadQueue"), icon: Download }]
+      : []),
     { href: "/clients", label: t("nav.clients"), icon: MonitorSmartphone },
     ...(user.role === "admin"
       ? [{ href: "/remote", label: t("nav.remote"), icon: TerminalSquare }]

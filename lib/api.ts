@@ -1047,3 +1047,86 @@ export async function getClientCommand(commandId: string) {
 export async function getClientEvents(clientId: number) {
   return apiFetch<{ events: ClientEventRecord[] }>(`/${clientId}/events`, {}, clientOpts());
 }
+
+// ── Download queue ─────────────────────────────────────────────────────────
+// Caps how many installers (EMLy and Updater, one shared pool) the API serves
+// at once. State lives in the API's RAM, per instance: every change here lasts
+// until the next API restart. Mounted at /v2/download-queue, not /v2/api, and
+// requires both X-Admin-Key and X-Dashboard-Key.
+
+function downloadQueueBase(): string {
+  return env.apiBaseUrl + "/v2/download-queue";
+}
+
+export type DownloadQueueProduct = "emly" | "updater";
+
+export interface DownloadQueueSlot {
+  id: number;
+  product: DownloadQueueProduct;
+  version: string;
+  ip?: string;
+  hostname?: string;
+  hwid?: string;
+  started_at: string;
+}
+
+export interface DownloadQueueSettings {
+  enabled: boolean;
+  capacity: number;
+  retry_after_seconds: number;
+}
+
+export interface DownloadQueueState extends DownloadQueueSettings {
+  active: number;
+  /** `capacity - active`, floored at 0: can be 0 with active > capacity after a shrink. */
+  available: number;
+  acquired_total: number;
+  rejected_total: number;
+  evicted_total: number;
+  /** The API's .env values, restored by the reset route. */
+  defaults: DownloadQueueSettings;
+  /** Oldest first; always an array. */
+  slots: DownloadQueueSlot[];
+}
+
+const downloadQueueOpts = (sessionToken?: string) => ({
+  requiresAdmin: true,
+  requiresApi: false,
+  baseUrl: downloadQueueBase(),
+  sessionToken,
+});
+
+export async function getDownloadQueue() {
+  return apiFetch<DownloadQueueState>("", {}, downloadQueueOpts());
+}
+
+export async function updateDownloadQueue(
+  data: Partial<DownloadQueueSettings>,
+  opts: { sessionToken?: string } = {},
+) {
+  return apiFetch<DownloadQueueState>(
+    "",
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    },
+    downloadQueueOpts(opts.sessionToken),
+  );
+}
+
+export async function resetDownloadQueue(opts: { sessionToken?: string } = {}) {
+  return apiFetch<DownloadQueueState>("/reset", { method: "POST" }, downloadQueueOpts(opts.sessionToken));
+}
+
+export async function evictDownloadQueueSlot(id: number, opts: { sessionToken?: string } = {}) {
+  return apiFetch<{ evicted: number }>(
+    `/slots/${id}`,
+    { method: "DELETE" },
+    downloadQueueOpts(opts.sessionToken),
+  );
+}
+
+export async function evictAllDownloadQueueSlots(opts: { sessionToken?: string } = {}) {
+  return apiFetch<{ evicted: number }>("/slots", { method: "DELETE" }, downloadQueueOpts(opts.sessionToken));
+}
