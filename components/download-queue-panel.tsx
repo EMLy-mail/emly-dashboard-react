@@ -43,7 +43,6 @@ import {
 // The spec asks for 5 s on this page and no polling anywhere else.
 const POLL_MS = 5_000;
 const CLOCK_MS = 1_000;
-const CAPACITY_STEPS = [10, 50] as const;
 const CAPACITY_MIN = 1;
 const CAPACITY_MAX = 10000;
 const RETRY_AFTER_MIN = 1;
@@ -282,14 +281,6 @@ export function DownloadQueuePanel({
     patch(data);
   }
 
-  /** The +/- buttons edit the draft; nothing is sent until Save. */
-  function stepCapacity(step: number) {
-    const base = Number(capacityDraft ?? current.capacity);
-    const next = Math.min(CAPACITY_MAX, Math.max(CAPACITY_MIN, (Number.isInteger(base) ? base : current.capacity) + step));
-    setCapacityDraft(next === current.capacity ? null : String(next));
-    setFieldError("capacity", null);
-  }
-
   function reset() {
     startTransition(async () => {
       const r = await resetDownloadQueueAction();
@@ -489,42 +480,23 @@ export function DownloadQueuePanel({
                 htmlFor="dq-capacity"
                 error={fieldErrors.capacity}
               >
-                <div className="flex flex-col items-start gap-2">
-                  {/* The empty unit slot keeps the input aligned with the rows below. */}
-                  <div className="flex items-center gap-2">
-                    <Input
-                      id="dq-capacity"
-                      type="number"
-                      inputMode="numeric"
-                      min={CAPACITY_MIN}
-                      max={CAPACITY_MAX}
-                      className="w-24"
-                      value={capacityDraft ?? String(current.capacity)}
-                      aria-invalid={fieldErrors.capacity ? true : undefined}
-                      onChange={(e) => {
-                        setCapacityDraft(e.target.value);
-                        setFieldError("capacity", null);
-                      }}
-                    />
-                    <span className="w-14" aria-hidden />
-                  </div>
-                  <div className="flex gap-1">
-                    <Button type="button" variant="outline" size="sm" disabled={isPending} onClick={() => stepCapacity(-10)}>
-                      −10
-                    </Button>
-                    {CAPACITY_STEPS.map((step) => (
-                      <Button
-                        key={step}
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={isPending}
-                        onClick={() => stepCapacity(step)}
-                      >
-                        +{step}
-                      </Button>
-                    ))}
-                  </div>
+                {/* The empty unit slot keeps the input aligned with the rows below. */}
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="dq-capacity"
+                    type="number"
+                    inputMode="numeric"
+                    min={CAPACITY_MIN}
+                    max={CAPACITY_MAX}
+                    className="w-24"
+                    value={capacityDraft ?? String(current.capacity)}
+                    aria-invalid={fieldErrors.capacity ? true : undefined}
+                    onChange={(e) => {
+                      setCapacityDraft(e.target.value);
+                      setFieldError("capacity", null);
+                    }}
+                  />
+                  <span className="w-14" aria-hidden />
                 </div>
               </SettingRow>
 
