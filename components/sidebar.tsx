@@ -56,6 +56,11 @@ export function Sidebar({ user }: { user: AuthUser }) {
           : []),
         { href: "/statistics", label: t("nav.statistics"), icon: BarChart3 },
         { href: "/users", label: t("nav.users"), icon: Users },
+        ...(canManageDownloadQueue(user.role)
+          ? [{ href: "/download-queue", label: t("nav.downloadQueue"), icon: Download }]
+          : []),
+        { href: "/config", label: t("nav.config"), icon: SlidersHorizontal },
+        { href: "/bans", label: t("nav.bans"), icon: Ban },
       ],
     },
     {
@@ -65,11 +70,6 @@ export function Sidebar({ user }: { user: AuthUser }) {
       items: [
         { href: "/bug-reports", label: t("nav.bugReports"), icon: Bug },
         { href: "/updates", label: t("nav.updates"), icon: PackageOpen },
-        ...(canManageDownloadQueue(user.role)
-          ? [{ href: "/download-queue", label: t("nav.downloadQueue"), icon: Download }]
-          : []),
-        { href: "/config", label: t("nav.config"), icon: SlidersHorizontal },
-        { href: "/bans", label: t("nav.bans"), icon: Ban },
       ],
     },
   ];
