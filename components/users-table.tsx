@@ -35,8 +35,17 @@ import {
 } from "@/components/ui/alert-dialog";
 import { MoreHorizontal, Trash2, KeyRound, ToggleLeft, ToggleRight } from "lucide-react";
 import { formatDate } from "@/lib/format-date";
+import { canManageUser } from "@/lib/roles";
 
-export function UsersTable({ users, isAdmin }: { users: User[]; isAdmin: boolean }) {
+export function UsersTable({
+  users,
+  isAdmin,
+  actor,
+}: {
+  users: User[];
+  isAdmin: boolean;
+  actor: { id: string; role: User["role"] } | null;
+}) {
   const [resetTarget, setResetTarget] = useState<User | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -81,12 +90,21 @@ export function UsersTable({ users, isAdmin }: { users: User[]; isAdmin: boolean
                 </TableCell>
               </TableRow>
             )}
-            {users.map((user) => (
+            {users.map((user) => {
+              const isSelf = actor?.id === user.id;
+              return (
               <TableRow key={user.id}>
-                <TableCell className="font-mono text-sm">{user.username}</TableCell>
+                <TableCell className="font-mono text-sm">
+                  {user.username}
+                  {user.auth_provider === "oidc" && (
+                    <Badge variant="outline" className="ml-2 align-middle text-[10px]">
+                      {t("table.sso")}
+                    </Badge>
+                  )}
+                </TableCell>
                 <TableCell>{user.displayname}</TableCell>
                 <TableCell>
-                  <Badge variant={user.role === "admin" ? "default" : "secondary"}>
+                  <Badge variant={user.role === "owner" || user.role === "admin" ? "default" : "secondary"}>
                     {user.role}
                   </Badge>
                 </TableCell>
@@ -99,7 +117,7 @@ export function UsersTable({ users, isAdmin }: { users: User[]; isAdmin: boolean
                   {formatDate(user.created_at)}
                 </TableCell>
                 <TableCell>
-                  {isAdmin && (
+                  {isAdmin && canManageUser(actor, user) && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon">
@@ -107,36 +125,45 @@ export function UsersTable({ users, isAdmin }: { users: User[]; isAdmin: boolean
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => handleToggleEnabled(user)}
-                          disabled={isPending}
-                        >
-                          {user.enabled ? (
-                            <ToggleLeft className="mr-2 h-4 w-4" />
-                          ) : (
-                            <ToggleRight className="mr-2 h-4 w-4" />
-                          )}
-                          {user.enabled ? t("table.disable") : t("table.enable")}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setResetTarget(user)}>
-                          <KeyRound className="mr-2 h-4 w-4" />
-                          {t("table.resetPassword")}
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          className="text-destructive"
-                          onClick={() => setDeleteTarget(user)}
-                          disabled={isPending}
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          {t("table.delete")}
-                        </DropdownMenuItem>
+                        {!isSelf && canManageUser(actor, user) && (
+                          <DropdownMenuItem
+                            onClick={() => handleToggleEnabled(user)}
+                            disabled={isPending}
+                          >
+                            {user.enabled ? (
+                              <ToggleLeft className="mr-2 h-4 w-4" />
+                            ) : (
+                              <ToggleRight className="mr-2 h-4 w-4" />
+                            )}
+                            {user.enabled ? t("table.disable") : t("table.enable")}
+                          </DropdownMenuItem>
+                        )}
+                        {user.auth_provider !== "oidc" && canManageUser(actor, user) && (
+                          <DropdownMenuItem onClick={() => setResetTarget(user)}>
+                            <KeyRound className="mr-2 h-4 w-4" />
+                            {t("table.resetPassword")}
+                          </DropdownMenuItem>
+                        )}
+                        {!isSelf && canManageUser(actor, user) && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="text-destructive"
+                              onClick={() => setDeleteTarget(user)}
+                              disabled={isPending}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              {t("table.delete")}
+                            </DropdownMenuItem>
+                          </>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   )}
                 </TableCell>
               </TableRow>
-            ))}
+              );
+            })}
           </TableBody>
         </Table>
       </div>

@@ -3,6 +3,7 @@ import { getUsers } from "@/lib/api";
 import { getCurrentUser } from "@/lib/auth";
 import { UsersTable } from "@/components/users-table";
 import { CreateUserDialog } from "@/components/create-user-dialog";
+import { isAdminRole } from "@/lib/roles";
 
 export default async function UsersPage() {
   const [users, currentUser, t] = await Promise.all([
@@ -10,7 +11,7 @@ export default async function UsersPage() {
     getCurrentUser(),
     getTranslations("users"),
   ]);
-  const isAdmin = currentUser?.role === "admin";
+  const isAdmin = isAdminRole(currentUser?.role);
 
   return (
     <div className="space-y-6">
@@ -21,7 +22,11 @@ export default async function UsersPage() {
         </div>
         {isAdmin && <CreateUserDialog />}
       </div>
-      <UsersTable users={users} isAdmin={isAdmin} />
+      <UsersTable
+        users={users}
+        isAdmin={isAdmin}
+        actor={currentUser ? { id: currentUser.id, role: currentUser.role } : null}
+      />
     </div>
   );
 }

@@ -407,7 +407,7 @@ export function StatsClientsTable({
               return (
                 <TableRow key={client.id}>
                   <TableCell>
-                    <Link href={`/statistics/clients/${client.id}`} className="font-medium hover:underline">
+                    <Link href={`/clients/${client.id}`} className="font-medium hover:underline">
                       {client.hostname}
                     </Link>
                   </TableCell>

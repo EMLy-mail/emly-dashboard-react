@@ -15,6 +15,7 @@ import {
   ArrowDown,
   Check,
   CircleAlert,
+  PowerOff,
   CircleQuestionMark,
   ArrowUp,
   ArrowUpDown,
@@ -57,6 +58,7 @@ import { useLiveStatsClients } from "@/hooks/use-stats-stream";
 import { LoggedUserName } from "@/components/logged-user-name";
 import { PresenceDot } from "@/components/presence-dot";
 import { OsIcon } from "@/components/os-icon";
+import { BrandMark } from "@/components/brand-mark";
 import { shortOsLabel } from "@/lib/os-label";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -96,6 +98,8 @@ const CLOCK_REFRESH_MS = 30_000;
 // simply never sends the field, so its blank logged-user cell says nothing
 // about the machine and has to be read as "unknown", not "nobody".
 const LOGGED_USER_MIN_UPDATER_VERSION = "1.6.1";
+// First agent release shipped under the Aryx brand; older ones are still EMLy Updater.
+const ARYX_BRAND_MIN_UPDATER_VERSION = "1.7.2";
 const EMLY_VERSION_MIN_UPDATER_VERSION = "1.6.3";
 // Panel width bounds, in px. The floor is what the widest label in the
 // detail list needs before it starts wrapping mid-word.
@@ -795,14 +799,13 @@ export function ClientsExplorer({
                         </div>
                       </TableCell>
                       <TableCell>
-                        <button
-                          type="button"
-                          aria-pressed={isSelected}
-                          onClick={() => selectDevice(client.id)}
+                        <Link
+                          href={`/clients/${client.id}`}
+                          onClick={(e) => e.stopPropagation()}
                           className="font-medium hover:underline"
                         >
                           {client.hostname}
-                        </button>
+                        </Link>
                       </TableCell>
                       {/* title carries the exact timestamp the relative label
                           rounds away. */}
@@ -847,11 +850,24 @@ export function ClientsExplorer({
                           machine — it is the updater that needs replacing). */}
                       <TableCell className="hidden text-sm md:table-cell">
                         {client.logged_user?.trim() ? (
-                          <LoggedUserName
-                            name={revealed ? client.logged_user : maskUser(client.logged_user)}
-                            disconnected={isSessionDisconnected(client)}
-                            hint={disconnectedSessionHint(client, t, locale)}
-                          />
+                          !assessment.online ? (
+                            <span className="inline-flex items-center gap-1.5">
+                              <HintedIcon
+                                icon={PowerOff}
+                                hint={t("iconHint.loggedUserPcOffline")}
+                                className="text-amber-600 dark:text-amber-400"
+                              />
+                              <span className="opacity-70">
+                                {revealed ? client.logged_user : maskUser(client.logged_user)}
+                              </span>
+                            </span>
+                          ) : (
+                            <LoggedUserName
+                              name={revealed ? client.logged_user : maskUser(client.logged_user)}
+                              disconnected={isSessionDisconnected(client)}
+                              hint={disconnectedSessionHint(client, t, locale)}
+                            />
+                          )
                         ) : updaterTooOldForLoggedUser(client.updater_version) ? (
                           <HintedIcon
                             icon={TriangleAlert}
@@ -909,10 +925,16 @@ export function ClientsExplorer({
                         }
                       >
                         <div className="flex items-center gap-1.5">
+                          {client.updater_version &&
+                            (compareVersions(client.updater_version, ARYX_BRAND_MIN_UPDATER_VERSION) === -1 ? (
+                              <BrandMark src="/emly-logo.png" className="mx-0.5 h-4 w-4 bg-[#b8860b]" />
+                            ) : (
+                              <BrandMark src="/aryx-logo.png" className="h-5 w-5" />
+                            ))}
                           {client.updater_version ?? "—"}
                           <VersionGapIcon
                             gap={assessment.updaterGap}
-                            name="EMLy Updater"
+                            name="AryxD Agent"
                             latest={latestUpdaterVersion}
                           />
                         </div>
@@ -1290,7 +1312,7 @@ function DeviceDetail({
         </dl>
 
         <Button variant="outline" size="sm" asChild className="w-full">
-          <Link href={`/statistics/clients/${client.id}`}>
+          <Link href={`/clients/${client.id}`}>
             {t("detail.openFull")}
             <ArrowUpRight className="h-4 w-4" />
           </Link>

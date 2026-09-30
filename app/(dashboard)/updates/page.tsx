@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate } from "@/lib/format-date";
+import { isAdminRole } from "@/lib/roles";
 
 export default async function UpdatesPage() {
   const t = await getTranslations("updates");
@@ -44,7 +45,7 @@ export default async function UpdatesPage() {
   const updaterReleases =
     updaterReleasesResult.status === "fulfilled" ? (updaterReleasesResult.value ?? []) : [];
   const currentUser = currentUserResult.status === "fulfilled" ? currentUserResult.value : null;
-  const isAdmin = currentUser?.role === "admin";
+  const isAdmin = isAdminRole(currentUser?.role);
   const manifestUrl = `${env.facingUrl}/v2/updates/manifest`;
   const updaterManifestUrl = `${env.facingUrl}/v2/updates/manifest/updater`;
   // An empty (or absent) version is the "nothing to distribute" state.

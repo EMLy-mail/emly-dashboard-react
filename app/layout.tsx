@@ -19,8 +19,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "EMLy Admin",
-  description: "EMLy bug report administration dashboard",
+  title: "Aryx Console",
+  description: "Aryx Web Console - Agent Runtime for remote fleet sYstems eXecution",
 };
 
 export default async function RootLayout({

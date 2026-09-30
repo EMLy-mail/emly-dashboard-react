@@ -13,10 +13,11 @@ import {
   type ReleaseSeverity,
 } from "@/lib/api";
 import { getCurrentUser } from "@/lib/auth";
+import { isAdminRole } from "@/lib/roles";
 
 async function requireAdmin() {
   const user = await getCurrentUser();
-  if (!user || user.role !== "admin") throw new Error("Unauthorized");
+  if (!user || !isAdminRole(user.role)) throw new Error("Unauthorized");
 }
 
 export type ReleaseActionState = { error?: string; success?: boolean };
@@ -112,7 +113,7 @@ export async function deleteReleaseAction(version: string) {
   revalidatePath("/updates");
 }
 
-// ── EMLy Updater self-update releases ──────────────────────────────────────
+// ── AryxD Agent self-update releases ──────────────────────────────────────
 
 /** `datetime-local` value -> RFC 3339, or undefined when left blank. */
 function toRfc3339(value: FormDataEntryValue | null): string | undefined {

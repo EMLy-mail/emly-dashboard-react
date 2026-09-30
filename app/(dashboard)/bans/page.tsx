@@ -5,6 +5,7 @@ import { BansTable } from "@/components/bans-table";
 import { CreateBanDialog } from "@/components/create-ban-dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info } from "lucide-react";
+import { isAdminRole } from "@/lib/roles";
 
 export default async function BansPage() {
   const [bans, currentUser, t] = await Promise.all([
@@ -12,7 +13,7 @@ export default async function BansPage() {
     getCurrentUser(),
     getTranslations("bans"),
   ]);
-  const isAdmin = currentUser?.role === "admin";
+  const isAdmin = isAdminRole(currentUser?.role);
 
   return (
     <div className="space-y-6">

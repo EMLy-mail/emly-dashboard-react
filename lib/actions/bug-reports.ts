@@ -4,10 +4,11 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { deleteBugReport, updateBugReportStatus, type BugReportStatus } from "@/lib/api";
 import { getCurrentUser } from "@/lib/auth";
+import { isAdminRole } from "@/lib/roles";
 
 async function requireAdmin() {
   const user = await getCurrentUser();
-  if (!user || user.role !== "admin") throw new Error("Unauthorized");
+  if (!user || !isAdminRole(user.role)) throw new Error("Unauthorized");
 }
 
 export async function updateStatusAction(id: number, status: BugReportStatus) {

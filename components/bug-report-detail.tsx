@@ -39,6 +39,7 @@ import {
   FileIcon,
 } from "lucide-react";
 import { formatDateTime } from "@/lib/format-date";
+import JsonViewer from "@/components/8starlabs-ui/json-viewer";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -66,60 +67,6 @@ const FILE_ROLE_ICONS: Record<BugReportFile["file_role"], React.ElementType> = {
   localstorage: HardDrive,
   config: FileCode,
 };
-
-// ── JSON syntax highlighter ────────────────────────────────────────────────
-
-function JsonViewer({ data }: { data: Record<string, unknown> }) {
-  const json = JSON.stringify(data, null, 2);
-  const tokens: React.ReactNode[] = [];
-  const regex =
-    /("(?:\\u[a-fA-F0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(?:true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?|[{}[\],]|:|\s+)/g;
-
-  let last = 0;
-  let i = 0;
-  let m: RegExpExecArray | null;
-
-  while ((m = regex.exec(json)) !== null) {
-    if (m.index > last) tokens.push(json.slice(last, m.index));
-
-    const t = m[0];
-    let cls = "";
-    if (/^\s/.test(t)) {
-      tokens.push(t);
-      last = regex.lastIndex;
-      continue;
-    }
-    if (/^"/.test(t)) {
-      cls = /:$/.test(t)
-        ? "text-blue-500 dark:text-blue-400"
-        : "text-green-600 dark:text-green-500";
-    } else if (t === "true" || t === "false") {
-      cls = "text-purple-500 dark:text-purple-400";
-    } else if (t === "null") {
-      cls = "text-muted-foreground";
-    } else if (/^-?\d/.test(t)) {
-      cls = "text-orange-500 dark:text-orange-400";
-    }
-
-    tokens.push(
-      cls ? (
-        <span key={i++} className={cls}>
-          {t}
-        </span>
-      ) : (
-        t
-      ),
-    );
-    last = regex.lastIndex;
-  }
-  if (last < json.length) tokens.push(json.slice(last));
-
-  return (
-    <pre className="max-h-72 overflow-auto rounded-md bg-muted p-3 text-xs font-mono leading-relaxed">
-      {tokens}
-    </pre>
-  );
-}
 
 interface Props {
   report: BugReport;

@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { BugReportsTable } from "@/components/bug-reports-table";
 import { BugReportSearch } from "@/components/bug-report-search";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { isAdminRole } from "@/lib/roles";
 
 interface PageProps {
   searchParams: Promise<{ page?: string; search?: string }>;
@@ -19,7 +20,7 @@ export default async function BugReportsPage({ searchParams }: PageProps) {
     getCurrentUser(),
     getTranslations("bugReports"),
   ]);
-  const isAdmin = currentUser?.role === "admin";
+  const isAdmin = isAdminRole(currentUser?.role);
 
   return (
     <div className="space-y-6">

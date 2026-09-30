@@ -4,8 +4,10 @@ import { env, SERVER_USER_AGENT } from "./env";
 // ── Types ──────────────────────────────────────────────────────────────────
 
 export type BugReportStatus = "new" | "in_review" | "resolved" | "closed";
-/** "owner" is not issued by the API yet (users.role is ENUM(admin,user)). */
-export type UserRole = "admin" | "owner" | "user";
+export type UserRole = "owner" | "admin" | "user";
+
+// "oidc" accounts come from single sign-on: no password to change or reset.
+export type AuthProvider = "local" | "oidc";
 
 export interface BugReport {
   id: number;
@@ -50,6 +52,7 @@ export interface User {
   displayname: string;
   role: UserRole;
   enabled: boolean;
+  auth_provider: AuthProvider;
   created_at: string;
 }
 
@@ -59,6 +62,7 @@ export interface AuthUser {
   displayname: string;
   role: UserRole;
   enabled: boolean;
+  auth_provider: AuthProvider;
 }
 
 // ── Error ──────────────────────────────────────────────────────────────────
@@ -131,6 +135,27 @@ export async function login(username: string, password: string) {
     "/admin/auth/login",
     { method: "POST", body: JSON.stringify({ username, password }) },
     { requiresApi: false },
+  );
+}
+
+/**
+ * Exchanges the ID token the identity provider issued for an API session. The
+ * API verifies the token itself; the nonce proves it was minted for this login.
+ */
+export async function loginOidc(idToken: string, nonce: string) {
+  return apiFetch<{ session_id: string; user: AuthUser }>(
+    "/admin/auth/oidc",
+    { method: "POST", body: JSON.stringify({ id_token: idToken, nonce }) },
+    { requiresApi: false, requiresAdmin: true },
+  );
+}
+
+/** Hands the provider's back-channel logout token to the API, which verifies it and drops that user's sessions. */
+export async function backchannelLogoutOidc(logoutToken: string) {
+  return apiFetch<{ sessions_removed: number }>(
+    "/admin/auth/oidc/backchannel-logout",
+    { method: "POST", body: JSON.stringify({ logout_token: logoutToken }) },
+    { requiresApi: false, requiresAdmin: true },
   );
 }
 
@@ -225,27 +250,34 @@ export async function createUser(data: {
   );
 }
 
-export async function updateUser(id: string, data: { displayname?: string; enabled?: boolean }) {
+// The three calls below act on an account. Passing the acting user's session
+// token lets the API enforce the role rules itself (an admin cannot touch
+// another admin); without it the call is treated as admin-key automation.
+export async function updateUser(
+  id: string,
+  data: { displayname?: string; enabled?: boolean },
+  sessionToken?: string,
+) {
   return apiFetch<{ updated: boolean }>(
     `/admin/users/${id}`,
     { method: "PATCH", body: JSON.stringify(data) },
-    { requiresAdmin: true, requiresApi: false },
+    { requiresAdmin: true, requiresApi: false, sessionToken },
   );
 }
 
-export async function deleteUser(id: string) {
+export async function deleteUser(id: string, sessionToken?: string) {
   return apiFetch<{ deleted: boolean }>(
     `/admin/users/${id}`,
     { method: "DELETE" },
-    { requiresAdmin: true, requiresApi: false },
+    { requiresAdmin: true, requiresApi: false, sessionToken },
   );
 }
 
-export async function resetUserPassword(id: string, password: string) {
+export async function resetUserPassword(id: string, password: string, sessionToken?: string) {
   return apiFetch<{ updated: boolean }>(
     `/admin/users/${id}/reset-password`,
     { method: "POST", body: JSON.stringify({ password }) },
-    { requiresAdmin: true, requiresApi: false },
+    { requiresAdmin: true, requiresApi: false, sessionToken },
   );
 }
 
@@ -404,7 +436,7 @@ export async function setReleaseChannels(
 // ── Updater self-update ────────────────────────────────────────────────────
 
 /**
- * Self-update contract for the EMLy Updater. Deliberately poorer than
+ * Self-update contract for the AryxD Agent. Deliberately poorer than
  * `UpdateManifest`: no channels, no criticality, no downgrade. An empty (or
  * absent) `version` means "nothing to distribute" — the kill-switch state.
  */
@@ -773,7 +805,7 @@ export async function getStatsEvents(opts: {
 
 // ── Remote Config ──────────────────────────────────────────────────────────
 //
-// The fleet-wide policy document served to the EMLy Updater and EMLy at
+// The fleet-wide policy document served to the AryxD Agent and EMLy at
 // GET /v2/config. See emly-api-go's
 // docs/superpowers/specs/2026-09-04-remote-config-api-design.md (storage,
 // revisions, admin routes) and emly-updater's
@@ -1024,29 +1056,36 @@ export interface ClientEventRecord {
   truncated?: boolean;
 }
 
-const clientOpts = () => ({ requiresAdmin: true, requiresApi: false, baseUrl: clientBase() });
+// The session token lets the API refuse anyone who is not an owner (remote control is owner-only).
+const clientOpts = (sessionToken?: string) => ({
+  requiresAdmin: true,
+  requiresApi: false,
+  baseUrl: clientBase(),
+  sessionToken,
+});
 
 export async function issueClientCommand(
   clientId: number,
   input: { name: ClientCommandName; args?: Record<string, unknown>; issued_by?: string },
+  sessionToken?: string,
 ) {
   return apiFetch<ClientCommandRecord>(
     `/${clientId}/commands`,
     { method: "POST", body: JSON.stringify(input) },
-    clientOpts(),
+    clientOpts(sessionToken),
   );
 }
 
-export async function getClientCommand(commandId: string) {
+export async function getClientCommand(commandId: string, sessionToken?: string) {
   return apiFetch<ClientCommandRecord>(
     `/commands/${encodeURIComponent(commandId)}`,
     {},
-    clientOpts(),
+    clientOpts(sessionToken),
   );
 }
 
-export async function getClientEvents(clientId: number) {
-  return apiFetch<{ events: ClientEventRecord[] }>(`/${clientId}/events`, {}, clientOpts());
+export async function getClientEvents(clientId: number, sessionToken?: string) {
+  return apiFetch<{ events: ClientEventRecord[] }>(`/${clientId}/events`, {}, clientOpts(sessionToken));
 }
 
 // ── Download queue ─────────────────────────────────────────────────────────

@@ -8,6 +8,7 @@ import { ConfigPreviewDialog } from "@/components/config-preview-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatDateTime } from "@/lib/format-date";
+import { isAdminRole } from "@/lib/roles";
 
 interface PageProps {
   searchParams: Promise<{ page?: string; status?: string }>;
@@ -29,7 +30,7 @@ export default async function ConfigPage({ searchParams }: PageProps) {
     getCurrentUser(),
   ]);
 
-  const isAdmin = currentUser?.role === "admin";
+  const isAdmin = isAdminRole(currentUser?.role);
   const revisions = revisionsResult?.revisions ?? [];
   const totalPages = revisionsResult ? Math.max(1, Math.ceil(revisionsResult.total / page_size)) : 1;
   const published = publishedResult?.revisions?.[0] ?? null;

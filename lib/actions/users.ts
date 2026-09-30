@@ -1,12 +1,26 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createUser, updateUser, deleteUser, resetUserPassword, ApiError, type UserRole } from "@/lib/api";
-import { getCurrentUser } from "@/lib/auth";
+import { createUser, updateUser, deleteUser, getUsers, resetUserPassword, ApiError, type UserRole } from "@/lib/api";
+import { getCurrentUser, getSessionToken } from "@/lib/auth";
+import { canManageUser, isAdminRole } from "@/lib/roles";
 
 async function requireAdmin() {
   const user = await getCurrentUser();
-  if (!user || user.role !== "admin") throw new Error("Unauthorized");
+  if (!user || !isAdminRole(user.role)) throw new Error("Unauthorized");
+  return user;
+}
+
+// The API authenticates these calls with the admin key, so it cannot tell who
+// is acting: the rule "an admin cannot touch another admin" lives here, checked
+// against the target's role as the API has it, not as the client claims. The
+// API re-applies the same rule when given the session token (defense in depth).
+async function requireCanManage(targetId: string) {
+  const actor = await requireAdmin();
+  const target = (await getUsers()).find((u) => u.id === targetId);
+  if (!target) throw new Error("User not found");
+  if (!canManageUser(actor, target)) throw new Error("Unauthorized");
+  return actor;
 }
 
 export type UserActionState = { error?: string; success?: boolean };
@@ -31,14 +45,16 @@ export async function createUserAction(
 }
 
 export async function updateUserAction(id: string, data: { displayname?: string; enabled?: boolean }) {
-  await requireAdmin();
-  await updateUser(id, data);
+  const actor = await requireCanManage(id);
+  if (data.enabled === false && actor.id === id) throw new Error("Cannot disable your own account");
+  await updateUser(id, data, await getSessionToken());
   revalidatePath("/users");
 }
 
 export async function deleteUserAction(id: string) {
-  await requireAdmin();
-  await deleteUser(id);
+  const actor = await requireCanManage(id);
+  if (actor.id === id) throw new Error("Cannot delete your own account");
+  await deleteUser(id, await getSessionToken());
   revalidatePath("/users");
 }
 
@@ -50,8 +66,8 @@ export async function resetPasswordAction(
   const password = formData.get("password") as string;
 
   try {
-    await requireAdmin();
-    await resetUserPassword(id, password);
+    await requireCanManage(id);
+    await resetUserPassword(id, password, await getSessionToken());
     return { success: true };
   } catch (e) {
     if (e instanceof ApiError) return { error: e.message };
