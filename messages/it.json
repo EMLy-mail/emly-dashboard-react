@@ -440,6 +440,10 @@
     },
     "clients": {
       "title": "Client Updater",
+      "deprecated": {
+        "title": "Tabella deprecata",
+        "description": "Questa tabella dei client è deprecata, non riceverà più miglioramenti e verrà rimossa in una delle prossime release. Usa la pagina <link>Client</link> per consultare e gestire i client."
+      },
       "filters": {
         "hostname": "Filtra per nome...",
         "ip": "Filtra per IP...",

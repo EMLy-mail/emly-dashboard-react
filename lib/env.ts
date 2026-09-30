@@ -14,6 +14,8 @@ type Env = {
   facingUrl: string;
   /** Kill switch for the stats realtime (WS→SSE) pipeline. Defaults to on. */
   statsRealtimeEnabled: boolean;
+  /** Shows the "deprecated" banner above the Statistics clients table. Defaults to off. */
+  statsClientsDeprecatedBanner: boolean;
 };
 
 function buildEnv(): Env {
@@ -24,6 +26,7 @@ function buildEnv(): Env {
     dashboardKey: requireEnv("DASHBOARD_KEY"),
     facingUrl: requireEnv("FACING_URL") || requireEnv("API_BASE_URL").replace(/\/?$/, ""), // fallback to API_BASE_URL if FACING_URL is not set
     statsRealtimeEnabled: process.env.STATS_REALTIME_ENABLED !== "false",
+    statsClientsDeprecatedBanner: process.env.STATS_CLIENTS_DEPRECATED_BANNER === "true",
   };
 }
 

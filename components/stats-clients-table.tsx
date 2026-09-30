@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
-import { ArrowDown, ArrowUp, ArrowUpDown, Search, X, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight } from "lucide-react";
+import { AlertTriangle, ArrowDown, ArrowUp, ArrowUpDown, Search, X, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight } from "lucide-react";
 import type { UpdaterClient } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import {
@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,6 +48,7 @@ function isOnlineAt(client: UpdaterClient, now: number, windowMinutes: number) {
 interface StatsClientsTableProps {
   data: UpdaterClient[] | null;
   windowMinutes: number;
+  showDeprecatedBanner?: boolean;
 }
 
 interface Filters {
@@ -98,7 +100,11 @@ function compareStrings(a: string, b: string) {
   return a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" });
 }
 
-export function StatsClientsTable({ data: rawData, windowMinutes }: StatsClientsTableProps) {
+export function StatsClientsTable({
+  data: rawData,
+  windowMinutes,
+  showDeprecatedBanner = false,
+}: StatsClientsTableProps) {
   const data = useMemo(() => rawData ?? [], [rawData]);
   const t = useTranslations("statistics.clients");
   const tHint = useTranslations("clients.iconHint");
@@ -236,6 +242,22 @@ export function StatsClientsTable({ data: rawData, windowMinutes }: StatsClients
           {t("filters.count", { shown: filtered.length, total: data.length })}
         </p>
       </div>
+
+      {showDeprecatedBanner && (
+        <Alert variant="warning">
+          <AlertTriangle />
+          <AlertTitle className="font-semibold">{t("deprecated.title")}</AlertTitle>
+          <AlertDescription>
+            {t.rich("deprecated.description", {
+              link: (chunks) => (
+                <Link href="/clients" className="font-medium">
+                  {chunks}
+                </Link>
+              ),
+            })}
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative w-full sm:w-56">

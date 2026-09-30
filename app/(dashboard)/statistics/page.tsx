@@ -59,7 +59,10 @@ export default async function StatisticsPage({ searchParams }: PageProps) {
           eventType={event_type ?? "all"}
         />
 
-        <StatsClientsTableLive windowMinutes={windowMinutes} />
+        <StatsClientsTableLive
+          windowMinutes={windowMinutes}
+          showDeprecatedBanner={env.statsClientsDeprecatedBanner}
+        />
       </div>
     </StatsStreamProvider>
   );

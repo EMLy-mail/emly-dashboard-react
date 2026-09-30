@@ -440,6 +440,10 @@
     },
     "clients": {
       "title": "Updater Clients",
+      "deprecated": {
+        "title": "Deprecated table",
+        "description": "This clients table is deprecated, will no longer receive improvements and will be removed in an upcoming release. Use the <link>Clients</link> page to browse and manage clients."
+      },
       "filters": {
         "hostname": "Filter by name...",
         "ip": "Filter by IP...",
