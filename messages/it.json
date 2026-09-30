@@ -713,8 +713,7 @@
     "description": "Invia comandi alle macchine connesse in questo momento sul canale client.",
     "beta": {
       "title": "Funzionalità in beta",
-      "description": "Il controllo remoto è ancora in beta. I comandi vengono eseguiti sulle macchine reali degli utenti: usalo con cautela.",
-      "confirm": "Ho capito"
+      "description": "Il controllo remoto è ancora in beta. I comandi vengono eseguiti sulle macchine reali degli utenti: usalo con cautela."
     },
     "machines": {
       "title": "Macchine connesse",

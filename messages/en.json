@@ -713,8 +713,7 @@
     "description": "Send commands to machines that are connected right now over the client channel.",
     "beta": {
       "title": "Beta feature",
-      "description": "Remote control is still in beta. Commands run on users' real machines: use it with caution.",
-      "confirm": "I understand"
+      "description": "Remote control is still in beta. Commands run on users' real machines: use it with caution."
     },
     "machines": {
       "title": "Connected machines",

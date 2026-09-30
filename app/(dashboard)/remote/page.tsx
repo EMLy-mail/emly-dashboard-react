@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import { AlertTriangle } from "lucide-react";
 import { getAllStatsClients, getStatsSummary } from "@/lib/api";
 import { getCurrentUser } from "@/lib/auth";
 import { env } from "@/lib/env";
@@ -7,7 +8,7 @@ import { statsHub } from "@/lib/realtime/stats-hub";
 import { StatsStreamProvider } from "@/components/stats-stream-provider";
 import { StatsLiveBadge } from "@/components/stats-live-badge";
 import { RemoteControl } from "@/components/remote-control";
-import { RemoteBetaDialog } from "@/components/remote-beta-dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { canSeeBeta } from "@/lib/roles";
 
 export default async function RemotePage() {
@@ -39,8 +40,13 @@ export default async function RemotePage() {
           </div>
           <StatsLiveBadge />
         </div>
+        {/* Commands act on users' real machines and the feature is still in beta. */}
+        <Alert variant="warning">
+          <AlertTriangle />
+          <AlertTitle className="font-semibold">{t("beta.title")}</AlertTitle>
+          <AlertDescription>{t("beta.description")}</AlertDescription>
+        </Alert>
         <RemoteControl />
-        <RemoteBetaDialog />
       </div>
     </StatsStreamProvider>
   );
