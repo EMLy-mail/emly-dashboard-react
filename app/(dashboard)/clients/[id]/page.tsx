@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { getStatsClientDetail, getBans, ApiError, type Ban } from "@/lib/api";
 import { getCurrentUser } from "@/lib/auth";
+import { isAdminRole } from "@/lib/roles";
 import { CreateBanDialog } from "@/components/create-ban-dialog";
 import { DeleteClientButton } from "@/components/delete-client-button";
 import { LoggedUserName } from "@/components/logged-user-name";
@@ -47,7 +48,7 @@ export default async function StatsClientDetailPage({ params }: PageProps) {
     getTranslations("clients.iconHint"),
     getCurrentUser(),
   ]);
-  const isAdmin = currentUser?.role === "admin";
+  const isAdmin = isAdminRole(currentUser?.role);
   const { client, events } = detail;
 
   // A ban is by identifier, not by client row, so "is this machine blocked"
