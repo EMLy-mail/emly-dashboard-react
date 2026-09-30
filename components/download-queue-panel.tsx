@@ -480,24 +480,18 @@ export function DownloadQueuePanel({
                 htmlFor="dq-capacity"
                 error={fieldErrors.capacity}
               >
-                {/* The empty unit slot keeps the input aligned with the rows below. */}
-                <div className="flex items-center gap-2">
-                  <Input
-                    id="dq-capacity"
-                    type="number"
-                    inputMode="numeric"
-                    min={CAPACITY_MIN}
-                    max={CAPACITY_MAX}
-                    className="w-24"
-                    value={capacityDraft ?? String(current.capacity)}
-                    aria-invalid={fieldErrors.capacity ? true : undefined}
-                    onChange={(e) => {
-                      setCapacityDraft(e.target.value);
-                      setFieldError("capacity", null);
-                    }}
-                  />
-                  <span className="w-14" aria-hidden />
-                </div>
+                <UnitInput
+                  id="dq-capacity"
+                  inputMode="numeric"
+                  min={CAPACITY_MIN}
+                  max={CAPACITY_MAX}
+                  value={capacityDraft ?? String(current.capacity)}
+                  aria-invalid={fieldErrors.capacity ? true : undefined}
+                  onChange={(e) => {
+                    setCapacityDraft(e.target.value);
+                    setFieldError("capacity", null);
+                  }}
+                />
               </SettingRow>
 
               <SettingRow
@@ -506,23 +500,19 @@ export function DownloadQueuePanel({
                 htmlFor="dq-retry"
                 error={fieldErrors.retry}
               >
-                <div className="flex items-center gap-2">
-                  <Input
-                    id="dq-retry"
-                    type="number"
-                    inputMode="numeric"
-                    min={RETRY_AFTER_MIN}
-                    max={RETRY_AFTER_MAX}
-                    className="w-24"
-                    value={retryDraft ?? String(current.retry_after_seconds)}
-                    aria-invalid={fieldErrors.retry ? true : undefined}
-                    onChange={(e) => {
-                      setRetryDraft(e.target.value);
-                      setFieldError("retry", null);
-                    }}
-                  />
-                  <span className="w-14 text-sm text-muted-foreground">{t("controls.secondsUnit")}</span>
-                </div>
+                <UnitInput
+                  id="dq-retry"
+                  unit={t("controls.secondsUnit")}
+                  inputMode="numeric"
+                  min={RETRY_AFTER_MIN}
+                  max={RETRY_AFTER_MAX}
+                  value={retryDraft ?? String(current.retry_after_seconds)}
+                  aria-invalid={fieldErrors.retry ? true : undefined}
+                  onChange={(e) => {
+                    setRetryDraft(e.target.value);
+                    setFieldError("retry", null);
+                  }}
+                />
               </SettingRow>
 
               <SettingRow
@@ -531,24 +521,20 @@ export function DownloadQueuePanel({
                 htmlFor="dq-timeout"
                 error={fieldErrors.timeout}
               >
-                <div className="flex items-center gap-2">
-                  <Input
-                    id="dq-timeout"
-                    type="number"
-                    inputMode="decimal"
-                    min={0.1}
-                    max={DOWNLOAD_TIMEOUT_MAX / 60}
-                    step="any"
-                    className="w-24"
-                    value={timeoutDraft ?? secondsToMinutes(current.download_timeout_seconds)}
-                    aria-invalid={fieldErrors.timeout ? true : undefined}
-                    onChange={(e) => {
-                      setTimeoutDraft(e.target.value);
-                      setFieldError("timeout", null);
-                    }}
-                  />
-                  <span className="w-14 text-sm text-muted-foreground">{t("controls.minutesUnit")}</span>
-                </div>
+                <UnitInput
+                  id="dq-timeout"
+                  unit={t("controls.minutesUnit")}
+                  inputMode="decimal"
+                  min={0.1}
+                  max={DOWNLOAD_TIMEOUT_MAX / 60}
+                  step="any"
+                  value={timeoutDraft ?? secondsToMinutes(current.download_timeout_seconds)}
+                  aria-invalid={fieldErrors.timeout ? true : undefined}
+                  onChange={(e) => {
+                    setTimeoutDraft(e.target.value);
+                    setFieldError("timeout", null);
+                  }}
+                />
               </SettingRow>
             </CardContent>
             <CardFooter className="justify-between gap-2">
@@ -767,7 +753,33 @@ function SettingRow({
         <p className="text-xs text-muted-foreground">{hint}</p>
         <FieldError message={error} />
       </div>
-      <div className="shrink-0">{children}</div>
+      <div className="flex shrink-0 justify-end">{children}</div>
+    </div>
+  );
+}
+
+/**
+ * Number input with its unit inside, on the right. Every one is the same
+ * width, with or without a unit, so the controls line up down the card.
+ */
+function UnitInput({ unit, className, ...props }: React.ComponentProps<typeof Input> & { unit?: string }) {
+  return (
+    <div className="relative w-36">
+      <Input
+        type="number"
+        // No spinner arrows: they would sit on top of the unit.
+        className={cn(
+          "[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none",
+          unit && "pr-16",
+          className,
+        )}
+        {...props}
+      />
+      {unit && (
+        <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground">
+          {unit}
+        </span>
+      )}
     </div>
   );
 }
