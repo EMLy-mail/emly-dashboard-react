@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { ApiError, getDownloadQueue, type DownloadQueueState } from "@/lib/api";
 import { getCurrentUser } from "@/lib/auth";
+import { canManageDownloadQueue } from "@/lib/roles";
 import { DownloadQueuePanel } from "@/components/download-queue-panel";
 
 // One clock for SSR and hydration, so the "started 12 s ago" cells render the
@@ -12,8 +13,8 @@ const getRenderedAt = cache(() => Date.now());
 export default async function DownloadQueuePage() {
   const user = await getCurrentUser();
   // Every control here changes whether installers can be downloaded; a
-  // non-admin has nothing to do on this page (the actions re-check the role).
-  if (user?.role !== "admin") redirect("/updates");
+  // non-admin/owner has nothing to do on this page (the actions re-check the role).
+  if (!canManageDownloadQueue(user?.role)) redirect("/updates");
 
   const t = await getTranslations("downloadQueue");
 

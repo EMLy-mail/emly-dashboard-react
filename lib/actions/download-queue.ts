@@ -11,14 +11,15 @@ import {
   type DownloadQueueState,
 } from "@/lib/api";
 import { getCurrentUser, getSessionToken } from "@/lib/auth";
+import { canManageDownloadQueue } from "@/lib/roles";
 
 // The queue decides whether installers can be downloaded at all, so it is
-// admin-only: the page hides it from other roles, re-checked here so a
-// non-admin session cannot drive the actions directly. The session token is
+// limited to admin and owner: the page hides it from other roles, re-checked
+// here so any other session cannot drive the actions directly. The session token is
 // forwarded so the API can attribute the change in its log.
 async function requireAdmin() {
   const user = await getCurrentUser();
-  if (!user || user.role !== "admin") throw new Error("Unauthorized");
+  if (!user || !canManageDownloadQueue(user.role)) throw new Error("Unauthorized");
   return getSessionToken();
 }
 
@@ -41,6 +42,8 @@ const CAPACITY_MIN = 1;
 const CAPACITY_MAX = 10000;
 const RETRY_AFTER_MIN = 1;
 const RETRY_AFTER_MAX = 86400;
+const DOWNLOAD_TIMEOUT_MIN = 1;
+const DOWNLOAD_TIMEOUT_MAX = 86400;
 
 function isIntIn(value: unknown, min: number, max: number) {
   return typeof value === "number" && Number.isInteger(value) && value >= min && value <= max;
@@ -80,6 +83,16 @@ export async function updateDownloadQueueAction(
         };
       }
       patch.retry_after_seconds = data.retry_after_seconds;
+    }
+    if (data.download_timeout_seconds !== undefined) {
+      if (!isIntIn(data.download_timeout_seconds, DOWNLOAD_TIMEOUT_MIN, DOWNLOAD_TIMEOUT_MAX)) {
+        return {
+          ok: false,
+          error: `download_timeout_seconds must be ${DOWNLOAD_TIMEOUT_MIN}-${DOWNLOAD_TIMEOUT_MAX}`,
+          status: 400,
+        };
+      }
+      patch.download_timeout_seconds = data.download_timeout_seconds;
     }
     if (Object.keys(patch).length === 0) return { ok: false, error: "Nothing to update", status: 400 };
 

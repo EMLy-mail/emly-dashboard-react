@@ -4,7 +4,8 @@ import { env, SERVER_USER_AGENT } from "./env";
 // ── Types ──────────────────────────────────────────────────────────────────
 
 export type BugReportStatus = "new" | "in_review" | "resolved" | "closed";
-export type UserRole = "admin" | "user";
+/** "owner" is not issued by the API yet (users.role is ENUM(admin,user)). */
+export type UserRole = "admin" | "owner" | "user";
 
 export interface BugReport {
   id: number;
@@ -1068,21 +1069,50 @@ export interface DownloadQueueSlot {
   hostname?: string;
   hwid?: string;
   started_at: string;
+  /** When the server timeout cuts this download. Fixed at start. */
+  deadline_at: string;
+  elapsed_seconds: number;
+  bytes_sent: number;
+  /** Missing for the first instants, before the release is opened on S3. */
+  bytes_total?: number;
+  /** 0-100; missing without `bytes_total`. */
+  percent?: number;
+  /** Average since the start, not instantaneous: starts low (lookup before the first byte). */
+  avg_bytes_per_sec: number;
 }
 
 export interface DownloadQueueSettings {
   enabled: boolean;
   capacity: number;
   retry_after_seconds: number;
+  /** Max duration of one download; applies to downloads started afterwards. */
+  download_timeout_seconds: number;
 }
+
+/**
+ * Known `failed_by_reason` keys. The API may add more: an unknown key is
+ * shown as-is, never dropped.
+ */
+export type DownloadQueueFailReason =
+  | "server timeout"
+  | "client disconnected"
+  | "copy failed"
+  | "error response"
+  | "internal error";
 
 export interface DownloadQueueState extends DownloadQueueSettings {
   active: number;
   /** `capacity - active`, floored at 0: can be 0 with active > capacity after a shrink. */
   available: number;
-  acquired_total: number;
+  // Every started download ends in exactly one of completed/failed/evicted.
+  completed_total: number;
+  failed_total: number;
+  /** Breakdown of `failed_total`; always an object. */
+  failed_by_reason: Partial<Record<DownloadQueueFailReason, number>> & Record<string, number>;
   rejected_total: number;
   evicted_total: number;
+  /** Sum of the slots' average speeds. */
+  total_bytes_per_sec: number;
   /** The API's .env values, restored by the reset route. */
   defaults: DownloadQueueSettings;
   /** Oldest first; always an array. */

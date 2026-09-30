@@ -782,17 +782,22 @@
       "available": "{available} free",
       "overCapacity": "More downloads in progress than slots: new ones are refused until enough finish.",
       "retryAfter": "Retry-After",
-      "acquired": "Accepted",
       "rejected": "Refused (429)",
-      "evicted": "Stopped",
-      "sinceRestart": "Counters since the last API restart."
+      "evicted": "Stopped by admin",
+      "sinceRestart": "Counters since the last API restart.",
+      "completed": "Completed",
+      "failed": "Errors / interrupted",
+      "bandwidth": "Total bandwidth",
+      "successRate": "Success rate",
+      "downloadTimeout": "Download timeout",
+      "failedBreakdown": "Errors by cause",
+      "serverTimeoutHint": "{count, plural, one {# download} other {# downloads}} cut by the server timeout ({timeout}): clients on slow lines that can't finish in time. Consider raising the download timeout."
     },
     "controls": {
       "title": "Controls",
       "reset": "Restore .env",
-      "resetHint": ".env values: {enabled}, {capacity} slots, Retry-After {retry} s",
       "resetDone": ".env values restored.",
-      "defaults": ".env values: {enabled}, {capacity} slots, Retry-After {retry} s.",
+      "defaults": ".env values: {enabled}, {capacity} slots, Retry-After {retry} s, timeout {timeout}.",
       "enabled": "Queue",
       "enabledHint": "Disabled, the queue refuses nothing.",
       "enable": "Enable",
@@ -801,8 +806,11 @@
       "retryAfter": "Retry-After",
       "secondsUnit": "seconds",
       "apply": "Apply",
-      "capacityRange": "Must be an integer between {min} and {max}.",
-      "retryRange": "Must be an integer between {min} and {max}."
+      "range": "Must be an integer between {min} and {max}.",
+      "downloadTimeout": "Download timeout",
+      "minutesUnit": "minutes",
+      "downloadTimeoutHint": "Applies to new downloads only: those in progress keep their deadline. Size it as installer size / slowest client speed, with margin (9.7 MB at 100 KB/s ≈ 100 s; at 30 KB/s ≈ 5.5 min).",
+      "timeoutRange": "Must be between 1 second and {max} minutes."
     },
     "slots": {
       "title": "Downloads in progress",
@@ -818,7 +826,17 @@
       "hwid": "HWID",
       "started": "Started",
       "startedAgo": "{elapsed} ago",
-      "empty": "No download in progress."
+      "empty": "No download in progress.",
+      "progress": "Progress",
+      "speed": "Average speed",
+      "expiresIn": "Expires in",
+      "bytesOf": "{sent} / {total} MB ({percent}%)",
+      "bytesSent": "{sent} MB",
+      "speedHint": "Average since the start, not instantaneous: the first seconds include the lookup before the first byte.",
+      "eta": "ETA {eta}",
+      "slow": "Slow client",
+      "expired": "expired",
+      "late": "Won't finish in time"
     },
     "product": {
       "emly": "EMLy",
@@ -827,7 +845,8 @@
     "elapsed": {
       "seconds": "{s} s",
       "minutes": "{m} min {s} s",
-      "hours": "{h} h {m} min"
+      "hours": "{h} h {m} min",
+      "minutesOnly": "{m} min"
     },
     "confirm": {
       "cancel": "Cancel",
@@ -845,6 +864,17 @@
       "unavailable": "Feature not available on this instance: the download queue is not configured on the API (503).",
       "generic": "Could not read the download queue.",
       "stale": "Update failed, the data shown may be out of date."
+    },
+    "units": {
+      "kbps": "{value} KB/s",
+      "mbps": "{value} MB/s"
+    },
+    "failReason": {
+      "serverTimeout": "Server timeout (slow connection)",
+      "clientDisconnected": "Client disconnected",
+      "copyFailed": "Transfer error",
+      "errorResponse": "Error before download (404/5xx)",
+      "internalError": "Internal error"
     }
   }
 }

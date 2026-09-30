@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { logoutAction } from "@/lib/actions/auth";
+import { canManageDownloadQueue } from "@/lib/roles";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { ChangePasswordDialog } from "@/components/change-password-dialog";
 import type { AuthUser } from "@/lib/api";
@@ -43,7 +44,7 @@ export function Sidebar({ user }: { user: AuthUser }) {
     { href: "/bug-reports", label: t("nav.bugReports"), icon: Bug },
     { href: "/users", label: t("nav.users"), icon: Users },
     { href: "/updates", label: t("nav.updates"), icon: PackageOpen },
-    ...(user.role === "admin"
+    ...(canManageDownloadQueue(user.role)
       ? [{ href: "/download-queue", label: t("nav.downloadQueue"), icon: Download }]
       : []),
     { href: "/clients", label: t("nav.clients"), icon: MonitorSmartphone },

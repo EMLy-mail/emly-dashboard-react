@@ -782,17 +782,22 @@
       "available": "{available} liberi",
       "overCapacity": "Più download in corso che slot: i nuovi sono rifiutati finché non ne terminano abbastanza.",
       "retryAfter": "Retry-After",
-      "acquired": "Accettati",
       "rejected": "Rifiutati (429)",
-      "evicted": "Interrotti",
-      "sinceRestart": "Contatori dall'ultimo riavvio dell'API."
+      "evicted": "Interrotti da admin",
+      "sinceRestart": "Contatori dall'ultimo riavvio dell'API.",
+      "completed": "Completati",
+      "failed": "Errori / interrotti",
+      "bandwidth": "Banda totale",
+      "successRate": "Tasso di successo",
+      "downloadTimeout": "Timeout download",
+      "failedBreakdown": "Errori per causa",
+      "serverTimeoutHint": "{count, plural, one {# download tagliato} other {# download tagliati}} dal timeout del server ({timeout}): client su linee lente che non finiscono in tempo. Valuta di alzare il timeout download."
     },
     "controls": {
       "title": "Controlli",
       "reset": "Ripristina .env",
-      "resetHint": "Valori .env: {enabled}, {capacity} slot, Retry-After {retry} s",
       "resetDone": "Valori .env ripristinati.",
-      "defaults": "Valori .env: {enabled}, {capacity} slot, Retry-After {retry} s.",
+      "defaults": "Valori .env: {enabled}, {capacity} slot, Retry-After {retry} s, timeout {timeout}.",
       "enabled": "Coda",
       "enabledHint": "Da disattivata, la coda non rifiuta nessuno.",
       "enable": "Attiva",
@@ -801,8 +806,11 @@
       "retryAfter": "Retry-After",
       "secondsUnit": "secondi",
       "apply": "Applica",
-      "capacityRange": "Deve essere un intero tra {min} e {max}.",
-      "retryRange": "Deve essere un intero tra {min} e {max}."
+      "range": "Deve essere un intero tra {min} e {max}.",
+      "downloadTimeout": "Timeout download",
+      "minutesUnit": "minuti",
+      "downloadTimeoutHint": "Vale per i nuovi download: quelli in corso mantengono la loro scadenza. Per dimensionarlo: dimensione installer / velocità del client più lento, con margine (9,7 MB a 100 KB/s ≈ 100 s; a 30 KB/s ≈ 5,5 min).",
+      "timeoutRange": "Deve essere tra 1 secondo e {max} minuti."
     },
     "slots": {
       "title": "Download in corso",
@@ -818,7 +826,17 @@
       "hwid": "HWID",
       "started": "Iniziato",
       "startedAgo": "da {elapsed}",
-      "empty": "Nessun download in corso."
+      "empty": "Nessun download in corso.",
+      "progress": "Avanzamento",
+      "speed": "Velocità media",
+      "expiresIn": "Scade tra",
+      "bytesOf": "{sent} / {total} MB ({percent}%)",
+      "bytesSent": "{sent} MB",
+      "speedHint": "Media dall'inizio, non istantanea: i primi secondi includono il lookup prima del primo byte.",
+      "eta": "ETA {eta}",
+      "slow": "Client lento",
+      "expired": "scaduto",
+      "late": "Non finirà in tempo"
     },
     "product": {
       "emly": "EMLy",
@@ -827,7 +845,8 @@
     "elapsed": {
       "seconds": "{s} s",
       "minutes": "{m} min {s} s",
-      "hours": "{h} h {m} min"
+      "hours": "{h} h {m} min",
+      "minutesOnly": "{m} min"
     },
     "confirm": {
       "cancel": "Annulla",
@@ -845,6 +864,17 @@
       "unavailable": "Funzione non disponibile su questa istanza: la coda download non è configurata sull'API (503).",
       "generic": "Impossibile leggere la coda download.",
       "stale": "Aggiornamento non riuscito, i dati mostrati potrebbero non essere aggiornati."
+    },
+    "units": {
+      "kbps": "{value} KB/s",
+      "mbps": "{value} MB/s"
+    },
+    "failReason": {
+      "serverTimeout": "Timeout server (connessione lenta)",
+      "clientDisconnected": "Client disconnesso",
+      "copyFailed": "Errore di trasferimento",
+      "errorResponse": "Errore prima del download (404/5xx)",
+      "internalError": "Errore interno"
     }
   }
 }

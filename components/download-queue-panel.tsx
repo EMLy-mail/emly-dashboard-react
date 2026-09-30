@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState, useTransition } from "react";
-import { useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { AlertTriangle, Loader2, Power, RotateCcw, Square, XCircle } from "lucide-react";
+import { AlertTriangle, Loader2, Power, RotateCcw, Square, Turtle, XCircle } from "lucide-react";
 import type { DownloadQueueSettings, DownloadQueueSlot, DownloadQueueState } from "@/lib/api";
 import {
   evictAllDownloadQueueSlotsAction,
@@ -47,8 +47,25 @@ const CAPACITY_MIN = 1;
 const CAPACITY_MAX = 10000;
 const RETRY_AFTER_MIN = 1;
 const RETRY_AFTER_MAX = 86400;
+const DOWNLOAD_TIMEOUT_MIN = 1;
+const DOWNLOAD_TIMEOUT_MAX = 86400;
+/** Below this average a client is flagged as slow. */
+const SLOW_BYTES_PER_SEC = 100 * 1024;
+// The average includes the lookup before the first byte, so every download
+// looks slow at first: don't flag anyone before this.
+const SLOW_GRACE_SECONDS = 10;
+
+// Known failed_by_reason keys → message keys. Anything else is shown raw.
+const FAIL_REASON_KEYS: Record<string, string> = {
+  "server timeout": "serverTimeout",
+  "client disconnected": "clientDisconnected",
+  "copy failed": "copyFailed",
+  "error response": "errorResponse",
+  "internal error": "internalError",
+};
 
 type LoadError = { status?: number; message: string };
+type Field = "capacity" | "retry" | "timeout";
 
 type Confirm =
   | { kind: "capacity"; capacity: number }
@@ -60,8 +77,14 @@ function isModified(state: DownloadQueueState) {
   return (
     state.enabled !== d.enabled ||
     state.capacity !== d.capacity ||
-    state.retry_after_seconds !== d.retry_after_seconds
+    state.retry_after_seconds !== d.retry_after_seconds ||
+    state.download_timeout_seconds !== d.download_timeout_seconds
   );
+}
+
+/** Seconds → minutes for the input, without trailing noise ("10", "5.5"). */
+function secondsToMinutes(seconds: number) {
+  return String(Math.round((seconds / 60) * 100) / 100);
 }
 
 export function DownloadQueuePanel({
@@ -74,14 +97,15 @@ export function DownloadQueuePanel({
   renderedAt: number;
 }) {
   const t = useTranslations("downloadQueue");
+  const format = useFormatter();
   const [state, setState] = useState(initialState);
   const [loadError, setLoadError] = useState(initialError);
   const [now, setNow] = useState(renderedAt);
   // null = show the live value; a string = the admin is typing.
   const [capacityDraft, setCapacityDraft] = useState<string | null>(null);
   const [retryDraft, setRetryDraft] = useState<string | null>(null);
-  const [capacityError, setCapacityError] = useState<string | null>(null);
-  const [retryError, setRetryError] = useState<string | null>(null);
+  const [timeoutDraft, setTimeoutDraft] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<Field, string>>>({});
   const [confirm, setConfirm] = useState<Confirm | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -153,39 +177,50 @@ export function DownloadQueuePanel({
   const current = state;
   const modified = isModified(current);
 
+  // ── Formatting ───────────────────────────────────────────────────────────
+  const oneDecimal = (n: number) => format.number(n, { maximumFractionDigits: 1 });
+  const mb = (bytes: number) => oneDecimal(bytes / (1024 * 1024));
+  const speed = (bps: number) =>
+    bps >= 1024 * 1024
+      ? t("units.mbps", { value: oneDecimal(bps / (1024 * 1024)) })
+      : t("units.kbps", { value: oneDecimal(bps / 1024) });
+  const duration = (seconds: number) => formatDuration(seconds, t);
+
   // ── Mutations ────────────────────────────────────────────────────────────
-  function patch(data: Partial<DownloadQueueSettings>, field?: "capacity" | "retry") {
+  function setFieldError(field: Field, message: string | null) {
+    setFieldErrors((prev) => ({ ...prev, [field]: message ?? undefined }));
+  }
+
+  function clearDraft(field: Field) {
+    if (field === "capacity") setCapacityDraft(null);
+    if (field === "retry") setRetryDraft(null);
+    if (field === "timeout") setTimeoutDraft(null);
+    setFieldError(field, null);
+  }
+
+  function patch(data: Partial<DownloadQueueSettings>, field?: Field) {
     startTransition(async () => {
       const r = await updateDownloadQueueAction(data);
       if (!r.ok) {
-        const message = r.status === 400 ? r.error : describeError({ status: r.status, message: r.error });
-        if (r.status === 400 && field === "capacity") setCapacityError(message);
-        else if (r.status === 400 && field === "retry") setRetryError(message);
-        else toast.error(message);
+        if (r.status === 400 && field) setFieldError(field, r.error);
+        else toast.error(describeError({ status: r.status, message: r.error }));
         return;
       }
       setState(r.state);
       setLoadError(null);
-      if (field === "capacity") {
-        setCapacityDraft(null);
-        setCapacityError(null);
-      }
-      if (field === "retry") {
-        setRetryDraft(null);
-        setRetryError(null);
-      }
+      if (field) clearDraft(field);
       toast.success(t("saved"));
     });
   }
 
   function requestCapacity(capacity: number) {
-    setCapacityError(null);
+    setFieldError("capacity", null);
     if (!Number.isInteger(capacity) || capacity < CAPACITY_MIN || capacity > CAPACITY_MAX) {
-      setCapacityError(t("controls.capacityRange", { min: CAPACITY_MIN, max: CAPACITY_MAX }));
+      setFieldError("capacity", t("controls.range", { min: CAPACITY_MIN, max: CAPACITY_MAX }));
       return;
     }
     if (capacity === current.capacity) {
-      setCapacityDraft(null);
+      clearDraft("capacity");
       return;
     }
     // Shrinking below the downloads in flight stops nobody, but it does
@@ -198,17 +233,36 @@ export function DownloadQueuePanel({
   }
 
   function submitRetry() {
-    setRetryError(null);
+    setFieldError("retry", null);
     const value = Number(retryDraft ?? current.retry_after_seconds);
     if (!Number.isInteger(value) || value < RETRY_AFTER_MIN || value > RETRY_AFTER_MAX) {
-      setRetryError(t("controls.retryRange", { min: RETRY_AFTER_MIN, max: RETRY_AFTER_MAX }));
+      setFieldError("retry", t("controls.range", { min: RETRY_AFTER_MIN, max: RETRY_AFTER_MAX }));
       return;
     }
     if (value === current.retry_after_seconds) {
-      setRetryDraft(null);
+      clearDraft("retry");
       return;
     }
     patch({ retry_after_seconds: value }, "retry");
+  }
+
+  function submitTimeout() {
+    setFieldError("timeout", null);
+    // Minutes in the UI, seconds on the wire.
+    const minutes = Number((timeoutDraft ?? secondsToMinutes(current.download_timeout_seconds)).replace(",", "."));
+    const seconds = Math.round(minutes * 60);
+    if (!Number.isFinite(minutes) || seconds < DOWNLOAD_TIMEOUT_MIN || seconds > DOWNLOAD_TIMEOUT_MAX) {
+      setFieldError(
+        "timeout",
+        t("controls.timeoutRange", { max: DOWNLOAD_TIMEOUT_MAX / 60 }),
+      );
+      return;
+    }
+    if (seconds === current.download_timeout_seconds) {
+      clearDraft("timeout");
+      return;
+    }
+    patch({ download_timeout_seconds: seconds }, "timeout");
   }
 
   function reset() {
@@ -219,10 +273,9 @@ export function DownloadQueuePanel({
         return;
       }
       setState(r.state);
-      setCapacityDraft(null);
-      setRetryDraft(null);
-      setCapacityError(null);
-      setRetryError(null);
+      clearDraft("capacity");
+      clearDraft("retry");
+      clearDraft("timeout");
       toast.success(t("controls.resetDone"));
     });
   }
@@ -262,9 +315,21 @@ export function DownloadQueuePanel({
     else evictAll();
   }
 
-  // ── Render ───────────────────────────────────────────────────────────────
+  // ── Derived ──────────────────────────────────────────────────────────────
   const full = current.available === 0;
   const fill = current.capacity > 0 ? Math.min(100, (current.active / current.capacity) * 100) : 100;
+  const finished = current.completed_total + current.failed_total;
+  const successRate = finished > 0 ? (current.completed_total / finished) * 100 : null;
+  const failReasons = Object.entries(current.failed_by_reason ?? {})
+    .filter(([, n]) => n > 0)
+    .sort(([, a], [, b]) => b - a);
+  const serverTimeouts = current.failed_by_reason?.["server timeout"] ?? 0;
+  const defaultsText = t("controls.defaults", {
+    enabled: current.defaults.enabled ? t("status.enabled") : t("status.disabled"),
+    capacity: current.defaults.capacity,
+    retry: current.defaults.retry_after_seconds,
+    timeout: duration(current.defaults.download_timeout_seconds),
+  });
 
   return (
     <div className="space-y-6">
@@ -324,12 +389,50 @@ export function DownloadQueuePanel({
               )}
             </div>
 
-            <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm sm:grid-cols-4">
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm sm:grid-cols-4">
+              <Stat label={t("status.bandwidth")} value={speed(current.total_bytes_per_sec)} />
+              <Stat
+                label={t("status.successRate")}
+                value={successRate === null ? "—" : `${oneDecimal(successRate)}%`}
+              />
               <Stat label={t("status.retryAfter")} value={t("seconds", { value: current.retry_after_seconds })} />
-              <Stat label={t("status.acquired")} value={current.acquired_total} />
+              <Stat label={t("status.downloadTimeout")} value={duration(current.download_timeout_seconds)} />
+              <Stat label={t("status.completed")} value={current.completed_total} />
+              <Stat
+                label={t("status.failed")}
+                value={current.failed_total}
+                className={current.failed_total > 0 ? "text-destructive" : undefined}
+              />
               <Stat label={t("status.rejected")} value={current.rejected_total} />
               <Stat label={t("status.evicted")} value={current.evicted_total} />
             </dl>
+
+            {failReasons.length > 0 && (
+              <div className="rounded-md border bg-muted/30 px-3 py-2">
+                <p className="mb-1 text-xs font-medium text-muted-foreground">{t("status.failedBreakdown")}</p>
+                <ul className="space-y-0.5 text-sm">
+                  {failReasons.map(([reason, count]) => (
+                    <li key={reason} className="flex justify-between gap-4">
+                      <span>
+                        {reason in FAIL_REASON_KEYS ? t(`failReason.${FAIL_REASON_KEYS[reason]}`) : reason}
+                      </span>
+                      <span className="font-medium tabular-nums">{count}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* A server timeout means a slow line that couldn't finish in
+                time: the one counter that tells the admin what to change. */}
+            {serverTimeouts > 0 && (
+              <p className="text-xs text-amber-700 dark:text-amber-400">
+                {t("status.serverTimeoutHint", {
+                  count: serverTimeouts,
+                  timeout: duration(current.download_timeout_seconds),
+                })}
+              </p>
+            )}
             <p className="text-xs text-muted-foreground">{t("status.sinceRestart")}</p>
           </CardContent>
         </Card>
@@ -344,23 +447,13 @@ export function DownloadQueuePanel({
                 size="sm"
                 disabled={isPending || !modified}
                 onClick={reset}
-                title={t("controls.resetHint", {
-                  enabled: current.defaults.enabled ? t("status.enabled") : t("status.disabled"),
-                  capacity: current.defaults.capacity,
-                  retry: current.defaults.retry_after_seconds,
-                })}
+                title={defaultsText}
               >
                 <RotateCcw className="mr-2 h-4 w-4" />
                 {t("controls.reset")}
               </Button>
             </div>
-            <CardDescription>
-              {t("controls.defaults", {
-                enabled: current.defaults.enabled ? t("status.enabled") : t("status.disabled"),
-                capacity: current.defaults.capacity,
-                retry: current.defaults.retry_after_seconds,
-              })}
-            </CardDescription>
+            <CardDescription>{defaultsText}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="flex items-center justify-between gap-4">
@@ -396,10 +489,10 @@ export function DownloadQueuePanel({
                   max={CAPACITY_MAX}
                   className="w-28"
                   value={capacityDraft ?? String(current.capacity)}
-                  aria-invalid={capacityError ? true : undefined}
+                  aria-invalid={fieldErrors.capacity ? true : undefined}
                   onChange={(e) => {
                     setCapacityDraft(e.target.value);
-                    setCapacityError(null);
+                    setFieldError("capacity", null);
                   }}
                 />
                 <Button type="submit" size="sm" disabled={isPending || capacityDraft === null}>
@@ -429,7 +522,7 @@ export function DownloadQueuePanel({
                   ))}
                 </div>
               </form>
-              {capacityError && <p className="text-xs text-destructive">{capacityError}</p>}
+              <FieldError message={fieldErrors.capacity} />
             </div>
 
             <div className="space-y-1.5">
@@ -449,10 +542,10 @@ export function DownloadQueuePanel({
                   max={RETRY_AFTER_MAX}
                   className="w-28"
                   value={retryDraft ?? String(current.retry_after_seconds)}
-                  aria-invalid={retryError ? true : undefined}
+                  aria-invalid={fieldErrors.retry ? true : undefined}
                   onChange={(e) => {
                     setRetryDraft(e.target.value);
-                    setRetryError(null);
+                    setFieldError("retry", null);
                   }}
                 />
                 <span className="text-sm text-muted-foreground">{t("controls.secondsUnit")}</span>
@@ -460,7 +553,40 @@ export function DownloadQueuePanel({
                   {t("controls.apply")}
                 </Button>
               </form>
-              {retryError && <p className="text-xs text-destructive">{retryError}</p>}
+              <FieldError message={fieldErrors.retry} />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="dq-timeout">{t("controls.downloadTimeout")}</Label>
+              <form
+                className="flex flex-wrap items-center gap-2"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  submitTimeout();
+                }}
+              >
+                <Input
+                  id="dq-timeout"
+                  type="number"
+                  inputMode="decimal"
+                  min={0.1}
+                  max={DOWNLOAD_TIMEOUT_MAX / 60}
+                  step="any"
+                  className="w-28"
+                  value={timeoutDraft ?? secondsToMinutes(current.download_timeout_seconds)}
+                  aria-invalid={fieldErrors.timeout ? true : undefined}
+                  onChange={(e) => {
+                    setTimeoutDraft(e.target.value);
+                    setFieldError("timeout", null);
+                  }}
+                />
+                <span className="text-sm text-muted-foreground">{t("controls.minutesUnit")}</span>
+                <Button type="submit" size="sm" disabled={isPending || timeoutDraft === null}>
+                  {t("controls.apply")}
+                </Button>
+              </form>
+              <p className="text-xs text-muted-foreground">{t("controls.downloadTimeoutHint")}</p>
+              <FieldError message={fieldErrors.timeout} />
             </div>
           </CardContent>
         </Card>
@@ -498,43 +624,94 @@ export function DownloadQueuePanel({
                 <TableHead>{t("slots.ip")}</TableHead>
                 <TableHead>{t("slots.hwid")}</TableHead>
                 <TableHead>{t("slots.started")}</TableHead>
+                <TableHead className="min-w-44">{t("slots.progress")}</TableHead>
+                <TableHead>{t("slots.speed")}</TableHead>
+                <TableHead>{t("slots.expiresIn")}</TableHead>
                 <TableHead className="w-28" />
               </TableRow>
             </TableHeader>
             <TableBody>
               {current.slots.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
+                  <TableCell colSpan={10} className="py-8 text-center text-muted-foreground">
                     {t("slots.empty")}
                   </TableCell>
                 </TableRow>
               )}
-              {current.slots.map((slot) => (
-                <TableRow key={slot.id}>
-                  <TableCell>
-                    <Badge variant="secondary">{t(`product.${slot.product}`)}</Badge>
-                  </TableCell>
-                  <TableCell className="font-mono text-sm">{slot.version}</TableCell>
-                  <TableCell className="text-sm">{slot.hostname ?? "—"}</TableCell>
-                  <TableCell className="font-mono text-sm">{slot.ip ?? "—"}</TableCell>
-                  <TableCell className="max-w-40 truncate font-mono text-xs" title={slot.hwid}>
-                    {slot.hwid ?? "—"}
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground" title={formatDateTime(slot.started_at)}>
-                    {t("slots.startedAgo", { elapsed: formatElapsed(now - Date.parse(slot.started_at), t) })}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      disabled={isPending}
-                      onClick={() => setConfirm({ kind: "evict", slot })}
+              {current.slots.map((slot) => {
+                const deadline = Date.parse(slot.deadline_at);
+                const remainingBytes =
+                  slot.bytes_total !== undefined ? Math.max(0, slot.bytes_total - slot.bytes_sent) : null;
+                const etaSeconds =
+                  remainingBytes !== null && remainingBytes > 0 && slot.avg_bytes_per_sec > 0
+                    ? remainingBytes / slot.avg_bytes_per_sec
+                    : null;
+                const slow =
+                  slot.elapsed_seconds >= SLOW_GRACE_SECONDS && slot.avg_bytes_per_sec < SLOW_BYTES_PER_SEC;
+                // Won't make it before the server cuts it: evicting frees the
+                // slot now instead of at the deadline.
+                const late = etaSeconds !== null && now + etaSeconds * 1000 > deadline;
+                return (
+                  <TableRow key={slot.id} className={cn(late && "bg-destructive/5", !late && slow && "bg-amber-500/5")}>
+                    <TableCell>
+                      <Badge variant="secondary">{t(`product.${slot.product}`)}</Badge>
+                    </TableCell>
+                    <TableCell className="font-mono text-sm">{slot.version}</TableCell>
+                    <TableCell className="text-sm">{slot.hostname ?? "—"}</TableCell>
+                    <TableCell className="font-mono text-sm">{slot.ip ?? "—"}</TableCell>
+                    <TableCell className="max-w-40 truncate font-mono text-xs" title={slot.hwid}>
+                      {slot.hwid ?? "—"}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground" title={formatDateTime(slot.started_at)}>
+                      {t("slots.startedAgo", {
+                        elapsed: duration((now - Date.parse(slot.started_at)) / 1000),
+                      })}
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <ProgressBar percent={slot.percent} />
+                        <p className="text-xs text-muted-foreground tabular-nums">
+                          {slot.bytes_total !== undefined
+                            ? t("slots.bytesOf", {
+                                sent: mb(slot.bytes_sent),
+                                total: mb(slot.bytes_total),
+                                percent: oneDecimal(slot.percent ?? 0),
+                              })
+                            : t("slots.bytesSent", { sent: mb(slot.bytes_sent) })}
+                        </p>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      <div className={cn("flex items-center gap-1 tabular-nums", slow && "text-amber-700 dark:text-amber-400")}>
+                        {slow && <Turtle className="h-3.5 w-3.5" aria-label={t("slots.slow")} />}
+                        <span title={t("slots.speedHint")}>{speed(slot.avg_bytes_per_sec)}</span>
+                      </div>
+                      {etaSeconds !== null && (
+                        <p className={cn("text-xs text-muted-foreground", late && "text-destructive")}>
+                          {t("slots.eta", { eta: duration(etaSeconds) })}
+                        </p>
+                      )}
+                    </TableCell>
+                    <TableCell
+                      className={cn("text-sm text-muted-foreground tabular-nums", late && "text-destructive font-medium")}
+                      title={formatDateTime(slot.deadline_at)}
                     >
-                      {t("slots.evict")}
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
+                      {deadline > now ? duration((deadline - now) / 1000) : t("slots.expired")}
+                      {late && <p className="text-xs font-normal">{t("slots.late")}</p>}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant={late ? "destructive" : "ghost"}
+                        size="sm"
+                        disabled={isPending}
+                        onClick={() => setConfirm({ kind: "evict", slot })}
+                      >
+                        {t("slots.evict")}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </div>
@@ -589,11 +766,35 @@ function RestartNotice() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: React.ReactNode }) {
+function Stat({ label, value, className }: { label: string; value: React.ReactNode; className?: string }) {
   return (
     <div>
       <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="font-medium tabular-nums">{value}</dd>
+      <dd className={cn("font-medium tabular-nums", className)}>{value}</dd>
+    </div>
+  );
+}
+
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null;
+  return <p className="text-xs text-destructive">{message}</p>;
+}
+
+/** Determinate when the size is known, an indeterminate pulse before that. */
+function ProgressBar({ percent }: { percent?: number }) {
+  const known = percent !== undefined;
+  return (
+    <div
+      className="h-1.5 w-full overflow-hidden rounded-full bg-muted"
+      role="progressbar"
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={known ? percent : undefined}
+    >
+      <div
+        className={cn("h-full rounded-full bg-primary transition-all", !known && "w-1/3 animate-pulse opacity-60")}
+        style={known ? { width: `${Math.min(100, Math.max(0, percent))}%` } : undefined}
+      />
     </div>
   );
 }
@@ -601,12 +802,12 @@ function Stat({ label, value }: { label: string; value: React.ReactNode }) {
 type Translate = ReturnType<typeof useTranslations<"downloadQueue">>;
 
 /** "12 s", "3 min 4 s", "1 h 20 min". */
-function formatElapsed(ms: number, t: Translate) {
-  const total = Math.max(0, Math.floor(ms / 1000));
+function formatDuration(seconds: number, t: Translate) {
+  const total = Math.max(0, Math.floor(seconds));
   const h = Math.floor(total / 3600);
   const m = Math.floor((total % 3600) / 60);
   const s = total % 60;
   if (h > 0) return t("elapsed.hours", { h, m });
-  if (m > 0) return t("elapsed.minutes", { m, s });
+  if (m > 0) return s > 0 ? t("elapsed.minutes", { m, s }) : t("elapsed.minutesOnly", { m });
   return t("elapsed.seconds", { s });
 }
