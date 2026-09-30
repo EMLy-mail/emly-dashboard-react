@@ -4,7 +4,8 @@ import { AlertTriangle } from "lucide-react";
 import { getAllStatsClients, getStatsSummary } from "@/lib/api";
 import { getCurrentUser } from "@/lib/auth";
 import { env } from "@/lib/env";
-import { statsHub } from "@/lib/realtime/stats-hub";
+import { defaultStatsProduct } from "@/lib/products";
+import { getPageStatsHub } from "@/lib/realtime/page-hub";
 import { StatsStreamProvider } from "@/components/stats-stream-provider";
 import { StatsLiveBadge } from "@/components/stats-live-badge";
 import { RemoteControl } from "@/components/remote-control";
@@ -19,17 +20,19 @@ export default async function RemotePage() {
 
   // Same warm-up as the clients page: the hub's snapshot stands in for REST
   // and, from then on, live presence arrives pushed.
-  statsHub.ensureStarted();
+  const statsProduct = defaultStatsProduct(user);
+  const hub = await getPageStatsHub(statsProduct);
   const [t, summary, clients] = await Promise.all([
     getTranslations("remote"),
-    statsHub.getSummarySnapshot() ?? getStatsSummary().catch(() => null),
-    statsHub.getClientsSnapshot() ?? getAllStatsClients().catch(() => null),
+    hub?.getSummarySnapshot() ?? getStatsSummary({ product: statsProduct }).catch(() => null),
+    hub?.getClientsSnapshot() ?? getAllStatsClients().catch(() => null),
   ]);
 
   return (
     <StatsStreamProvider
       initialSummary={summary}
       initialClients={clients ?? []}
+      product={statsProduct}
       enabled={env.statsRealtimeEnabled}
     >
       <div className="space-y-6">

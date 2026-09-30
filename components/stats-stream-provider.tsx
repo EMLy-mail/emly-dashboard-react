@@ -36,11 +36,14 @@ const StatsStreamContext = createContext<StatsStreamState>({
 export function StatsStreamProvider({
   initialSummary,
   initialClients,
+  product,
   enabled = true,
   children,
 }: {
   initialSummary: StatsSummary | null;
   initialClients: UpdaterClient[];
+  /** Stats `product` filter the stream is opened for; must match the initial data. */
+  product: string;
   enabled?: boolean;
   children: ReactNode;
 }) {
@@ -52,7 +55,7 @@ export function StatsStreamProvider({
   useEffect(() => {
     if (!enabled) return;
 
-    const source = new EventSource("/api/stats/live");
+    const source = new EventSource(`/api/stats/live?product=${encodeURIComponent(product)}`);
 
     source.addEventListener("stats-summary", (e) => setSummary(JSON.parse((e as MessageEvent).data)));
     source.addEventListener("stats-clients", (e) => setClients(JSON.parse((e as MessageEvent).data)));
@@ -61,7 +64,7 @@ export function StatsStreamProvider({
     source.onerror = () => setLive(false);
 
     return () => source.close();
-  }, [enabled]);
+  }, [enabled, product]);
 
   return (
     <StatsStreamContext.Provider value={{ summary, clients, events, live }}>

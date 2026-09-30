@@ -1,13 +1,18 @@
 import Link from "next/link";
-import { FileJson } from "lucide-react";
+import { AlertTriangle, FileJson } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import {
+  ApiError,
   getReleases,
   getUpdateManifest,
   getUpdaterManifest,
   getUpdaterReleases,
+  productManifestPath,
 } from "@/lib/api";
 import { getCurrentUser } from "@/lib/auth";
+import { getDefaultProduct, getUserProductOptions } from "@/lib/products";
+import { STATS_PRODUCT_UPDATER } from "@/lib/product-rules";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { env } from "@/lib/env";
 import { formatBytes } from "@/lib/utils";
 import { ReleasesTable } from "@/components/releases-table";
@@ -21,9 +26,37 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate } from "@/lib/format-date";
 import { isAdminRole } from "@/lib/roles";
 
-export default async function UpdatesPage() {
-  const t = await getTranslations("updates");
+// The Agent's tab. "updater" is a reserved product slug, so it cannot clash
+// with a real product in `?product=`.
+const UPDATER_TAB = STATS_PRODUCT_UPDATER;
 
+interface PageProps {
+  searchParams: Promise<{ product?: string }>;
+}
+
+export default async function UpdatesPage({ searchParams }: PageProps) {
+  const [{ product: productParam }, t, defaultProduct, productOptions] = await Promise.all([
+    searchParams,
+    getTranslations("updates"),
+    getDefaultProduct(),
+    getUserProductOptions(),
+  ]);
+
+  // Null = the Agent's tab: asked for, or the only one a user with no
+  // products has. A slug the user does not have (stale link, product taken
+  // away) falls back to the default tab rather than asking the API for a 403.
+  const assigned = productOptions.find((p) => p.slug === productParam)?.slug;
+  const product = productParam === UPDATER_TAB ? null : (assigned ?? defaultProduct);
+  const productName = productOptions.find((p) => p.slug === product)?.name ?? product ?? "";
+
+  const tabs = [
+    ...productOptions.map((p) => ({ value: p.slug, label: p.name })),
+    { value: UPDATER_TAB, label: t("tabs.updater") },
+  ];
+
+  // Only the open tab is fetched.
+  const skip = Promise.reject(null);
+  skip.catch(() => {});
   const [
     manifestResult,
     releasesResult,
@@ -31,22 +64,28 @@ export default async function UpdatesPage() {
     updaterReleasesResult,
     currentUserResult,
   ] = await Promise.allSettled([
-    getUpdateManifest(),
-    getReleases(),
-    getUpdaterManifest(),
-    getUpdaterReleases(),
+    product ? getUpdateManifest(product) : skip,
+    product ? getReleases(product) : skip,
+    product ? skip : getUpdaterManifest(),
+    product ? skip : getUpdaterReleases(),
     getCurrentUser(),
   ]);
 
   const manifest = manifestResult.status === "fulfilled" ? manifestResult.value : null;
   const releases = releasesResult.status === "fulfilled" ? (releasesResult.value ?? []) : [];
+  // 403: product taken away since the page loaded; 404: product deleted.
+  // Either way say so instead of showing an empty table as if it had none.
+  const releasesError =
+    releasesResult.status === "rejected" && releasesResult.reason instanceof ApiError
+      ? releasesResult.reason
+      : null;
   const updaterManifest =
     updaterManifestResult.status === "fulfilled" ? updaterManifestResult.value : null;
   const updaterReleases =
     updaterReleasesResult.status === "fulfilled" ? (updaterReleasesResult.value ?? []) : [];
   const currentUser = currentUserResult.status === "fulfilled" ? currentUserResult.value : null;
   const isAdmin = isAdminRole(currentUser?.role);
-  const manifestUrl = `${env.facingUrl}/v2/updates/manifest`;
+  const manifestUrl = product ? `${env.facingUrl}${productManifestPath(product)}` : null;
   const updaterManifestUrl = `${env.facingUrl}/v2/updates/manifest/updater`;
   // An empty (or absent) version is the "nothing to distribute" state.
   const updaterServedVersion = updaterManifest?.version || null;
@@ -64,19 +103,40 @@ export default async function UpdatesPage() {
     }
   }
 
-  const emlySection = (
+  const productSection = product && (
     <>
-      <div className="flex flex-wrap items-center justify-end gap-2">
-        <Button variant="outline" asChild>
-          <Link href={manifestUrl} target="_blank" rel="noopener noreferrer">
-            <FileJson className="mr-2 h-4 w-4" />
-            {t("showManifest")}
-          </Link>
-        </Button>
-        {isAdmin && <CreateReleaseDialog />}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        {manifestUrl && (
+          <code className="truncate rounded bg-muted px-2 py-1 text-xs text-muted-foreground">
+            {manifestUrl}
+          </code>
+        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {manifestUrl && (
+            <Button variant="outline" asChild>
+              <Link href={manifestUrl} target="_blank" rel="noopener noreferrer">
+                <FileJson className="mr-2 h-4 w-4" />
+                {t("showManifest")}
+              </Link>
+            </Button>
+          )}
+          {isAdmin && <CreateReleaseDialog product={product} productName={productName} />}
+        </div>
       </div>
 
-      {manifest && (
+      {releasesError && (releasesError.status === 403 || releasesError.status === 404) && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            {releasesError.status === 403
+              ? t("errors.notAssigned", { product: productName })
+              : t("errors.notFound", { product: productName })}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* No stable release yet: the API still serves a manifest, with empty versions. */}
+      {manifest?.stableVersion && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Card>
             <CardHeader className="pb-2">
@@ -134,7 +194,12 @@ export default async function UpdatesPage() {
         </div>
       )}
 
-      <ReleasesTable releases={releases} isAdmin={isAdmin} />
+      <ReleasesTable
+        releases={releases}
+        isAdmin={isAdmin}
+        product={product}
+        productName={productName}
+      />
     </>
   );
 
@@ -235,7 +300,9 @@ export default async function UpdatesPage() {
         <p className="text-muted-foreground">{t("description")}</p>
       </div>
 
-      <UpdatesTabs emly={emlySection} updater={updaterSection} />
+      <UpdatesTabs tabs={tabs} active={product ?? UPDATER_TAB} updaterValue={UPDATER_TAB}>
+        {product ? productSection : updaterSection}
+      </UpdatesTabs>
     </div>
   );
 }

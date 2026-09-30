@@ -51,3 +51,12 @@ const DOWNLOAD_QUEUE_ROLES: readonly UserRole[] = ["admin", "owner"];
 export function canManageDownloadQueue(role: UserRole | null | undefined): boolean {
   return role != null && DOWNLOAD_QUEUE_ROLES.includes(role);
 }
+
+/**
+ * Who may change a user's product assignment. Mirrors the API, which lets
+ * only admins and owners call `PUT /users/{id}/products` with a session (403
+ * for `user`): a scope users could widen for themselves would scope nothing.
+ */
+export function canAssignProducts(role: UserRole | null | undefined): boolean {
+  return isAdminRole(role);
+}

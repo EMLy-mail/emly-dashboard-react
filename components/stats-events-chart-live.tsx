@@ -19,14 +19,15 @@ export function StatsEventsChartLive({
   bucket,
   eventType,
 }: {
-  initial: StatsEventsResponse["data"];
+  initial: NonNullable<StatsEventsResponse["data"]>;
   bucket: StatsEventBucket;
   eventType: string;
 }) {
   const { events } = useLiveStatsEvents();
 
   const data = useMemo(() => {
-    const rows = events?.bucket === bucket ? events.data : initial;
+    // A pushed snapshot of an empty window carries `data: null`.
+    const rows = (events?.bucket === bucket ? events.data : initial) ?? [];
     return eventType === "all" ? rows : rows.filter((row) => row.event_type === eventType);
   }, [events, initial, bucket, eventType]);
 

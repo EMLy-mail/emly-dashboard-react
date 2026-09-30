@@ -1,5 +1,8 @@
 import "server-only";
+import { cookies } from "next/headers";
+import { unstable_rethrow } from "next/navigation";
 import { env, SERVER_USER_AGENT } from "./env";
+import { SESSION_COOKIE } from "./session-cookie";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -63,6 +66,12 @@ export interface AuthUser {
   role: UserRole;
   enabled: boolean;
   auth_provider: AuthProvider;
+  /**
+   * Product slugs assigned to the user: the same list the API scopes every
+   * request by, so it is what the product selector offers. Absent only on an
+   * API that predates products; see `userProductSlugs` in lib/products.ts.
+   */
+  products?: string[];
 }
 
 // ── Error ──────────────────────────────────────────────────────────────────
@@ -82,17 +91,35 @@ export class ApiError extends Error {
 // ── Base fetch ─────────────────────────────────────────────────────────────
 
 type ApiOptions = {
-  sessionToken?: string;
+  /**
+   * Sent as X-Session-Token. The API scopes releases, products and stats by
+   * the user behind it, and without one the admin key sees everything, so
+   * left undefined it defaults to the signed-in user's token from the request
+   * cookie. Pass null for the calls that must go out without one (login).
+   */
+  sessionToken?: string | null;
   requiresAdmin?: boolean;
   requiresApi?: boolean;
   baseUrl?: string;
 };
+
+async function requestSessionToken(): Promise<string | undefined> {
+  try {
+    return (await cookies()).get(SESSION_COOKIE)?.value;
+  } catch (e) {
+    // Outside a request (no cookies to read) there is no user to act for.
+    unstable_rethrow(e);
+    return undefined;
+  }
+}
 
 async function apiFetch<T>(
   path: string,
   init: RequestInit = {},
   opts: ApiOptions = {},
 ): Promise<T> {
+  const sessionToken =
+    opts.sessionToken === undefined ? await requestSessionToken() : opts.sessionToken;
   const headers: Record<string, string> = {
     ...(init.headers as Record<string, string>),
     "User-Agent": SERVER_USER_AGENT,
@@ -104,8 +131,8 @@ async function apiFetch<T>(
   if (opts.requiresAdmin) {
     headers["X-Admin-Key"] = env.adminKey;
   }
-  if (opts.sessionToken) {
-    headers["X-Session-Token"] = opts.sessionToken;
+  if (sessionToken) {
+    headers["X-Session-Token"] = sessionToken;
   }
   if (env.dashboardKey) {
     headers["X-Dashboard-Key"] = env.dashboardKey;
@@ -134,7 +161,7 @@ export async function login(username: string, password: string) {
   return apiFetch<{ session_id: string; user: AuthUser }>(
     "/admin/auth/login",
     { method: "POST", body: JSON.stringify({ username, password }) },
-    { requiresApi: false },
+    { requiresApi: false, sessionToken: null },
   );
 }
 
@@ -146,7 +173,7 @@ export async function loginOidc(idToken: string, nonce: string) {
   return apiFetch<{ session_id: string; user: AuthUser }>(
     "/admin/auth/oidc",
     { method: "POST", body: JSON.stringify({ id_token: idToken, nonce }) },
-    { requiresApi: false, requiresAdmin: true },
+    { requiresApi: false, requiresAdmin: true, sessionToken: null },
   );
 }
 
@@ -155,7 +182,7 @@ export async function backchannelLogoutOidc(logoutToken: string) {
   return apiFetch<{ sessions_removed: number }>(
     "/admin/auth/oidc/backchannel-logout",
     { method: "POST", body: JSON.stringify({ logout_token: logoutToken }) },
-    { requiresApi: false, requiresAdmin: true },
+    { requiresApi: false, requiresAdmin: true, sessionToken: null },
   );
 }
 
@@ -281,6 +308,93 @@ export async function resetUserPassword(id: string, password: string, sessionTok
   );
 }
 
+/** The product slugs a user is scoped to. */
+export async function getUserProducts(id: string) {
+  return apiFetch<{ user_id: string; products: string[] }>(
+    `/admin/users/${id}/products`,
+    {},
+    { requiresAdmin: true, requiresApi: false },
+  );
+}
+
+/**
+ * Replaces the user's whole assignment (`[]` removes every product). With a
+ * session, the API lets only an `admin`-role user call it (403 otherwise). The
+ * user sees the change on their next request; their product selector follows
+ * on the next `validate`.
+ */
+export async function setUserProducts(id: string, products: string[], sessionToken?: string) {
+  return apiFetch<{ user_id: string; products: string[] }>(
+    `/admin/users/${id}/products`,
+    { method: "PUT", body: JSON.stringify({ products }) },
+    { requiresAdmin: true, requiresApi: false, sessionToken },
+  );
+}
+
+// ── Products ───────────────────────────────────────────────────────────────
+// The registry of products distributed from /v2/updates/{product}. With a
+// session every call is scoped: the list holds only the user's products, and
+// one outside the scope is 404.
+
+export interface Product {
+  /** Permanent: written into every release, event and inventory row. */
+  slug: string;
+  name: string;
+  /** Absent = derived (`<S3_UPDATES_PREFIX>/<slug>`, `emly` at the root). */
+  s3_prefix?: string | null;
+  /** false = 404 on the public manifest and downloads; releases stay manageable. */
+  enabled: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+function productsBase(): string {
+  return env.apiBaseUrl + "/v2/products";
+}
+
+export async function getProducts() {
+  return apiFetch<Product[]>("", {}, { requiresAdmin: true, requiresApi: false, baseUrl: productsBase() });
+}
+
+/** 409 when the slug already exists. The creator is assigned the product. */
+export async function createProduct(data: {
+  slug: string;
+  name: string;
+  s3_prefix?: string | null;
+  enabled?: boolean;
+}) {
+  return apiFetch<Product>(
+    "",
+    { method: "POST", body: JSON.stringify(data) },
+    { requiresAdmin: true, requiresApi: false, baseUrl: productsBase() },
+  );
+}
+
+/** An empty `s3_prefix` goes back to the default. Changing it moves no file. */
+export async function updateProduct(
+  slug: string,
+  data: { name?: string; s3_prefix?: string; enabled?: boolean },
+) {
+  return apiFetch<Product>(
+    `/${encodeURIComponent(slug)}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    },
+    { requiresAdmin: true, requiresApi: false, baseUrl: productsBase() },
+  );
+}
+
+/** 409 while the product still has releases, and always for `emly`. */
+export async function deleteProduct(slug: string) {
+  return apiFetch<{ deleted: boolean }>(
+    `/${encodeURIComponent(slug)}`,
+    { method: "DELETE" },
+    { requiresAdmin: true, requiresApi: false, baseUrl: productsBase() },
+  );
+}
+
 // ── Updates ────────────────────────────────────────────────────────────────
 
 /**
@@ -310,6 +424,8 @@ export interface UpdateManifest {
 }
 
 export interface Release {
+  /** Slug of the product the release belongs to; versions are unique per product. */
+  product: string;
   version: string;
   is_stable: boolean;
   is_beta: boolean;
@@ -330,24 +446,40 @@ function updatesBase(): string {
   return env.apiBaseUrl + "/v2";
 }
 
-export async function getUpdateManifest() {
+/**
+ * Path of a product's release routes. Every product, EMLy included, goes
+ * through `/updates/{product}/...`; the unprefixed routes are EMLy-only
+ * aliases kept for the clients in the field.
+ */
+function releasesPath(product: string, version?: string): string {
+  const base = `/updates/${encodeURIComponent(product)}/releases`;
+  return version === undefined ? base : `${base}/${encodeURIComponent(version)}`;
+}
+
+/** Public manifest path of a product, relative to the API root. */
+export function productManifestPath(product: string): string {
+  return `/v2/updates/${encodeURIComponent(product)}/manifest`;
+}
+
+/** Public: 404 when the product does not exist or is disabled. */
+export async function getUpdateManifest(product: string) {
   return apiFetch<UpdateManifest>(
-    "/updates/manifest",
+    `/updates/${encodeURIComponent(product)}/manifest`,
     {},
     { requiresApi: false, baseUrl: updatesBase() },
   );
 }
 
-export async function getReleases(channel?: ReleaseChannel) {
+export async function getReleases(product: string, channel?: ReleaseChannel) {
   const qs = channel ? `?channel=${channel}` : "";
   return apiFetch<Release[]>(
-    `/updates/releases${qs}`,
+    `${releasesPath(product)}${qs}`,
     {},
     { requiresAdmin: true, requiresApi: false, baseUrl: updatesBase() },
   );
 }
 
-export async function createRelease(data: {
+export async function createRelease(product: string, data: {
   file: File;
   version: string;
   short_note?: string;
@@ -374,21 +506,22 @@ export async function createRelease(data: {
   if (data.min_required_version) form.append("min_required_version", data.min_required_version);
 
   return apiFetch<{ version: string; is_stable: boolean; is_beta: boolean; download_filename: string; sha256_checksum: string }>(
-    "/updates/releases",
+    releasesPath(product),
     { method: "POST", body: form },
     { requiresAdmin: true, requiresApi: false, baseUrl: updatesBase() },
   );
 }
 
-export async function deleteRelease(version: string) {
+export async function deleteRelease(product: string, version: string) {
   return apiFetch<{ deleted: boolean }>(
-    `/updates/releases/${encodeURIComponent(version)}`,
+    releasesPath(product, version),
     { method: "DELETE" },
     { requiresAdmin: true, requiresApi: false, baseUrl: updatesBase() },
   );
 }
 
 export async function updateRelease(
+  product: string,
   version: string,
   data: {
     short_note?: string;
@@ -403,7 +536,7 @@ export async function updateRelease(
   },
 ) {
   return apiFetch<Release>(
-    `/updates/releases/${encodeURIComponent(version)}`,
+    releasesPath(product, version),
     {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -415,15 +548,17 @@ export async function updateRelease(
 
 /**
  * Sets is_stable and/or is_beta on a release. Setting either to true demotes
- * whoever currently holds that slot; the two flags are independent, so a
- * release may hold both at once. Setting a flag to false just clears it.
+ * whoever currently holds that slot in the same product; the two flags are
+ * independent, so a release may hold both at once. Setting a flag to false
+ * just clears it.
  */
 export async function setReleaseChannels(
+  product: string,
   version: string,
   flags: { is_stable?: boolean; is_beta?: boolean },
 ) {
   return apiFetch<{ version: string; is_stable: boolean; is_beta: boolean }>(
-    `/updates/releases/${encodeURIComponent(version)}/channel`,
+    `${releasesPath(product, version)}/channel`,
     {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -672,7 +807,16 @@ export interface UpdaterEvent {
   created_at: string;
 }
 
+/**
+ * `?product=` on the stats routes: a registry slug, `updater` (the Agent's own
+ * self-update, which belongs to no product) or `all`. With a session, `all`
+ * means the user's products plus `updater`, and an unassigned slug is 403.
+ */
+export type StatsProductFilter = string;
+
 export interface StatsSummary {
+  /** The filter the payload was built for. */
+  product?: StatsProductFilter;
   total_clients: number;
   connected_clients: number;
   window_minutes: number;
@@ -688,20 +832,34 @@ export interface PaginatedStatsClients {
   total_pages: number;
 }
 
+/** One product installed on a machine, from its last reported inventory. */
+export interface ClientProduct {
+  product: string;
+  version: string;
+  /** Since when the machine has been on this version. */
+  updated_at: string;
+}
+
 export interface StatsClientDetail {
   client: UpdaterClient;
   events: UpdaterEvent[];
+  /** Absent on an API that predates products. */
+  products?: ClientProduct[];
 }
 
 export interface StatsEventsResponse {
   bucket: StatsEventBucket;
   from: string;
   to: string;
-  data: { bucket: string; event_type: string; count: number }[];
+  /** null, not [], when the window has no events (a nil slice on the API side). */
+  data: { bucket: string; event_type: string; count: number }[] | null;
 }
 
-export async function getStatsSummary(windowMinutes?: number) {
-  const qs = windowMinutes ? `?window_minutes=${windowMinutes}` : "";
+export async function getStatsSummary(opts: { product?: StatsProductFilter; windowMinutes?: number } = {}) {
+  const params = new URLSearchParams();
+  if (opts.windowMinutes) params.set("window_minutes", String(opts.windowMinutes));
+  if (opts.product) params.set("product", opts.product);
+  const qs = params.toString() ? `?${params}` : "";
   return apiFetch<StatsSummary>(
     `/stats/summary${qs}`,
     {},
@@ -785,12 +943,14 @@ export async function deleteStatsClient(id: number) {
 }
 
 export async function getStatsEvents(opts: {
+  product?: StatsProductFilter;
   bucket?: StatsEventBucket;
   event_type?: string;
   from?: string;
   to?: string;
 }) {
   const params = new URLSearchParams();
+  if (opts.product) params.set("product", opts.product);
   if (opts.bucket) params.set("bucket", opts.bucket);
   if (opts.event_type) params.set("event_type", opts.event_type);
   if (opts.from) params.set("from", opts.from);

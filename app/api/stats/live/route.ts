@@ -1,9 +1,11 @@
-import { getCurrentUser } from "@/lib/auth";
-import { statsHub } from "@/lib/realtime/stats-hub";
+import type { NextRequest } from "next/server";
+import { getCurrentUser, getSessionToken } from "@/lib/auth";
+import { defaultStatsProduct, statsProductFilters } from "@/lib/products";
+import { getStatsHub } from "@/lib/realtime/stats-hub";
 
-// In-domain fan-out only: the WebSocket to the API lives in statsHub, one per
-// Next.js process, and this route just relays what it already has to every
-// open tab. Needs the module-level singleton and a long-lived response, so
+// In-domain fan-out only: the WebSocket to the API lives in a stats hub, one
+// per session and product filter in this Next.js process, and this route just
+// relays what it already has to every open tab of that session. Needs the module-level singleton and a long-lived response, so
 // neither the Edge runtime nor any caching applies.
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,16 +16,25 @@ function sseFrame(event: string, data: unknown): string {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 }
 
-export async function GET() {
-  const user = await getCurrentUser();
-  if (!user) {
-    return new Response(JSON.stringify({ error: "unauthorized" }), {
-      status: 401,
-      headers: { "Content-Type": "application/json" },
-    });
+function jsonError(status: number, error: string): Response {
+  return new Response(JSON.stringify({ error }), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+export async function GET(request: NextRequest) {
+  const [user, token] = await Promise.all([getCurrentUser(), getSessionToken()]);
+  if (!user || !token) return jsonError(401, "unauthorized");
+
+  // Checked here too so a hand-written URL cannot open a socket the API
+  // would only refuse.
+  const product = request.nextUrl.searchParams.get("product") || defaultStatsProduct(user);
+  if (!statsProductFilters(user).includes(product)) {
+    return jsonError(403, "product not assigned to this user");
   }
 
-  statsHub.ensureStarted();
+  const statsHub = getStatsHub(token, product);
 
   const encoder = new TextEncoder();
   let heartbeat: ReturnType<typeof setInterval> | undefined;

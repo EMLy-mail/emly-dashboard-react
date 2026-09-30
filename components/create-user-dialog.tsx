@@ -3,7 +3,8 @@
 import { useState, useActionState, useEffect } from "react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
-import { createUserAction, type UserActionState } from "@/lib/actions/users";
+import { createUserAction, type CreateUserActionState } from "@/lib/actions/users";
+import { ProductCheckboxes, type AssignableProduct } from "@/components/user-products-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -24,11 +25,17 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Plus } from "lucide-react";
 
-const initialState: UserActionState = {};
+const initialState: CreateUserActionState = {};
 
-export function CreateUserDialog() {
+/**
+ * `assignableProducts` is null when the actor cannot assign products (only
+ * admins and owners can); the dialog then only warns that the new user will
+ * see nothing until an admin assigns them some.
+ */
+export function CreateUserDialog({ assignableProducts }: { assignableProducts: AssignableProduct[] | null }) {
   const [open, setOpen] = useState(false);
   const [role, setRole] = useState("user");
+  const [products, setProducts] = useState<string[]>([]);
   const [state, formAction, isPending] = useActionState(createUserAction, initialState);
   const t = useTranslations("users");
   const [lastHandledState, setLastHandledState] = useState(state);
@@ -37,7 +44,11 @@ export function CreateUserDialog() {
     setLastHandledState(state);
     if (state.success) {
       setOpen(false);
+      setProducts([]);
       toast.success(t("createDialog.success"));
+      if (state.productsError) {
+        toast.error(t("createDialog.productsFailed", { error: state.productsError }));
+      }
     }
   }
 
@@ -84,6 +95,23 @@ export function CreateUserDialog() {
                 <SelectItem value="admin">{t("createDialog.roleAdmin")}</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>{t("createDialog.products")}</Label>
+            {assignableProducts && assignableProducts.length > 0 && (
+              <ProductCheckboxes
+                idPrefix="new-user-product"
+                name="products"
+                options={assignableProducts}
+                selected={products}
+                onChange={setProducts}
+              />
+            )}
+            {products.length === 0 && (
+              <p className="text-xs text-muted-foreground">
+                {assignableProducts ? t("createDialog.noProductsHint") : t("createDialog.noProductsHintNoAssign")}
+              </p>
+            )}
           </div>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>

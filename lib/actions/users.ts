@@ -1,9 +1,20 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createUser, updateUser, deleteUser, getUsers, resetUserPassword, ApiError, type UserRole } from "@/lib/api";
+import {
+  createUser,
+  updateUser,
+  deleteUser,
+  getUsers,
+  getUserProducts,
+  resetUserPassword,
+  setUserProducts,
+  ApiError,
+  type UserRole,
+} from "@/lib/api";
 import { getCurrentUser, getSessionToken } from "@/lib/auth";
-import { canManageUser, isAdminRole } from "@/lib/roles";
+import { redirectIfSessionExpired, userProductSlugs } from "@/lib/products";
+import { canAssignProducts, canManageUser, isAdminRole } from "@/lib/roles";
 
 async function requireAdmin() {
   const user = await getCurrentUser();
@@ -25,22 +36,68 @@ async function requireCanManage(targetId: string) {
 
 export type UserActionState = { error?: string; success?: boolean };
 
+// A product assignment is replaced as a whole by the API. The acting admin
+// only sees (and so only offers) their own products, so the target's other
+// products are carried over untouched rather than silently dropped.
+async function assignProducts(targetId: string, picked: string[]) {
+  const actor = await getCurrentUser();
+  if (!actor || !canAssignProducts(actor.role)) throw new Error("Unauthorized");
+  const offered = userProductSlugs(actor);
+  const current = (await getUserProducts(targetId)).products ?? [];
+  const kept = current.filter((slug) => !offered.includes(slug));
+  const chosen = picked.filter((slug) => offered.includes(slug));
+  return setUserProducts(targetId, [...new Set([...chosen, ...kept])], await getSessionToken());
+}
+
+export type CreateUserActionState = UserActionState & {
+  /** The user was created, but assigning the picked products failed. */
+  productsError?: string;
+};
+
 export async function createUserAction(
-  _prevState: UserActionState,
+  _prevState: CreateUserActionState,
   formData: FormData,
-): Promise<UserActionState> {
+): Promise<CreateUserActionState> {
   const username = formData.get("username") as string;
   const displayname = formData.get("displayname") as string;
   const password = formData.get("password") as string;
   const role = formData.get("role") as UserRole;
+  const products = formData.getAll("products").map(String);
 
+  let created;
   try {
-    await createUser({ username, displayname: displayname || undefined, password, role });
-    revalidatePath("/users");
-    return { success: true };
+    await requireAdmin();
+    created = await createUser({ username, displayname: displayname || undefined, password, role });
   } catch (e) {
     if (e instanceof ApiError) return { error: e.message };
     return { error: "Failed to create user" };
+  }
+
+  // A new user has no products and sees nothing until given some.
+  if (products.length > 0) {
+    try {
+      await assignProducts(created.id, products);
+    } catch (e) {
+      revalidatePath("/users");
+      return { success: true, productsError: e instanceof Error ? e.message : "Failed to assign products" };
+    }
+  }
+  revalidatePath("/users");
+  return { success: true };
+}
+
+export async function setUserProductsAction(
+  id: string,
+  products: string[],
+): Promise<{ error?: string; products?: string[] }> {
+  try {
+    const result = await assignProducts(id, products);
+    revalidatePath("/users");
+    return { products: result.products };
+  } catch (e) {
+    await redirectIfSessionExpired(e);
+    if (e instanceof Error) return { error: e.message };
+    return { error: "Failed to assign products" };
   }
 }
 

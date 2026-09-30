@@ -27,18 +27,20 @@ const initialState: ReleaseActionState = {};
 
 interface EditReleaseDialogProps {
   release: Release;
+  product: string;
+  productName: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export function EditReleaseDialog({ release, open, onOpenChange }: EditReleaseDialogProps) {
+export function EditReleaseDialog({ release, product, productName, open, onOpenChange }: EditReleaseDialogProps) {
   const [isStable, setIsStable] = useState<boolean>(release.is_stable);
   const [isBeta, setIsBeta] = useState<boolean>(release.is_beta);
   const [severityType, setSeverityType] = useState<string>(release.severity_type);
   const [isCritical, setIsCritical] = useState<boolean>(release.is_critical);
   const t = useTranslations("updates");
 
-  const boundAction = updateReleaseAction.bind(null, release.version);
+  const boundAction = updateReleaseAction.bind(null, product, release.version);
   const [state, formAction, isPending] = useActionState(boundAction, initialState);
 
   const handleOpenChange = (nextOpen: boolean) => {
@@ -118,7 +120,7 @@ export function EditReleaseDialog({ release, open, onOpenChange }: EditReleaseDi
               </Select>
             </div>
           </div>
-          <p className="-mt-2 text-xs text-muted-foreground">{t("editDialog.channelsHelp")}</p>
+          <p className="-mt-2 text-xs text-muted-foreground">{t("editDialog.channelsHelp", { product: productName })}</p>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="edit-note">{t("editDialog.shortNote")}</Label>

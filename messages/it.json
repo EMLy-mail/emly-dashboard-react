@@ -13,7 +13,8 @@
       "bans": "Ban",
       "clients": "Client",
       "remote": "Controllo remoto",
-      "downloadQueue": "Coda download"
+      "downloadQueue": "Coda download",
+      "products": "Prodotti"
     },
     "signOut": "Esci",
     "toggleTheme": "Cambia tema",
@@ -138,7 +139,10 @@
       "deleteTitle": "Eliminare l'utente \"{username}\"?",
       "deleteDescription": "Questa azione non può essere annullata. L'utente perderà immediatamente l'accesso alla dashboard.",
       "cancel": "Annulla",
-      "sso": "SSO"
+      "sso": "SSO",
+      "products": "Prodotti",
+      "noProducts": "Nessuno",
+      "assignProducts": "Assegna prodotti"
     },
     "createDialog": {
       "title": "Crea Nuovo Utente",
@@ -151,7 +155,11 @@
       "cancel": "Annulla",
       "create": "Crea",
       "creating": "Creazione...",
-      "success": "Utente creato con successo"
+      "success": "Utente creato con successo",
+      "products": "Prodotti",
+      "noProductsHint": "Nessun prodotto selezionato: il nuovo utente non vedrà versioni, statistiche né macchine finché un amministratore non gliene assegna uno.",
+      "noProductsHintNoAssign": "I nuovi utenti partono senza prodotti e non vedono versioni, statistiche né macchine finché un amministratore non gliene assegna uno.",
+      "productsFailed": "Utente creato, ma l'assegnazione dei prodotti non è riuscita: {error}"
     },
     "resetPassword": {
       "title": "Reimposta Password per {username}",
@@ -160,6 +168,17 @@
       "reset": "Reimposta Password",
       "resetting": "Reimpostazione...",
       "success": "Password reimpostata con successo"
+    },
+    "productsDialog": {
+      "title": "Prodotti di {username}",
+      "description": "L'utente vede solo versioni, statistiche e macchine di questi prodotti. La modifica vale dalla sua prossima richiesta.",
+      "noOptions": "Non hai prodotti da assegnare.",
+      "hiddenKept": "Assegnati anche, fuori dai tuoi prodotti: restano come sono.",
+      "noneWarning": "Senza prodotti l'utente non vedrà niente.",
+      "cancel": "Annulla",
+      "save": "Salva",
+      "saving": "Salvataggio...",
+      "saved": "Prodotti aggiornati per {username}"
     }
   },
   "updates": {
@@ -189,7 +208,7 @@
       "removeFromStable": "Rimuovi da Stabile",
       "removeFromBeta": "Rimuovi da Beta",
       "delete": "Elimina",
-      "deleteTitle": "Eliminare la versione \"{version}\"?",
+      "deleteTitle": "Eliminare la versione \"{version}\" di {product}?",
       "deleteDescription": "Questo rimuoverà definitivamente il record della versione e il file installer dall'archivio. Questa azione non può essere annullata.",
       "cancel": "Annulla",
       "promotedStable": "{version} promossa a stabile",
@@ -201,10 +220,10 @@
       "deleteFailed": "Eliminazione versione fallita"
     },
     "createDialog": {
-      "title": "Nuova Versione",
+      "title": "Nuova versione {product}",
       "version": "Versione *",
       "channel": "Canale",
-      "channelsHelp": "Una versione può essere sia stabile che beta allo stesso tempo. Selezionando una casella la si toglie alla versione che attualmente la occupa.",
+      "channelsHelp": "Una versione può essere sia stabile che beta allo stesso tempo. Selezionando una casella la si toglie alla versione di {product} che attualmente la occupa; gli altri prodotti non vengono toccati.",
       "installerFile": "File Installer (.exe) *",
       "checksumNote": "Il checksum SHA-256 viene calcolato lato server dopo il caricamento.",
       "severity": "Gravità",
@@ -230,7 +249,7 @@
     "editDialog": {
       "title": "Modifica Versione {version}",
       "channel": "Canale",
-      "channelsHelp": "Una versione può essere sia stabile che beta allo stesso tempo. Selezionando una casella la si toglie alla versione che attualmente la occupa.",
+      "channelsHelp": "Una versione può essere sia stabile che beta allo stesso tempo. Selezionando una casella la si toglie alla versione di {product} che attualmente la occupa; gli altri prodotti non vengono toccati.",
       "severity": "Gravità",
       "shortNote": "Nota Breve",
       "shortNotePlaceholder": "Breve riepilogo della versione",
@@ -252,7 +271,6 @@
       "critical": "Aggiornamento critico (i client devono aggiornare immediatamente)"
     },
     "tabs": {
-      "emly": "EMLy",
       "updater": "AryxD Agent"
     },
     "updater": {
@@ -327,6 +345,10 @@
         "saving": "Salvataggio...",
         "success": "Versione updater {version} aggiornata"
       }
+    },
+    "errors": {
+      "notAssigned": "{product} non ti è più assegnato. Scegli un altro prodotto nella barra laterale.",
+      "notFound": "{product} non esiste più."
     }
   },
   "clients": {
@@ -510,7 +532,9 @@
         "contact": "Contatto",
         "lastIp": "Ultimo IP",
         "firstSeen": "Prima Rilevazione",
-        "lastSeen": "Ultima Rilevazione"
+        "lastSeen": "Ultima Rilevazione",
+        "installedProducts": "Prodotti installati",
+        "installedSince": "dal {date}"
       },
       "events": {
         "title": "Eventi Recenti",
@@ -544,6 +568,11 @@
         "download": "Download"
       },
       "noData": "Nessun evento in questo intervallo."
+    },
+    "productFilter": {
+      "label": "Prodotto",
+      "updater": "AryxD Agent (self-update)",
+      "all": "Tutti i miei prodotti"
     }
   },
   "bans": {
@@ -888,6 +917,59 @@
       "copyFailed": "Errore di trasferimento",
       "errorResponse": "Errore prima del download (404/5xx)",
       "internalError": "Errore interno"
+    }
+  },
+  "products": {
+    "title": "Prodotti",
+    "description": "Software distribuito tramite l'API di aggiornamento. Ogni prodotto ha le sue versioni, i suoi canali e il suo manifest.",
+    "create": "Nuovo prodotto",
+    "none": {
+      "title": "Nessun prodotto assegnato",
+      "description": "Il tuo account non ha ancora prodotti, quindi qui non c'è niente da mostrare. Contatta un amministratore per ottenere l'accesso."
+    },
+    "table": {
+      "slug": "Slug",
+      "name": "Nome",
+      "status": "Stato",
+      "s3Prefix": "Prefisso S3",
+      "created": "Creato",
+      "noData": "Nessun prodotto trovato.",
+      "enabled": "Attivo",
+      "disabled": "Disattivato",
+      "defaultPrefix": "predefinito",
+      "edit": "Modifica",
+      "delete": "Elimina",
+      "cancel": "Annulla",
+      "deleteTitle": "Eliminare il prodotto \"{slug}\"?",
+      "deleteDescription": "Si può eliminare solo un prodotto senza versioni: eliminale (o disattiva il prodotto) prima. Telemetria e inventari delle macchine restano, e il prodotto viene tolto a tutti gli utenti.",
+      "deleted": "Prodotto {slug} eliminato",
+      "deleteFailed": "Impossibile eliminare il prodotto: {error}"
+    },
+    "form": {
+      "createTitle": "Nuovo prodotto",
+      "createDescription": "Il nuovo prodotto ti verrà assegnato automaticamente.",
+      "editTitle": "Modifica prodotto {slug}",
+      "slug": "Slug *",
+      "slugHelp": "Lettere minuscole, cifre e trattini, fino a 20 caratteri. Non si può modificare dopo la creazione.",
+      "name": "Nome *",
+      "s3Prefix": "Prefisso S3",
+      "s3PrefixPlaceholder": "Vuoto per il predefinito",
+      "s3PrefixHelp": "Vuoto usa la cartella predefinita (S3_UPDATES_PREFIX/slug).",
+      "s3PrefixWarning": "Cambiare il prefisso non sposta i file già caricati: i download delle versioni esistenti andranno in 404 finché non vengono spostati a mano.",
+      "enabled": "Attivo",
+      "enabledHelp": "Se disattivato, manifest e download del prodotto rispondono 404 ai client, ma le versioni si possono ancora gestire. Utile per preparare un prodotto prima del lancio.",
+      "cancel": "Annulla",
+      "create": "Crea",
+      "save": "Salva",
+      "saving": "Salvataggio...",
+      "created": "Prodotto {slug} creato",
+      "updated": "Prodotto {slug} aggiornato",
+      "errors": {
+        "slugFormat": "Lo slug deve iniziare con una lettera minuscola o una cifra e contenere solo lettere minuscole, cifre e trattini (max 20).",
+        "slugReserved": "Slug riservato: manifest, releases, download, updater, all e products non si possono usare.",
+        "nameRequired": "Il nome è obbligatorio.",
+        "nameTooLong": "Il nome può avere al massimo 100 caratteri."
+      }
     }
   }
 }

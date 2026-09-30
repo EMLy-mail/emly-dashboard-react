@@ -2,8 +2,9 @@ import "server-only";
 import { cache } from "react";
 import { cookies, headers } from "next/headers";
 import { validateSession, type AuthUser } from "./api";
+import { SESSION_COOKIE } from "./session-cookie";
 
-export const SESSION_COOKIE = "emly_session";
+export { SESSION_COOKIE };
 
 async function shouldUseSecureCookie(): Promise<boolean> {
   const hdrs = await headers();

@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import type { User } from "@/lib/api";
 import { updateUserAction, deleteUserAction } from "@/lib/actions/users";
 import { ResetPasswordDialog } from "./reset-password-dialog";
+import { UserProductsDialog, type AssignableProduct } from "./user-products-dialog";
 import {
   Table,
   TableBody,
@@ -33,7 +34,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MoreHorizontal, Trash2, KeyRound, ToggleLeft, ToggleRight } from "lucide-react";
+import { MoreHorizontal, Trash2, KeyRound, ToggleLeft, ToggleRight, Boxes } from "lucide-react";
 import { formatDate } from "@/lib/format-date";
 import { canManageUser } from "@/lib/roles";
 
@@ -41,12 +42,24 @@ export function UsersTable({
   users,
   isAdmin,
   actor,
+  productsByUser,
+  productNames,
+  canAssign,
+  assignableProducts,
 }: {
   users: User[];
   isAdmin: boolean;
   actor: { id: string; role: User["role"] } | null;
+  /** Each user's assigned slugs; null hides the column (not loaded for non-admins). */
+  productsByUser: Record<string, string[]> | null;
+  productNames: Record<string, string>;
+  /** Whether the actor may change assignments (API: admins and owners). */
+  canAssign: boolean;
+  /** The actor's own products: the ones they can hand out. */
+  assignableProducts: AssignableProduct[];
 }) {
   const [resetTarget, setResetTarget] = useState<User | null>(null);
+  const [productsTarget, setProductsTarget] = useState<User | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
   const [isPending, startTransition] = useTransition();
   const t = useTranslations("users");
@@ -78,6 +91,7 @@ export function UsersTable({
               <TableHead>{t("table.displayName")}</TableHead>
               <TableHead>{t("table.role")}</TableHead>
               <TableHead>{t("table.status")}</TableHead>
+              {productsByUser && <TableHead>{t("table.products")}</TableHead>}
               <TableHead>{t("table.created")}</TableHead>
               <TableHead className="w-10" />
             </TableRow>
@@ -85,7 +99,7 @@ export function UsersTable({
           <TableBody>
             {users.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={productsByUser ? 7 : 6} className="text-center text-muted-foreground py-8">
                   {t("table.noData")}
                 </TableCell>
               </TableRow>
@@ -113,11 +127,26 @@ export function UsersTable({
                     {user.enabled ? t("table.active") : t("table.disabled")}
                   </Badge>
                 </TableCell>
+                {productsByUser && (
+                  <TableCell>
+                    {(productsByUser[user.id] ?? []).length === 0 ? (
+                      <span className="text-sm text-muted-foreground">{t("table.noProducts")}</span>
+                    ) : (
+                      <div className="flex flex-wrap gap-1">
+                        {productsByUser[user.id].map((slug) => (
+                          <Badge key={slug} variant="outline" title={slug}>
+                            {productNames[slug] ?? slug}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </TableCell>
+                )}
                 <TableCell className="text-sm text-muted-foreground">
                   {formatDate(user.created_at)}
                 </TableCell>
                 <TableCell>
-                  {isAdmin && canManageUser(actor, user) && (
+                  {((isAdmin && canManageUser(actor, user)) || canAssign) && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon">
@@ -125,7 +154,13 @@ export function UsersTable({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        {!isSelf && canManageUser(actor, user) && (
+                        {canAssign && productsByUser && (
+                          <DropdownMenuItem onClick={() => setProductsTarget(user)}>
+                            <Boxes className="mr-2 h-4 w-4" />
+                            {t("table.assignProducts")}
+                          </DropdownMenuItem>
+                        )}
+                        {isAdmin && !isSelf && canManageUser(actor, user) && (
                           <DropdownMenuItem
                             onClick={() => handleToggleEnabled(user)}
                             disabled={isPending}
@@ -138,13 +173,13 @@ export function UsersTable({
                             {user.enabled ? t("table.disable") : t("table.enable")}
                           </DropdownMenuItem>
                         )}
-                        {user.auth_provider !== "oidc" && canManageUser(actor, user) && (
+                        {isAdmin && user.auth_provider !== "oidc" && canManageUser(actor, user) && (
                           <DropdownMenuItem onClick={() => setResetTarget(user)}>
                             <KeyRound className="mr-2 h-4 w-4" />
                             {t("table.resetPassword")}
                           </DropdownMenuItem>
                         )}
-                        {!isSelf && canManageUser(actor, user) && (
+                        {isAdmin && !isSelf && canManageUser(actor, user) && (
                           <>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
@@ -168,6 +203,15 @@ export function UsersTable({
         </Table>
       </div>
       <ResetPasswordDialog user={resetTarget} onClose={() => setResetTarget(null)} />
+      {productsTarget && productsByUser && (
+        <UserProductsDialog
+          key={productsTarget.id}
+          user={productsTarget}
+          assigned={productsByUser[productsTarget.id] ?? []}
+          options={assignableProducts}
+          onClose={() => setProductsTarget(null)}
+        />
+      )}
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
         <AlertDialogContent>

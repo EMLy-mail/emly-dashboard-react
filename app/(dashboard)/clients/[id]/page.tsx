@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { getStatsClientDetail, getBans, ApiError, type Ban } from "@/lib/api";
 import { getCurrentUser } from "@/lib/auth";
+import { getUserProductOptions } from "@/lib/products";
 import { isAdminRole } from "@/lib/roles";
 import { CreateBanDialog } from "@/components/create-ban-dialog";
 import { DeleteClientButton } from "@/components/delete-client-button";
@@ -41,15 +42,18 @@ export default async function StatsClientDetailPage({ params }: PageProps) {
     throw e;
   }
 
-  const [t, tEvents, tBans, tHint, currentUser] = await Promise.all([
+  const [t, tEvents, tBans, tHint, currentUser, productOptions] = await Promise.all([
     getTranslations("statistics.clientDetail"),
     getTranslations("statistics.events"),
     getTranslations("bans"),
     getTranslations("clients.iconHint"),
     getCurrentUser(),
+    getUserProductOptions(),
   ]);
   const isAdmin = isAdminRole(currentUser?.role);
   const { client, events } = detail;
+  const installedProducts = detail.products ?? [];
+  const productNames = new Map(productOptions.map((p) => [p.slug, p.name]));
 
   // A ban is by identifier, not by client row, so "is this machine blocked"
   // is a question about three separate values - any one of them being on the
@@ -190,6 +194,27 @@ export default async function StatsClientDetailPage({ params }: PageProps) {
           <div>
             <p className="text-xs font-medium text-muted-foreground">{t("info.emlyVersion")}</p>
             <p className="font-mono font-medium">{client.emly_version ?? "—"}</p>
+          </div>
+          {/* The machine's full inventory as the Agent last reported it. A
+              product the user is not assigned still shows, by slug: it is
+              what is installed, not what the user may manage. */}
+          <div>
+            <p className="text-xs font-medium text-muted-foreground">{t("info.installedProducts")}</p>
+            {installedProducts.length === 0 ? (
+              <p className="font-medium">—</p>
+            ) : (
+              <ul className="space-y-0.5">
+                {installedProducts.map((p) => (
+                  <li key={p.product} className="text-sm">
+                    <span className="font-medium">{productNames.get(p.product) ?? p.product}</span>{" "}
+                    <span className="font-mono">{p.version}</span>{" "}
+                    <span className="text-xs text-muted-foreground">
+                      {t("info.installedSince", { date: formatDateTime(p.updated_at) })}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
           <div>
             <p className="text-xs font-medium text-muted-foreground">{t("info.osVersion")}</p>

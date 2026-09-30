@@ -26,13 +26,16 @@ import { Plus } from "lucide-react";
 
 const initialState: ReleaseActionState = {};
 
-export function CreateReleaseDialog() {
+export function CreateReleaseDialog({ product, productName }: { product: string; productName: string }) {
   const [open, setOpen] = useState(false);
   const [isStable, setIsStable] = useState(false);
   const [isBeta, setIsBeta] = useState(false);
   const [severityType, setSeverityType] = useState("none");
   const [isCritical, setIsCritical] = useState(false);
-  const [state, formAction, isPending] = useActionState(createReleaseAction, initialState);
+  const [state, formAction, isPending] = useActionState(
+    createReleaseAction.bind(null, product),
+    initialState,
+  );
   const t = useTranslations("updates");
 
   useEffect(() => {
@@ -54,7 +57,7 @@ export function CreateReleaseDialog() {
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{t("createDialog.title")}</DialogTitle>
+          <DialogTitle>{t("createDialog.title", { product: productName })}</DialogTitle>
         </DialogHeader>
         <form action={formAction} className="space-y-4">
           {/* hidden inputs carry Select values since Select doesn't submit natively */}
@@ -101,7 +104,7 @@ export function CreateReleaseDialog() {
               </div>
             </div>
           </div>
-          <p className="-mt-2 text-xs text-muted-foreground">{t("createDialog.channelsHelp")}</p>
+          <p className="-mt-2 text-xs text-muted-foreground">{t("createDialog.channelsHelp", { product: productName })}</p>
           <div className="space-y-2">
             <Label htmlFor="rel-file">{t("createDialog.installerFile")}</Label>
             <Input

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
   Bar,
@@ -32,7 +32,7 @@ const EVENT_COLORS: Record<UpdaterEventType, string> = {
 };
 
 interface StatsEventsChartProps {
-  data: StatsEventsResponse["data"];
+  data: NonNullable<StatsEventsResponse["data"]>;
   bucket: StatsEventBucket;
   eventType: string;
 }
@@ -40,13 +40,16 @@ interface StatsEventsChartProps {
 export function StatsEventsChart({ data, bucket, eventType }: StatsEventsChartProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const t = useTranslations("statistics.eventsChart");
 
   function navigate(next: { bucket?: StatsEventBucket; eventType?: string }) {
-    const params = new URLSearchParams();
+    // Keeps the other filters (the product one) the page URL carries.
+    const params = new URLSearchParams(searchParams.toString());
     params.set("bucket", next.bucket ?? bucket);
     const et = next.eventType ?? eventType;
     if (et && et !== "all") params.set("event_type", et);
+    else params.delete("event_type");
     router.push(`${pathname}?${params.toString()}`);
   }
 

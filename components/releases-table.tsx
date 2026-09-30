@@ -53,7 +53,18 @@ function SeverityBadge({ severity }: { severity: string }) {
   return <Badge variant="outline">none</Badge>;
 }
 
-export function ReleasesTable({ releases, isAdmin }: { releases: Release[]; isAdmin: boolean }) {
+export function ReleasesTable({
+  releases,
+  isAdmin,
+  product,
+  productName,
+}: {
+  releases: Release[];
+  isAdmin: boolean;
+  /** Slug every action targets; channels are per product. */
+  product: string;
+  productName: string;
+}) {
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [editTarget, setEditTarget] = useState<Release | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -66,7 +77,7 @@ export function ReleasesTable({ releases, isAdmin }: { releases: Release[]; isAd
   ) {
     startTransition(async () => {
       try {
-        await setReleaseChannelsAction(version, flags);
+        await setReleaseChannelsAction(product, version, flags);
         toast.success(t(successKey, { version }));
       } catch {
         toast.error(t("table.promoteFailed"));
@@ -80,7 +91,7 @@ export function ReleasesTable({ releases, isAdmin }: { releases: Release[]; isAd
     setDeleteTarget(null);
     startTransition(async () => {
       try {
-        await deleteReleaseAction(version);
+        await deleteReleaseAction(product, version);
         toast.success(t("table.deleted", { version }));
       } catch {
         toast.error(t("table.deleteFailed"));
@@ -209,6 +220,8 @@ export function ReleasesTable({ releases, isAdmin }: { releases: Release[]; isAd
       {editTarget && (
         <EditReleaseDialog
           release={editTarget}
+          product={product}
+          productName={productName}
           open={!!editTarget}
           onOpenChange={(open) => { if (!open) setEditTarget(null); }}
         />
@@ -217,7 +230,9 @@ export function ReleasesTable({ releases, isAdmin }: { releases: Release[]; isAd
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t("table.deleteTitle", { version: deleteTarget ?? "" })}</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t("table.deleteTitle", { version: deleteTarget ?? "", product: productName })}
+            </AlertDialogTitle>
             <AlertDialogDescription>
               {t("table.deleteDescription")}
             </AlertDialogDescription>

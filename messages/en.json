@@ -13,7 +13,8 @@
       "bans": "Bans",
       "clients": "Clients",
       "remote": "Remote control",
-      "downloadQueue": "Download queue"
+      "downloadQueue": "Download queue",
+      "products": "Products"
     },
     "signOut": "Sign out",
     "toggleTheme": "Toggle dark mode",
@@ -138,7 +139,10 @@
       "deleteTitle": "Delete user \"{username}\"?",
       "deleteDescription": "This action cannot be undone. The user will lose access to the dashboard immediately.",
       "cancel": "Cancel",
-      "sso": "SSO"
+      "sso": "SSO",
+      "products": "Products",
+      "noProducts": "None",
+      "assignProducts": "Assign products"
     },
     "createDialog": {
       "title": "Create New User",
@@ -151,7 +155,11 @@
       "cancel": "Cancel",
       "create": "Create",
       "creating": "Creating...",
-      "success": "User created successfully"
+      "success": "User created successfully",
+      "products": "Products",
+      "noProductsHint": "No product selected: the new user will see no releases, statistics or machines until an admin assigns them one.",
+      "noProductsHintNoAssign": "New users start with no products and see no releases, statistics or machines until an admin assigns them one.",
+      "productsFailed": "User created, but assigning products failed: {error}"
     },
     "resetPassword": {
       "title": "Reset Password for {username}",
@@ -160,6 +168,17 @@
       "reset": "Reset Password",
       "resetting": "Resetting...",
       "success": "Password reset successfully"
+    },
+    "productsDialog": {
+      "title": "Products for {username}",
+      "description": "The user sees only these products' releases, statistics and machines. The change applies from their next request.",
+      "noOptions": "You have no products to assign.",
+      "hiddenKept": "Also assigned, outside your own products: kept as they are.",
+      "noneWarning": "With no products the user will see nothing.",
+      "cancel": "Cancel",
+      "save": "Save",
+      "saving": "Saving...",
+      "saved": "Products updated for {username}"
     }
   },
   "updates": {
@@ -189,7 +208,7 @@
       "removeFromStable": "Remove from Stable",
       "removeFromBeta": "Remove from Beta",
       "delete": "Delete",
-      "deleteTitle": "Delete release \"{version}\"?",
+      "deleteTitle": "Delete {product} release \"{version}\"?",
       "deleteDescription": "This will permanently remove the release record and delete the installer file from storage. This action cannot be undone.",
       "cancel": "Cancel",
       "promotedStable": "{version} promoted to stable",
@@ -201,10 +220,10 @@
       "deleteFailed": "Failed to delete release"
     },
     "createDialog": {
-      "title": "New Release",
+      "title": "New {product} release",
       "version": "Version *",
       "channel": "Channel",
-      "channelsHelp": "A release can be both stable and beta at once. Checking either clears it from whichever release currently holds it.",
+      "channelsHelp": "A release can be both stable and beta at once. Checking either clears it from whichever {product} release currently holds it; other products are not affected.",
       "installerFile": "Installer File (.exe) *",
       "checksumNote": "SHA-256 checksum is computed server-side after upload.",
       "severity": "Severity",
@@ -230,7 +249,7 @@
     "editDialog": {
       "title": "Edit Release {version}",
       "channel": "Channel",
-      "channelsHelp": "A release can be both stable and beta at once. Checking either clears it from whichever release currently holds it.",
+      "channelsHelp": "A release can be both stable and beta at once. Checking either clears it from whichever {product} release currently holds it; other products are not affected.",
       "severity": "Severity",
       "shortNote": "Short Note",
       "shortNotePlaceholder": "Brief release summary",
@@ -252,7 +271,6 @@
       "critical": "Critical update (clients must update immediately)"
     },
     "tabs": {
-      "emly": "EMLy",
       "updater": "AryxD Agent"
     },
     "updater": {
@@ -327,6 +345,10 @@
         "saving": "Saving...",
         "success": "Updater release {version} updated"
       }
+    },
+    "errors": {
+      "notAssigned": "{product} is no longer assigned to you. Pick another product in the sidebar.",
+      "notFound": "{product} no longer exists."
     }
   },
   "clients": {
@@ -510,7 +532,9 @@
         "contact": "Contact",
         "lastIp": "Last IP",
         "firstSeen": "First Seen",
-        "lastSeen": "Last Seen"
+        "lastSeen": "Last Seen",
+        "installedProducts": "Installed products",
+        "installedSince": "since {date}"
       },
       "events": {
         "title": "Recent Events",
@@ -544,6 +568,11 @@
         "download": "Download"
       },
       "noData": "No events in this range."
+    },
+    "productFilter": {
+      "label": "Product",
+      "updater": "AryxD Agent (self-update)",
+      "all": "All my products"
     }
   },
   "bans": {
@@ -888,6 +917,59 @@
       "copyFailed": "Transfer error",
       "errorResponse": "Error before download (404/5xx)",
       "internalError": "Internal error"
+    }
+  },
+  "products": {
+    "title": "Products",
+    "description": "Software distributed through the update API. Each product has its own releases, channels and manifest.",
+    "create": "New Product",
+    "none": {
+      "title": "No products assigned",
+      "description": "Your account has no products yet, so there is nothing to show here. Contact an administrator to get access."
+    },
+    "table": {
+      "slug": "Slug",
+      "name": "Name",
+      "status": "Status",
+      "s3Prefix": "S3 prefix",
+      "created": "Created",
+      "noData": "No products found.",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "defaultPrefix": "default",
+      "edit": "Edit",
+      "delete": "Delete",
+      "cancel": "Cancel",
+      "deleteTitle": "Delete product \"{slug}\"?",
+      "deleteDescription": "Only a product with no releases can be deleted: delete its releases (or disable it) first. Telemetry and machine inventories are kept, and the product is removed from every user.",
+      "deleted": "Product {slug} deleted",
+      "deleteFailed": "Could not delete product: {error}"
+    },
+    "form": {
+      "createTitle": "New Product",
+      "createDescription": "You will be assigned the new product automatically.",
+      "editTitle": "Edit product {slug}",
+      "slug": "Slug *",
+      "slugHelp": "Lowercase letters, digits and dashes, up to 20 characters. It cannot be changed after creation.",
+      "name": "Name *",
+      "s3Prefix": "S3 prefix",
+      "s3PrefixPlaceholder": "Leave empty for the default",
+      "s3PrefixHelp": "Empty uses the default folder (S3_UPDATES_PREFIX/slug).",
+      "s3PrefixWarning": "Changing the prefix does not move files already uploaded: downloads of existing releases will return 404 until they are moved by hand.",
+      "enabled": "Enabled",
+      "enabledHelp": "When disabled, the product's manifest and downloads return 404 to clients, but its releases can still be managed. Useful to prepare a product before launch.",
+      "cancel": "Cancel",
+      "create": "Create",
+      "save": "Save",
+      "saving": "Saving...",
+      "created": "Product {slug} created",
+      "updated": "Product {slug} updated",
+      "errors": {
+        "slugFormat": "The slug must start with a lowercase letter or digit and contain only lowercase letters, digits and dashes (max 20).",
+        "slugReserved": "This slug is reserved: manifest, releases, download, updater, all and products cannot be used.",
+        "nameRequired": "The name is required.",
+        "nameTooLong": "The name can be at most 100 characters."
+      }
     }
   }
 }

@@ -13,6 +13,7 @@ import {
   type ReleaseSeverity,
 } from "@/lib/api";
 import { getCurrentUser } from "@/lib/auth";
+import { redirectIfSessionExpired, userHasProduct } from "@/lib/products";
 import { isAdminRole } from "@/lib/roles";
 
 async function requireAdmin() {
@@ -20,13 +21,28 @@ async function requireAdmin() {
   if (!user || !isAdminRole(user.role)) throw new Error("Unauthorized");
 }
 
+// The API refuses a product outside the session's scope (403) on its own;
+// checking first keeps a stale page from even trying.
+async function requireProductAdmin(product: string) {
+  await requireAdmin();
+  if (!(await userHasProduct(product))) throw new Error("Product not assigned to this user");
+}
+
+/** Shared tail of the release actions: re-login on a dead session, else the API's message. */
+async function releaseError(e: unknown, fallback: string): Promise<ReleaseActionState> {
+  await redirectIfSessionExpired(e);
+  if (e instanceof ApiError) return { error: e.message };
+  if (e instanceof Error) return { error: e.message };
+  return { error: fallback };
+}
+
 export type ReleaseActionState = { error?: string; success?: boolean };
 
 export async function createReleaseAction(
+  product: string,
   _prevState: ReleaseActionState,
   formData: FormData,
 ): Promise<ReleaseActionState> {
-  await requireAdmin();
   const file = formData.get("file") as File;
   const version = formData.get("version") as string;
   const short_note = (formData.get("short_note") as string) || undefined;
@@ -41,7 +57,8 @@ export async function createReleaseAction(
   if (!file || file.size === 0) return { error: "Installer file is required" };
 
   try {
-    await createRelease({
+    await requireProductAdmin(product);
+    await createRelease(product, {
       file,
       version,
       short_note,
@@ -58,17 +75,16 @@ export async function createReleaseAction(
     revalidatePath("/updates");
     return { success: true };
   } catch (e) {
-    if (e instanceof ApiError) return { error: e.message };
-    return { error: "Failed to create release" };
+    return releaseError(e, "Failed to create release");
   }
 }
 
 export async function updateReleaseAction(
+  product: string,
   version: string,
   _prevState: ReleaseActionState,
   formData: FormData,
 ): Promise<ReleaseActionState> {
-  await requireAdmin();
   const short_note = (formData.get("short_note") as string) || undefined;
   const is_stable = formData.get("is_stable") === "true";
   const is_beta = formData.get("is_beta") === "true";
@@ -79,7 +95,8 @@ export async function updateReleaseAction(
   const min_required_version = (formData.get("min_required_version") as string) || null;
 
   try {
-    await updateRelease(version, {
+    await requireProductAdmin(product);
+    await updateRelease(product, version, {
       short_note,
       is_stable,
       is_beta,
@@ -93,23 +110,33 @@ export async function updateReleaseAction(
     revalidatePath("/updates");
     return { success: true };
   } catch (e) {
-    if (e instanceof ApiError) return { error: e.message };
-    return { error: "Failed to update release" };
+    return releaseError(e, "Failed to update release");
   }
 }
 
 export async function setReleaseChannelsAction(
+  product: string,
   version: string,
   flags: { is_stable?: boolean; is_beta?: boolean },
 ) {
-  await requireAdmin();
-  await setReleaseChannels(version, flags);
+  await requireProductAdmin(product);
+  try {
+    await setReleaseChannels(product, version, flags);
+  } catch (e) {
+    await redirectIfSessionExpired(e);
+    throw e;
+  }
   revalidatePath("/updates");
 }
 
-export async function deleteReleaseAction(version: string) {
-  await requireAdmin();
-  await deleteRelease(version);
+export async function deleteReleaseAction(product: string, version: string) {
+  await requireProductAdmin(product);
+  try {
+    await deleteRelease(product, version);
+  } catch (e) {
+    await redirectIfSessionExpired(e);
+    throw e;
+  }
   revalidatePath("/updates");
 }
 

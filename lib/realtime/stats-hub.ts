@@ -1,4 +1,5 @@
 import "server-only";
+import { createHash } from "node:crypto";
 import { EventEmitter } from "node:events";
 import WebSocket from "ws";
 import { env, SERVER_USER_AGENT } from "@/lib/env";
@@ -49,6 +50,12 @@ const STALE_AFTER_MS = 90_000;
 const RECONNECT_MIN_MS = 1_000;
 const RECONNECT_MAX_MS = 30_000;
 
+// A hub nobody is listening to (no open SSE stream) is closed once it has
+// gone this long without a page asking for it. The sweep runs often enough
+// that a logged-out session's socket does not linger for long.
+const IDLE_CLOSE_MS = 5 * 60_000;
+const IDLE_SWEEP_MS = 60_000;
+
 export type StatsHubStatus = "disabled" | "connecting" | "open" | "reconnecting";
 
 function wsUrlFromApiBaseUrl(apiBaseUrl: string): string {
@@ -58,13 +65,22 @@ function wsUrlFromApiBaseUrl(apiBaseUrl: string): string {
 }
 
 /**
- * Single long-lived WS connection to the API's stats stream, shared by every
- * browser tab via app/api/stats/live/route.ts. Never opened per-request -
- * see docs/specs/2026-09-04-websocket-stats-realtime-nextjs.md §2.
+ * Long-lived WS connection to the API's stats stream for one session and one
+ * product filter, shared by every browser tab of that session via
+ * app/api/stats/live/route.ts. Never opened per-request - see
+ * docs/specs/2026-09-04-websocket-stats-realtime-nextjs.md §2.
+ *
+ * The API scopes the stream by the session token it gets at the upgrade
+ * (only the user's products, only the machines that run them), so one
+ * connection cannot serve two users: get hubs from `getStatsHub`, never share
+ * one across sessions.
  */
 class StatsHub extends EventEmitter {
   private ws: WebSocket | null = null;
   private started = false;
+  private disposed = false;
+  /** Last time a page or stream asked for this hub - drives the idle close. */
+  lastUsedAt = Date.now();
   private currentStatus: StatsHubStatus = "disabled";
   private reconnectDelay = RECONNECT_MIN_MS;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
@@ -77,8 +93,17 @@ class StatsHub extends EventEmitter {
   private clientsById = new Map<number, UpdaterClient>();
   private clientsSnapshotReceived = false;
 
+  constructor(
+    private readonly sessionToken: string,
+    /** The stats `product` filter every channel is subscribed with. */
+    readonly product: string,
+  ) {
+    super();
+  }
+
   /** Idempotent - safe to call from every incoming request. */
   ensureStarted(): void {
+    this.lastUsedAt = Date.now();
     if (this.started) return;
     this.started = true;
 
@@ -92,6 +117,22 @@ class StatsHub extends EventEmitter {
 
   status(): StatsHubStatus {
     return this.currentStatus;
+  }
+
+  /** True while at least one SSE stream is attached. */
+  hasListeners(): boolean {
+    return this.eventNames().some((name) => this.listenerCount(name) > 0);
+  }
+
+  /** Closes the socket for good; the registry drops the hub right after. */
+  dispose(): void {
+    this.disposed = true;
+    this.stopTimers();
+    if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
+    this.reconnectTimer = null;
+    this.ws?.terminate();
+    this.ws = null;
+    this.removeAllListeners();
   }
 
   getSummarySnapshot(): StatsSummary | null {
@@ -117,8 +158,11 @@ class StatsHub extends EventEmitter {
   private connect(): void {
     this.setStatus(this.reconnectDelay === RECONNECT_MIN_MS ? "connecting" : "reconnecting");
 
+    // The session token is what scopes the stream to this user's products;
+    // without it the admin key would stream the whole fleet.
     const headers: Record<string, string> = {
       "X-Admin-Key": env.adminKey,
+      "X-Session-Token": this.sessionToken,
       "User-Agent": SERVER_USER_AGENT,
     };
     if (env.dashboardKey) headers["X-Dashboard-Key"] = env.dashboardKey;
@@ -163,6 +207,7 @@ class StatsHub extends EventEmitter {
       channels: SUBSCRIBED_CHANNELS,
       params: {
         window_minutes: WINDOW_MINUTES,
+        product: this.product,
         events: {
           bucket: EVENTS_BUCKET,
           from: new Date(now - EVENTS_WINDOW_DAYS * 86_400_000).toISOString(),
@@ -200,6 +245,7 @@ class StatsHub extends EventEmitter {
   private handleDisconnect(): void {
     this.stopTimers();
     this.ws = null;
+    if (this.disposed) return;
     // Stale snapshots are worse than none: a client that fell offline while
     // we were disconnected would otherwise keep showing as online forever,
     // and page.tsx would serve that cache instead of falling back to REST.
@@ -211,6 +257,7 @@ class StatsHub extends EventEmitter {
   }
 
   private scheduleReconnect(): void {
+    if (this.disposed) return;
     if (!env.statsRealtimeEnabled) {
       this.setStatus("disabled");
       return;
@@ -248,8 +295,9 @@ class StatsHub extends EventEmitter {
       case "error":
         // Nothing to do: "pong" only resets the staleness clock (already
         // done by the caller), "subscribed" is an ack, and "error" reports a
-        // bad subscribe - a bug in this file, not a runtime condition to
-        // recover from.
+        // bad subscribe - a bug in this file, or a product the user has lost
+        // since the page checked it, which leaves the channels empty and the
+        // page on its REST data.
         break;
     }
   }
@@ -283,9 +331,57 @@ class StatsHub extends EventEmitter {
   }
 }
 
-const globalForHub = globalThis as unknown as { statsHub?: StatsHub };
+// ── Registry ────────────────────────────────────────────────────────────────
+
+interface HubRegistry {
+  hubs: Map<string, StatsHub>;
+  sweeper: ReturnType<typeof setInterval> | null;
+}
+
+const globalForHub = globalThis as unknown as { statsHubs?: HubRegistry };
 
 // Survives next dev's HMR module re-evaluation, same pattern as the usual
 // Prisma-client singleton.
-export const statsHub = globalForHub.statsHub ?? new StatsHub();
-if (process.env.NODE_ENV !== "production") globalForHub.statsHub = statsHub;
+const registry: HubRegistry = globalForHub.statsHubs ?? { hubs: new Map(), sweeper: null };
+if (process.env.NODE_ENV !== "production") globalForHub.statsHubs = registry;
+
+// Keyed by a hash so the map never holds the raw token as a key.
+function hubKey(sessionToken: string, product: string): string {
+  return createHash("sha256").update(sessionToken).digest("hex") + "|" + product;
+}
+
+function sweepIdleHubs(): void {
+  const now = Date.now();
+  for (const [key, hub] of registry.hubs) {
+    if (!hub.hasListeners() && now - hub.lastUsedAt > IDLE_CLOSE_MS) {
+      hub.dispose();
+      registry.hubs.delete(key);
+    }
+  }
+  if (registry.hubs.size === 0 && registry.sweeper) {
+    clearInterval(registry.sweeper);
+    registry.sweeper = null;
+  }
+}
+
+/**
+ * The hub for one session and one stats product filter, created on first use.
+ * Callers validate `product` against the user's scope first; the API would
+ * refuse it anyway, but only after opening a connection for nothing.
+ */
+export function getStatsHub(sessionToken: string, product: string): StatsHub {
+  const key = hubKey(sessionToken, product);
+  let hub = registry.hubs.get(key);
+  if (!hub) {
+    hub = new StatsHub(sessionToken, product);
+    registry.hubs.set(key, hub);
+  }
+  if (!registry.sweeper) {
+    registry.sweeper = setInterval(sweepIdleHubs, IDLE_SWEEP_MS);
+    registry.sweeper.unref?.();
+  }
+  hub.ensureStarted();
+  return hub;
+}
+
+export type { StatsHub };
