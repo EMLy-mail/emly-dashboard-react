@@ -1,8 +1,8 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { login, logoutSession, ApiError } from "@/lib/api";
-import { setSessionToken, clearSessionToken, getSessionToken } from "@/lib/auth";
+import { login, logoutSession, resetUserPassword, ApiError } from "@/lib/api";
+import { setSessionToken, clearSessionToken, getSessionToken, getCurrentUser } from "@/lib/auth";
 
 export type LoginActionState = {
   error?: string;
@@ -43,4 +43,44 @@ export async function logoutAction(): Promise<void> {
   }
   await clearSessionToken();
   redirect("/login");
+}
+
+// Codes rather than text: the dialog translates them.
+export type ChangePasswordActionState = {
+  error?: "unauthorized" | "required" | "mismatch" | "unchanged" | "wrongCurrent" | "failed";
+  success?: boolean;
+};
+
+export async function changeOwnPasswordAction(
+  _prevState: ChangePasswordActionState,
+  formData: FormData,
+): Promise<ChangePasswordActionState> {
+  const currentPassword = formData.get("currentPassword") as string;
+  const newPassword = formData.get("newPassword") as string;
+  const confirmPassword = formData.get("confirmPassword") as string;
+
+  // The user id comes from the session, never from the form: this action can
+  // only ever change the caller's own password.
+  const user = await getCurrentUser();
+  if (!user) return { error: "unauthorized" };
+  if (!currentPassword || !newPassword) return { error: "required" };
+  if (newPassword !== confirmPassword) return { error: "mismatch" };
+  if (newPassword === currentPassword) return { error: "unchanged" };
+
+  // The API has no self-service route, so the current password is checked
+  // through login; the session it opens is dropped straight away.
+  try {
+    const { session_id } = await login(user.username, currentPassword);
+    await logoutSession(session_id).catch(() => {});
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 401) return { error: "wrongCurrent" };
+    return { error: "failed" };
+  }
+
+  try {
+    await resetUserPassword(user.id, newPassword);
+    return { success: true };
+  } catch {
+    return { error: "failed" };
+  }
 }

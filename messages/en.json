@@ -8,13 +8,34 @@
       "statistics": "Statistics",
       "config": "Remote Config",
       "bans": "Bans",
-      "clients": "Clients"
+      "clients": "Clients",
+      "remote": "Remote control"
     },
     "signOut": "Sign out",
     "toggleTheme": "Toggle dark mode",
     "toggleLanguage": "Change language",
     "openMenu": "Open menu",
-    "closeMenu": "Close menu"
+    "closeMenu": "Close menu",
+    "changePassword": "Change password"
+  },
+  "changePassword": {
+    "title": "Change password",
+    "description": "Enter your current password and choose a new one.",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm new password",
+    "cancel": "Cancel",
+    "save": "Change password",
+    "saving": "Saving...",
+    "success": "Password changed successfully",
+    "errors": {
+      "unauthorized": "Your session has expired: please sign in again.",
+      "required": "Fill in all the fields.",
+      "mismatch": "The two new passwords do not match.",
+      "unchanged": "The new password must differ from the current one.",
+      "wrongCurrent": "The current password is incorrect.",
+      "failed": "Could not change the password. Please try again."
+    }
   },
   "login": {
     "title": "EMLy Admin",
@@ -481,6 +502,15 @@
           "date": "Date",
           "noData": "No events recorded for this client."
         }
+      },
+      "delete": {
+        "button": "Delete client",
+        "title": "Delete client {hostname}?",
+        "description": "This removes the client and its whole event history. Fleet-wide charts are not affected. If the machine contacts the API again it will reappear from scratch: use a ban to block it.",
+        "cancel": "Cancel",
+        "confirm": "Delete",
+        "success": "Client deleted ({events} events removed)",
+        "failed": "Failed to delete client"
       }
     },
     "eventsChart": {
@@ -658,5 +688,76 @@
       "none": "none",
       "effectiveDocument": "Effective document"
     }
+  },
+  "remote": {
+    "title": "Remote control",
+    "description": "Send commands to machines that are connected right now over the client channel.",
+    "beta": {
+      "title": "Beta feature",
+      "description": "Remote control is still in beta. Commands run on users' real machines: use it with caution.",
+      "confirm": "I understand"
+    },
+    "machines": {
+      "title": "Connected machines",
+      "search": "Search by name, user, IP...",
+      "empty": "No machine can take commands right now.",
+      "hidden": "{count, plural, one {# offline machine hidden} other {# offline machines hidden}}",
+      "tooOld": "{count, plural, one {# machine hidden: updater older than {version}} other {# machines hidden: updater older than {version}}}"
+    },
+    "selectPrompt": "Pick a machine on the left. Only machines connected over WebSocket with EMLy Updater {version} or newer can take commands.",
+    "connected": "Connected",
+    "disconnected": "Not connected",
+    "groups": {
+      "read": "Read-only",
+      "destructive": "Disruptive",
+      "destructiveHint": "These act on the user's machine. The client only runs them if its remote configuration allows it, and only over a secure (wss) connection."
+    },
+    "commands": {
+      "machineInfo": "Machine info",
+      "emlyManifest": "Check EMLy update",
+      "updaterManifest": "Check Updater update",
+      "appsUpgradable": "List app updates",
+      "serviceRestart": "Restart service",
+      "machineReboot": "Reboot PC"
+    },
+    "status": {
+      "sent": "Sent",
+      "acked": "Running",
+      "done": "Done",
+      "failed": "Failed",
+      "rejected": "Rejected",
+      "timeout": "Timed out"
+    },
+    "sent": "Command sent",
+    "errors": {
+      "offline": "The machine is no longer connected."
+    },
+    "history": {
+      "title": "Commands (this session)",
+      "empty": "No command sent to this machine yet.",
+      "result": "Result"
+    },
+    "events": {
+      "title": "Recent events",
+      "hint": "The last events the machine pushed. Kept in memory by the API, lost when it restarts.",
+      "empty": "No events.",
+      "refresh": "Refresh events",
+      "truncated": "truncated"
+    },
+    "restart": {
+      "title": "Restart the updater service?",
+      "description": "The EMLy Updater service on {host} will restart. It reconnects on its own within a few seconds."
+    },
+    "reboot": {
+      "title": "Reboot the PC?",
+      "description": "{host} will reboot. The user gets a countdown from Windows.",
+      "delay": "Delay (seconds)",
+      "whenActive": "If a user is logged on",
+      "warn": "Warn and reboot",
+      "skip": "Do not reboot",
+      "invalidDelay": "Delay must be a whole number from 0 to 3600."
+    },
+    "cancel": "Cancel",
+    "confirm": "Confirm"
   }
 }

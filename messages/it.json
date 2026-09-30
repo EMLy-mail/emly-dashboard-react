@@ -8,13 +8,34 @@
       "statistics": "Statistiche",
       "config": "Config Remota",
       "bans": "Ban",
-      "clients": "Client"
+      "clients": "Client",
+      "remote": "Controllo remoto"
     },
     "signOut": "Esci",
     "toggleTheme": "Cambia tema",
     "toggleLanguage": "Cambia lingua",
     "openMenu": "Apri menu",
-    "closeMenu": "Chiudi menu"
+    "closeMenu": "Chiudi menu",
+    "changePassword": "Cambia password"
+  },
+  "changePassword": {
+    "title": "Cambia password",
+    "description": "Inserisci la password attuale e scegli quella nuova.",
+    "currentPassword": "Password attuale",
+    "newPassword": "Nuova password",
+    "confirmPassword": "Conferma nuova password",
+    "cancel": "Annulla",
+    "save": "Cambia password",
+    "saving": "Salvataggio...",
+    "success": "Password cambiata con successo",
+    "errors": {
+      "unauthorized": "Sessione scaduta: effettua di nuovo l'accesso.",
+      "required": "Compila tutti i campi.",
+      "mismatch": "Le due nuove password non coincidono.",
+      "unchanged": "La nuova password deve essere diversa da quella attuale.",
+      "wrongCurrent": "La password attuale non è corretta.",
+      "failed": "Impossibile cambiare la password. Riprova."
+    }
   },
   "login": {
     "title": "EMLy Admin",
@@ -481,6 +502,15 @@
           "date": "Data",
           "noData": "Nessun evento registrato per questo client."
         }
+      },
+      "delete": {
+        "button": "Elimina client",
+        "title": "Eliminare il client {hostname}?",
+        "description": "Verranno cancellati il client e tutto il suo storico eventi. I grafici della flotta non cambiano. Se la macchina contatta di nuovo l'API ricomparirà da zero: per bloccarla usa un ban.",
+        "cancel": "Annulla",
+        "confirm": "Elimina",
+        "success": "Client eliminato ({events} eventi cancellati)",
+        "failed": "Impossibile eliminare il client"
       }
     },
     "eventsChart": {
@@ -658,5 +688,76 @@
       "none": "nessuno",
       "effectiveDocument": "Documento effettivo"
     }
+  },
+  "remote": {
+    "title": "Controllo remoto",
+    "description": "Invia comandi alle macchine connesse in questo momento sul canale client.",
+    "beta": {
+      "title": "Funzionalità in beta",
+      "description": "Il controllo remoto è ancora in beta. I comandi vengono eseguiti sulle macchine reali degli utenti: usalo con cautela.",
+      "confirm": "Ho capito"
+    },
+    "machines": {
+      "title": "Macchine connesse",
+      "search": "Cerca per nome, utente, IP...",
+      "empty": "Nessuna macchina può ricevere comandi al momento.",
+      "hidden": "{count, plural, one {# macchina offline nascosta} other {# macchine offline nascoste}}",
+      "tooOld": "{count, plural, one {# macchina nascosta: updater precedente alla {version}} other {# macchine nascoste: updater precedente alla {version}}}"
+    },
+    "selectPrompt": "Scegli una macchina a sinistra. Ricevono comandi solo le macchine connesse via WebSocket con EMLy Updater {version} o superiore.",
+    "connected": "Connessa",
+    "disconnected": "Non connessa",
+    "groups": {
+      "read": "Sola lettura",
+      "destructive": "Impattanti",
+      "destructiveHint": "Agiscono sulla macchina dell'utente. Il client li esegue solo se la sua configurazione remota lo consente, e solo su connessione sicura (wss)."
+    },
+    "commands": {
+      "machineInfo": "Info macchina",
+      "emlyManifest": "Controlla update EMLy",
+      "updaterManifest": "Controlla update Updater",
+      "appsUpgradable": "Elenca update app",
+      "serviceRestart": "Riavvia servizio",
+      "machineReboot": "Riavvia PC"
+    },
+    "status": {
+      "sent": "Inviato",
+      "acked": "In esecuzione",
+      "done": "Completato",
+      "failed": "Fallito",
+      "rejected": "Rifiutato",
+      "timeout": "Scaduto"
+    },
+    "sent": "Comando inviato",
+    "errors": {
+      "offline": "La macchina non è più connessa."
+    },
+    "history": {
+      "title": "Comandi (questa sessione)",
+      "empty": "Nessun comando inviato a questa macchina.",
+      "result": "Risultato"
+    },
+    "events": {
+      "title": "Eventi recenti",
+      "hint": "Gli ultimi eventi inviati dalla macchina. Tenuti in memoria dall'API, persi al riavvio.",
+      "empty": "Nessun evento.",
+      "refresh": "Aggiorna eventi",
+      "truncated": "troncato"
+    },
+    "restart": {
+      "title": "Riavviare il servizio updater?",
+      "description": "Il servizio EMLy Updater su {host} verrà riavviato. Si riconnette da solo in pochi secondi."
+    },
+    "reboot": {
+      "title": "Riavviare il PC?",
+      "description": "{host} verrà riavviato. L'utente vede il conto alla rovescia di Windows.",
+      "delay": "Ritardo (secondi)",
+      "whenActive": "Se un utente è collegato",
+      "warn": "Avvisa e riavvia",
+      "skip": "Non riavviare",
+      "invalidDelay": "Il ritardo deve essere un intero da 0 a 3600."
+    },
+    "cancel": "Annulla",
+    "confirm": "Conferma"
   }
 }

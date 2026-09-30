@@ -386,3 +386,24 @@ export function maskSerial(serial: string | null | undefined): string {
   if (trimmed.length <= 2) return "***";
   return `${"*".repeat(Math.min(trimmed.length - 2, 12))}${trimmed.slice(-2)}`;
 }
+
+/**
+ * First EMLy Updater release that speaks the client channel's command
+ * protocol (CLIENT_WS_PROTOCOL.md). An older updater holds the presence
+ * socket open but does not understand a command frame.
+ */
+export const MIN_COMMAND_UPDATER_VERSION = "1.7.2";
+
+/**
+ * Whether a machine's updater can take remote commands. The numeric triple
+ * decides: a suffixed build of the minimum (1.7.2b) counts, unlike in
+ * `compareVersions`, where a suffix sorts a build below its clean tag - here
+ * the question is "does this build have the feature", not "is it released".
+ * An unreported or unparseable version is treated as too old.
+ */
+export function supportsRemoteCommands(updaterVersion: string | null | undefined): boolean {
+  const m = updaterVersion?.trim().match(/^v?(\d+(?:\.\d+){0,2})/i);
+  if (!m) return false;
+  const cmp = compareVersions(m[1], MIN_COMMAND_UPDATER_VERSION);
+  return cmp !== null && cmp >= 0;
+}
