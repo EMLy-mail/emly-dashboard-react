@@ -822,7 +822,7 @@
       "range": "Deve essere un intero tra {min} e {max}.",
       "downloadTimeout": "Timeout download",
       "minutesUnit": "minuti",
-      "downloadTimeoutHint": "Vale per i nuovi download: quelli in corso mantengono la loro scadenza. Per dimensionarlo: dimensione installer / velocità del client più lento, con margine (9,7 MB a 100 KB/s ≈ 100 s; a 30 KB/s ≈ 5,5 min).",
+      "downloadTimeoutHint": "Vale per i nuovi download: quelli in corso mantengono la loro scadenza.",
       "timeoutRange": "Deve essere tra 1 secondo e {max} minuti."
     },
     "slots": {

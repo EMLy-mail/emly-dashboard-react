@@ -822,7 +822,7 @@
       "range": "Must be an integer between {min} and {max}.",
       "downloadTimeout": "Download timeout",
       "minutesUnit": "minutes",
-      "downloadTimeoutHint": "Applies to new downloads only: those in progress keep their deadline. Size it as installer size / slowest client speed, with margin (9.7 MB at 100 KB/s ≈ 100 s; at 30 KB/s ≈ 5.5 min).",
+      "downloadTimeoutHint": "Applies to new downloads only: those in progress keep their deadline.",
       "timeoutRange": "Must be between 1 second and {max} minutes."
     },
     "slots": {
