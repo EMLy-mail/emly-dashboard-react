@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { useFormatter, useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { AlertTriangle, Loader2, Power, RotateCcw, Square, Turtle, XCircle } from "lucide-react";
+import { Info, Loader2, RotateCcw, Square, Turtle, XCircle } from "lucide-react";
 import type { DownloadQueueSettings, DownloadQueueSlot, DownloadQueueState } from "@/lib/api";
 import {
   evictAllDownloadQueueSlotsAction,
@@ -17,9 +17,10 @@ import { cn } from "@/lib/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Table,
   TableBody,
@@ -67,8 +68,14 @@ const FAIL_REASON_KEYS: Record<string, string> = {
 type LoadError = { status?: number; message: string };
 type Field = "capacity" | "retry" | "timeout";
 
+const SETTING_FIELDS: Partial<Record<keyof DownloadQueueSettings, Field>> = {
+  capacity: "capacity",
+  retry_after_seconds: "retry",
+  download_timeout_seconds: "timeout",
+};
+
 type Confirm =
-  | { kind: "capacity"; capacity: number }
+  | { kind: "capacity"; capacity: number; data: Partial<DownloadQueueSettings> }
   | { kind: "evict"; slot: DownloadQueueSlot }
   | { kind: "evictAll"; count: number };
 
@@ -101,7 +108,8 @@ export function DownloadQueuePanel({
   const [state, setState] = useState(initialState);
   const [loadError, setLoadError] = useState(initialError);
   const [now, setNow] = useState(renderedAt);
-  // null = show the live value; a string = the admin is typing.
+  // null = show the live value; otherwise an unsaved edit, sent on Save.
+  const [enabledDraft, setEnabledDraft] = useState<boolean | null>(null);
   const [capacityDraft, setCapacityDraft] = useState<string | null>(null);
   const [retryDraft, setRetryDraft] = useState<string | null>(null);
   const [timeoutDraft, setTimeoutDraft] = useState<string | null>(null);
@@ -176,6 +184,7 @@ export function DownloadQueuePanel({
 
   const current = state;
   const modified = isModified(current);
+  const dirty = enabledDraft !== null || capacityDraft !== null || retryDraft !== null || timeoutDraft !== null;
 
   // ── Formatting ───────────────────────────────────────────────────────────
   const oneDecimal = (n: number) => format.number(n, { maximumFractionDigits: 1 });
@@ -191,78 +200,94 @@ export function DownloadQueuePanel({
     setFieldErrors((prev) => ({ ...prev, [field]: message ?? undefined }));
   }
 
-  function clearDraft(field: Field) {
-    if (field === "capacity") setCapacityDraft(null);
-    if (field === "retry") setRetryDraft(null);
-    if (field === "timeout") setTimeoutDraft(null);
-    setFieldError(field, null);
+  function clearDrafts() {
+    setEnabledDraft(null);
+    setCapacityDraft(null);
+    setRetryDraft(null);
+    setTimeoutDraft(null);
+    setFieldErrors({});
   }
 
-  function patch(data: Partial<DownloadQueueSettings>, field?: Field) {
+  function patch(data: Partial<DownloadQueueSettings>) {
     startTransition(async () => {
       const r = await updateDownloadQueueAction(data);
       if (!r.ok) {
+        // A 400 can only be pinned on a field when that field was the one sent.
+        const keys = Object.keys(data);
+        const field = keys.length === 1 ? SETTING_FIELDS[keys[0] as keyof DownloadQueueSettings] : undefined;
         if (r.status === 400 && field) setFieldError(field, r.error);
         else toast.error(describeError({ status: r.status, message: r.error }));
         return;
       }
       setState(r.state);
       setLoadError(null);
-      if (field) clearDraft(field);
+      clearDrafts();
       toast.success(t("saved"));
     });
   }
 
-  function requestCapacity(capacity: number) {
-    setFieldError("capacity", null);
-    if (!Number.isInteger(capacity) || capacity < CAPACITY_MIN || capacity > CAPACITY_MAX) {
-      setFieldError("capacity", t("controls.range", { min: CAPACITY_MIN, max: CAPACITY_MAX }));
-      return;
+  /** The drafts that differ from the live values, or null if any is invalid. */
+  function collectChanges(): Partial<DownloadQueueSettings> | null {
+    const errors: Partial<Record<Field, string>> = {};
+    const data: Partial<DownloadQueueSettings> = {};
+
+    if (enabledDraft !== null && enabledDraft !== current.enabled) data.enabled = enabledDraft;
+
+    if (capacityDraft !== null) {
+      const value = Number(capacityDraft);
+      if (!Number.isInteger(value) || value < CAPACITY_MIN || value > CAPACITY_MAX) {
+        errors.capacity = t("controls.range", { min: CAPACITY_MIN, max: CAPACITY_MAX });
+      } else if (value !== current.capacity) {
+        data.capacity = value;
+      }
     }
-    if (capacity === current.capacity) {
-      clearDraft("capacity");
+
+    if (retryDraft !== null) {
+      const value = Number(retryDraft);
+      if (!Number.isInteger(value) || value < RETRY_AFTER_MIN || value > RETRY_AFTER_MAX) {
+        errors.retry = t("controls.range", { min: RETRY_AFTER_MIN, max: RETRY_AFTER_MAX });
+      } else if (value !== current.retry_after_seconds) {
+        data.retry_after_seconds = value;
+      }
+    }
+
+    if (timeoutDraft !== null) {
+      // Minutes in the UI, seconds on the wire.
+      const minutes = Number(timeoutDraft.replace(",", "."));
+      const seconds = Math.round(minutes * 60);
+      if (!Number.isFinite(minutes) || seconds < DOWNLOAD_TIMEOUT_MIN || seconds > DOWNLOAD_TIMEOUT_MAX) {
+        errors.timeout = t("controls.timeoutRange", { max: DOWNLOAD_TIMEOUT_MAX / 60 });
+      } else if (seconds !== current.download_timeout_seconds) {
+        data.download_timeout_seconds = seconds;
+      }
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length > 0 ? null : data;
+  }
+
+  function save() {
+    const data = collectChanges();
+    if (!data) return;
+    if (Object.keys(data).length === 0) {
+      clearDrafts();
       return;
     }
     // Shrinking below the downloads in flight stops nobody, but it does
     // refuse every new one until enough finish: worth a second look.
-    if (capacity < current.active) {
-      setConfirm({ kind: "capacity", capacity });
+    if (data.capacity !== undefined && data.capacity < current.active) {
+      setConfirm({ kind: "capacity", capacity: data.capacity, data });
       return;
     }
-    patch({ capacity }, "capacity");
+    patch(data);
   }
 
-  function submitRetry() {
-    setFieldError("retry", null);
-    const value = Number(retryDraft ?? current.retry_after_seconds);
-    if (!Number.isInteger(value) || value < RETRY_AFTER_MIN || value > RETRY_AFTER_MAX) {
-      setFieldError("retry", t("controls.range", { min: RETRY_AFTER_MIN, max: RETRY_AFTER_MAX }));
-      return;
-    }
-    if (value === current.retry_after_seconds) {
-      clearDraft("retry");
-      return;
-    }
-    patch({ retry_after_seconds: value }, "retry");
-  }
-
-  function submitTimeout() {
-    setFieldError("timeout", null);
-    // Minutes in the UI, seconds on the wire.
-    const minutes = Number((timeoutDraft ?? secondsToMinutes(current.download_timeout_seconds)).replace(",", "."));
-    const seconds = Math.round(minutes * 60);
-    if (!Number.isFinite(minutes) || seconds < DOWNLOAD_TIMEOUT_MIN || seconds > DOWNLOAD_TIMEOUT_MAX) {
-      setFieldError(
-        "timeout",
-        t("controls.timeoutRange", { max: DOWNLOAD_TIMEOUT_MAX / 60 }),
-      );
-      return;
-    }
-    if (seconds === current.download_timeout_seconds) {
-      clearDraft("timeout");
-      return;
-    }
-    patch({ download_timeout_seconds: seconds }, "timeout");
+  /** The +/- buttons edit the draft; nothing is sent until Save. */
+  function stepCapacity(step: number) {
+    const base = Number(capacityDraft ?? current.capacity);
+    const next = Math.min(CAPACITY_MAX, Math.max(CAPACITY_MIN, (Number.isInteger(base) ? base : current.capacity) + step));
+    setCapacityDraft(next === current.capacity ? null : String(next));
+    setFieldError("capacity", null);
   }
 
   function reset() {
@@ -273,9 +298,7 @@ export function DownloadQueuePanel({
         return;
       }
       setState(r.state);
-      clearDraft("capacity");
-      clearDraft("retry");
-      clearDraft("timeout");
+      clearDrafts();
       toast.success(t("controls.resetDone"));
     });
   }
@@ -310,7 +333,7 @@ export function DownloadQueuePanel({
     const c = confirm;
     setConfirm(null);
     if (!c) return;
-    if (c.kind === "capacity") patch({ capacity: c.capacity }, "capacity");
+    if (c.kind === "capacity") patch(c.data);
     else if (c.kind === "evict") evict(c.slot);
     else evictAll();
   }
@@ -437,12 +460,122 @@ export function DownloadQueuePanel({
           </CardContent>
         </Card>
 
-        {/* Controls */}
+        {/* Controls: every change is a draft until Save. */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between gap-2">
-              <CardTitle>{t("controls.title")}</CardTitle>
+            <CardTitle>{t("controls.title")}</CardTitle>
+            <CardDescription>{defaultsText}</CardDescription>
+          </CardHeader>
+          <form
+            className="contents"
+            onSubmit={(e) => {
+              e.preventDefault();
+              save();
+            }}
+          >
+            <CardContent className="flex-1 divide-y">
+              <SettingRow label={t("controls.enabled")} hint={t("controls.enabledHint")} htmlFor="dq-enabled">
+                <Switch
+                  id="dq-enabled"
+                  checked={enabledDraft ?? current.enabled}
+                  disabled={isPending}
+                  onCheckedChange={(v) => setEnabledDraft(v === current.enabled ? null : v)}
+                />
+              </SettingRow>
+
+              <SettingRow
+                label={t("controls.capacity")}
+                hint={t("controls.capacityHint")}
+                htmlFor="dq-capacity"
+                error={fieldErrors.capacity}
+              >
+                <div className="flex items-center gap-1">
+                  <Input
+                    id="dq-capacity"
+                    type="number"
+                    inputMode="numeric"
+                    min={CAPACITY_MIN}
+                    max={CAPACITY_MAX}
+                    className="w-24"
+                    value={capacityDraft ?? String(current.capacity)}
+                    aria-invalid={fieldErrors.capacity ? true : undefined}
+                    onChange={(e) => {
+                      setCapacityDraft(e.target.value);
+                      setFieldError("capacity", null);
+                    }}
+                  />
+                  <Button type="button" variant="outline" size="sm" disabled={isPending} onClick={() => stepCapacity(-10)}>
+                    −10
+                  </Button>
+                  {CAPACITY_STEPS.map((step) => (
+                    <Button
+                      key={step}
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={isPending}
+                      onClick={() => stepCapacity(step)}
+                    >
+                      +{step}
+                    </Button>
+                  ))}
+                </div>
+              </SettingRow>
+
+              <SettingRow
+                label={t("controls.retryAfter")}
+                hint={t("controls.retryAfterHint")}
+                htmlFor="dq-retry"
+                error={fieldErrors.retry}
+              >
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="dq-retry"
+                    type="number"
+                    inputMode="numeric"
+                    min={RETRY_AFTER_MIN}
+                    max={RETRY_AFTER_MAX}
+                    className="w-24"
+                    value={retryDraft ?? String(current.retry_after_seconds)}
+                    aria-invalid={fieldErrors.retry ? true : undefined}
+                    onChange={(e) => {
+                      setRetryDraft(e.target.value);
+                      setFieldError("retry", null);
+                    }}
+                  />
+                  <span className="w-14 text-sm text-muted-foreground">{t("controls.secondsUnit")}</span>
+                </div>
+              </SettingRow>
+
+              <SettingRow
+                label={t("controls.downloadTimeout")}
+                hint={t("controls.downloadTimeoutHint")}
+                htmlFor="dq-timeout"
+                error={fieldErrors.timeout}
+              >
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="dq-timeout"
+                    type="number"
+                    inputMode="decimal"
+                    min={0.1}
+                    max={DOWNLOAD_TIMEOUT_MAX / 60}
+                    step="any"
+                    className="w-24"
+                    value={timeoutDraft ?? secondsToMinutes(current.download_timeout_seconds)}
+                    aria-invalid={fieldErrors.timeout ? true : undefined}
+                    onChange={(e) => {
+                      setTimeoutDraft(e.target.value);
+                      setFieldError("timeout", null);
+                    }}
+                  />
+                  <span className="w-14 text-sm text-muted-foreground">{t("controls.minutesUnit")}</span>
+                </div>
+              </SettingRow>
+            </CardContent>
+            <CardFooter className="justify-between gap-2">
               <Button
+                type="button"
                 variant="outline"
                 size="sm"
                 disabled={isPending || !modified}
@@ -452,143 +585,12 @@ export function DownloadQueuePanel({
                 <RotateCcw className="mr-2 h-4 w-4" />
                 {t("controls.reset")}
               </Button>
-            </div>
-            <CardDescription>{defaultsText}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-sm font-medium">{t("controls.enabled")}</p>
-                <p className="text-xs text-muted-foreground">{t("controls.enabledHint")}</p>
-              </div>
-              <Button
-                variant={current.enabled ? "outline" : "default"}
-                size="sm"
-                disabled={isPending}
-                onClick={() => patch({ enabled: !current.enabled })}
-              >
-                <Power className="mr-2 h-4 w-4" />
-                {current.enabled ? t("controls.disable") : t("controls.enable")}
+              <Button type="submit" size="sm" disabled={isPending || !dirty}>
+                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {t("controls.save")}
               </Button>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="dq-capacity">{t("controls.capacity")}</Label>
-              <form
-                className="flex flex-wrap items-center gap-2"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  requestCapacity(Number(capacityDraft ?? current.capacity));
-                }}
-              >
-                <Input
-                  id="dq-capacity"
-                  type="number"
-                  inputMode="numeric"
-                  min={CAPACITY_MIN}
-                  max={CAPACITY_MAX}
-                  className="w-28"
-                  value={capacityDraft ?? String(current.capacity)}
-                  aria-invalid={fieldErrors.capacity ? true : undefined}
-                  onChange={(e) => {
-                    setCapacityDraft(e.target.value);
-                    setFieldError("capacity", null);
-                  }}
-                />
-                <Button type="submit" size="sm" disabled={isPending || capacityDraft === null}>
-                  {t("controls.apply")}
-                </Button>
-                <div className="flex gap-1">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={isPending || current.capacity - 10 < CAPACITY_MIN}
-                    onClick={() => requestCapacity(current.capacity - 10)}
-                  >
-                    −10
-                  </Button>
-                  {CAPACITY_STEPS.map((step) => (
-                    <Button
-                      key={step}
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={isPending || current.capacity + step > CAPACITY_MAX}
-                      onClick={() => requestCapacity(current.capacity + step)}
-                    >
-                      +{step}
-                    </Button>
-                  ))}
-                </div>
-              </form>
-              <FieldError message={fieldErrors.capacity} />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="dq-retry">{t("controls.retryAfter")}</Label>
-              <form
-                className="flex flex-wrap items-center gap-2"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  submitRetry();
-                }}
-              >
-                <Input
-                  id="dq-retry"
-                  type="number"
-                  inputMode="numeric"
-                  min={RETRY_AFTER_MIN}
-                  max={RETRY_AFTER_MAX}
-                  className="w-28"
-                  value={retryDraft ?? String(current.retry_after_seconds)}
-                  aria-invalid={fieldErrors.retry ? true : undefined}
-                  onChange={(e) => {
-                    setRetryDraft(e.target.value);
-                    setFieldError("retry", null);
-                  }}
-                />
-                <span className="text-sm text-muted-foreground">{t("controls.secondsUnit")}</span>
-                <Button type="submit" size="sm" disabled={isPending || retryDraft === null}>
-                  {t("controls.apply")}
-                </Button>
-              </form>
-              <FieldError message={fieldErrors.retry} />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="dq-timeout">{t("controls.downloadTimeout")}</Label>
-              <form
-                className="flex flex-wrap items-center gap-2"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  submitTimeout();
-                }}
-              >
-                <Input
-                  id="dq-timeout"
-                  type="number"
-                  inputMode="decimal"
-                  min={0.1}
-                  max={DOWNLOAD_TIMEOUT_MAX / 60}
-                  step="any"
-                  className="w-28"
-                  value={timeoutDraft ?? secondsToMinutes(current.download_timeout_seconds)}
-                  aria-invalid={fieldErrors.timeout ? true : undefined}
-                  onChange={(e) => {
-                    setTimeoutDraft(e.target.value);
-                    setFieldError("timeout", null);
-                  }}
-                />
-                <span className="text-sm text-muted-foreground">{t("controls.minutesUnit")}</span>
-                <Button type="submit" size="sm" disabled={isPending || timeoutDraft === null}>
-                  {t("controls.apply")}
-                </Button>
-              </form>
-              <p className="text-xs text-muted-foreground">{t("controls.downloadTimeoutHint")}</p>
-              <FieldError message={fieldErrors.timeout} />
-            </div>
-          </CardContent>
+            </CardFooter>
+          </form>
         </Card>
       </div>
 
@@ -759,10 +761,36 @@ export function DownloadQueuePanel({
 function RestartNotice() {
   const t = useTranslations("downloadQueue");
   return (
-    <Alert variant="warning">
-      <AlertTriangle className="h-4 w-4" />
+    <Alert>
+      <Info className="h-4 w-4" />
       <AlertDescription>{t("restartNotice")}</AlertDescription>
     </Alert>
+  );
+}
+
+/** One setting: label and hint on the left, its control on the right. */
+function SettingRow({
+  label,
+  hint,
+  htmlFor,
+  error,
+  children,
+}: {
+  label: string;
+  hint: string;
+  htmlFor: string;
+  error?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+      <div className="min-w-0 space-y-1">
+        <Label htmlFor={htmlFor}>{label}</Label>
+        <p className="text-xs text-muted-foreground">{hint}</p>
+        <FieldError message={error} />
+      </div>
+      <div className="shrink-0">{children}</div>
+    </div>
   );
 }
 
