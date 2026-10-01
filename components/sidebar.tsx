@@ -15,7 +15,7 @@ import { LanguageSwitcher } from "@/components/language-switcher";
 import { ChangePasswordDialog } from "@/components/change-password-dialog";
 import type { AuthUser } from "@/lib/api";
 import { EMLY_PRODUCT } from "@/lib/product-rules";
-import { canManageDownloadQueue, canSeeBeta, isAdminRole, isBetaPath } from "@/lib/roles";
+import { canManageDownloadQueue, canSeeBeta, canUseRemoteControl, isBetaPath } from "@/lib/roles";
 
 interface NavGroup {
   key: string;
@@ -95,7 +95,7 @@ export function Sidebar({
       logo: null,
       items: [
         { href: "/clients", label: t("nav.clients"), icon: MonitorSmartphone },
-        ...(isAdminRole(user.role)
+        ...(canUseRemoteControl(user.role)
           ? [{ href: "/remote", label: t("nav.remote"), icon: TerminalSquare }]
           : []),
         { href: "/statistics", label: t("nav.statistics"), icon: BarChart3 },

@@ -12,15 +12,14 @@ import {
 } from "@/lib/api";
 import { getCurrentUser, getSessionToken } from "@/lib/auth";
 import { MIN_COMMAND_UPDATER_VERSION, supportsRemoteCommands } from "@/lib/device-status";
-import { canSeeBeta } from "@/lib/roles";
+import { canUseRemoteControl } from "@/lib/roles";
 
 // Commands run on a user's machine (restart the service, reboot the PC), so
 // this is admin-only: the same bar the API sets on the routes, re-checked
 // here so a non-admin session cannot drive the action directly.
-// Remote control is a beta page (see BETA_PATHS), so admins are refused too.
-async function requireOwner() {
+async function requireAdmin() {
   const user = await getCurrentUser();
-  if (!user || !canSeeBeta(user.role)) throw new Error("Unauthorized");
+  if (!user || !canUseRemoteControl(user.role)) throw new Error("Unauthorized");
   return user;
 }
 
@@ -45,7 +44,7 @@ export async function issueCommandAction(
   args?: { delaySeconds?: number; whenUserActive?: "warn" | "skip" },
 ): Promise<CommandActionResult> {
   try {
-    const user = await requireOwner();
+    const user = await requireAdmin();
     if (!Number.isInteger(clientId) || clientId <= 0) return { ok: false, error: "Invalid client" };
     if (!COMMANDS.includes(name)) return { ok: false, error: "Unknown command" };
 
@@ -92,7 +91,7 @@ export async function issueCommandAction(
 
 export async function pollCommandAction(commandId: string): Promise<CommandActionResult> {
   try {
-    await requireOwner();
+    await requireAdmin();
     return { ok: true, command: await getClientCommand(commandId, await getSessionToken()) };
   } catch (e) {
     if (e instanceof ApiError) return { ok: false, error: e.message, status: e.status };
@@ -106,7 +105,7 @@ export type EventsActionResult =
 
 export async function listEventsAction(clientId: number): Promise<EventsActionResult> {
   try {
-    await requireOwner();
+    await requireAdmin();
     if (!Number.isInteger(clientId) || clientId <= 0) return { ok: false, error: "Invalid client" };
     const { events } = await getClientEvents(clientId, await getSessionToken());
     return { ok: true, events };

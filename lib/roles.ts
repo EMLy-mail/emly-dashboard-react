@@ -18,7 +18,7 @@ export function isOwnerRole(role: UserRole | null | undefined): boolean {
  * from anyone who cannot see beta, each page redirects those users away, and
  * the actions behind them refuse them. Adding a page here is the whole change.
  */
-export const BETA_PATHS = ["/remote"] as const;
+export const BETA_PATHS: readonly string[] = [];
 
 export function isBetaPath(path: string): boolean {
   return BETA_PATHS.some((p) => path === p || path.startsWith(`${p}/`));
@@ -27,6 +27,15 @@ export function isBetaPath(path: string): boolean {
 /** Beta pages are for owners only; admins do not see them. */
 export function canSeeBeta(role: UserRole | null | undefined): boolean {
   return isOwnerRole(role);
+}
+
+/**
+ * Who may send commands to a user's machine (restart the service, reboot the
+ * PC): admins and owners, the same bar the API sets on the command routes.
+ * No `server-only`: the sidebar (client) and the page/actions (server) agree.
+ */
+export function canUseRemoteControl(role: UserRole | null | undefined): boolean {
+  return isAdminRole(role);
 }
 
 type RoleSubject = { id: string; role: UserRole };
