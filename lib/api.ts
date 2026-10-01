@@ -728,6 +728,12 @@ export interface UpdaterClient {
    * schedule, so one current updater version spans several EMLy releases.
    */
   emly_version?: string | null;
+  /**
+   * Installed-products inventory, the same rows `GET /clients/{id}` returns,
+   * sorted by product. Every installed product, not only the user's. Absent
+   * on an API that predates it.
+   */
+  products?: ClientProduct[];
   /** Revision of the remote config document this client last pulled. */
   config_revision?: number | null;
   /** When that pull happened - null for a client that has never fetched config. */

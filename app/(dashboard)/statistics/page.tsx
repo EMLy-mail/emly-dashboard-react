@@ -1,5 +1,5 @@
 import { getTranslations } from "next-intl/server";
-import { getStatsSummary, getAllStatsClients, getStatsEvents, type StatsEventBucket } from "@/lib/api";
+import { getStatsSummary, getStatsEvents, type StatsEventBucket } from "@/lib/api";
 import { getCurrentUser } from "@/lib/auth";
 import { env } from "@/lib/env";
 import {
@@ -11,7 +11,6 @@ import {
 import { getPageStatsHub } from "@/lib/realtime/page-hub";
 import { StatsStreamProvider } from "@/components/stats-stream-provider";
 import { StatsSummaryCardsLive } from "@/components/stats-summary-cards-live";
-import { StatsClientsTableLive } from "@/components/stats-clients-table-live";
 import { StatsEventsChartLive } from "@/components/stats-events-chart-live";
 import { StatsLiveBadge } from "@/components/stats-live-badge";
 import { StatsProductFilter } from "@/components/stats-product-filter";
@@ -66,18 +65,14 @@ export default async function StatisticsPage({ searchParams }: PageProps) {
   // type happens client-side, off the same unfiltered rows the stream sends.
   const hub = await getPageStatsHub(product);
   const cachedSummary = hub?.getSummarySnapshot();
-  const cachedClients = hub?.getClientsSnapshot();
   const cachedEvents = hub?.getEventsSnapshot();
 
-  const [summaryResult, clients, eventsResult] = await Promise.all([
+  const [summaryResult, eventsResult] = await Promise.all([
     cachedSummary ?? getStatsSummary({ product }).catch(() => null),
-    cachedClients ?? getAllStatsClients().catch(() => null),
     cachedEvents?.bucket === bucket
       ? cachedEvents
       : getStatsEvents({ product, bucket }).catch(() => null),
   ]);
-
-  const windowMinutes = summaryResult?.window_minutes ?? 15;
 
   return (
     // Keyed by product: switching filter must drop the previous product's
@@ -85,7 +80,7 @@ export default async function StatisticsPage({ searchParams }: PageProps) {
     <StatsStreamProvider
       key={product}
       initialSummary={summaryResult}
-      initialClients={clients ?? []}
+      initialClients={[]}
       product={product}
       enabled={env.statsRealtimeEnabled}
     >
@@ -103,11 +98,6 @@ export default async function StatisticsPage({ searchParams }: PageProps) {
           initial={eventsResult?.data ?? []}
           bucket={bucket}
           eventType={event_type ?? "all"}
-        />
-
-        <StatsClientsTableLive
-          windowMinutes={windowMinutes}
-          showDeprecatedBanner={env.statsClientsDeprecatedBanner}
         />
       </div>
     </StatsStreamProvider>

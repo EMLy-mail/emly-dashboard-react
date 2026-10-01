@@ -3,7 +3,8 @@
 import type { ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Package, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
+import { ProductIcon } from "@/components/product-icon";
 
 export interface UpdatesTab {
   /** A product slug, or UPDATER_TAB for the Agent's own self-update. */
@@ -38,7 +39,7 @@ export function UpdatesTabs({
       <TabsList className="h-auto flex-wrap">
         {tabs.map((tab) => (
           <TabsTrigger key={tab.value} value={tab.value}>
-            {tab.value === updaterValue ? <RefreshCw /> : <Package />}
+            {tab.value === updaterValue ? <RefreshCw /> : <ProductIcon slug={tab.value} />}
             {tab.label}
           </TabsTrigger>
         ))}

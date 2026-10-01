@@ -15,6 +15,7 @@ import { LanguageSwitcher } from "@/components/language-switcher";
 import { ChangePasswordDialog } from "@/components/change-password-dialog";
 import type { AuthUser } from "@/lib/api";
 import { EMLY_PRODUCT } from "@/lib/product-rules";
+import { productIcon } from "@/lib/product-icons";
 import { canManageDownloadQueue, canSeeBeta, canUseRemoteControl, isBetaPath } from "@/lib/roles";
 
 interface NavGroup {
@@ -23,6 +24,8 @@ interface NavGroup {
   label: string | null;
   /** Product logo; a group without one shows a generic package icon. */
   logo: string | null;
+  /** Shown when there is no logo; defaults to the generic package icon. */
+  icon?: LucideIcon;
   items: { href: string; label: string; icon: LucideIcon }[];
 }
 
@@ -81,6 +84,7 @@ export function Sidebar({
     key: `product:${slug}`,
     label: name,
     logo: slug === EMLY_PRODUCT ? "/emly-logo.png" : null,
+    icon: productIcon(slug),
     items: [
       { href: updatesHref(slug), label: t("nav.updates"), icon: PackageOpen },
       // Bug reports come from the EMLy app only.
@@ -194,6 +198,7 @@ export function Sidebar({
         <nav className="flex-1 space-y-4 overflow-y-auto p-3">
           {navGroups.map((group) => {
             const collapsed = group.label !== null && !!collapsedGroups[group.key];
+            const GroupIcon = group.icon ?? Package;
             return (
               <div key={group.key} className="space-y-1">
                 {group.label && (
@@ -207,7 +212,7 @@ export function Sidebar({
                       {group.logo ? (
                         <Image src={group.logo} alt="" width={16} height={16} className="h-4 w-4 dark:invert" />
                       ) : (
-                        <Package className="h-4 w-4 shrink-0" />
+                        <GroupIcon className="h-4 w-4 shrink-0" />
                       )}
                       <span className="truncate">{group.label}</span>
                     </span>

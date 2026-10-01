@@ -59,6 +59,8 @@ import { LoggedUserName } from "@/components/logged-user-name";
 import { PresenceDot } from "@/components/presence-dot";
 import { OsIcon } from "@/components/os-icon";
 import { BrandMark } from "@/components/brand-mark";
+import { ProductIcon } from "@/components/product-icon";
+import { EMLY_PRODUCT } from "@/lib/product-rules";
 import { shortOsLabel } from "@/lib/os-label";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -115,7 +117,7 @@ type SortColumn =
   | "loggedUser"
   | "lastIp"
   | "updaterVersion"
-  | "emlyVersion"
+  | "products"
   | "os"
   | "createdAt";
 
@@ -295,6 +297,8 @@ interface ClientsExplorerProps {
   latestAppVersion: string | null;
   dcLookupMap: DcLookupMap | null;
   windowMinutes: number;
+  /** Display names by slug; a product missing here shows by slug. */
+  productNames: Record<string, string>;
 }
 
 interface ScoredClient {
@@ -309,6 +313,7 @@ export function ClientsExplorer({
   latestAppVersion,
   dcLookupMap,
   windowMinutes,
+  productNames,
 }: ClientsExplorerProps) {
   const t = useTranslations("clients");
   const locale = useLocale();
@@ -389,6 +394,7 @@ export function ClientsExplorer({
           client.updater_version,
           client.emly_version,
           client.os_version,
+          ...(client.products ?? []).flatMap((p) => [p.product, productNames[p.product]]),
         ].some((field) => (field ?? "").toLowerCase().includes(needle));
       })
       .sort((a, b) => {
@@ -424,13 +430,19 @@ export function ClientsExplorer({
             // comparison would; fall back to text only if either is unparseable.
             return dir * (compareVersions(av, bv) ?? compareStrings(av, bv));
           }
-          case "emlyVersion": {
-            const av = a.client.emly_version ?? "";
-            const bv = b.client.emly_version ?? "";
-            if (!av && !bv) return 0;
-            if (!av) return 1;
-            if (!bv) return -1;
-            return dir * (compareVersions(av, bv) ?? compareStrings(av, bv));
+          case "products": {
+            // How many products first, then which ones, so machines with
+            // the same set end up next to each other.
+            const ap = a.client.products ?? [];
+            const bp = b.client.products ?? [];
+            return (
+              dir *
+              (ap.length - bp.length ||
+                compareStrings(
+                  ap.map((p) => p.product).join(","),
+                  bp.map((p) => p.product).join(","),
+                ))
+            );
           }
           case "os":
             return dir * compareStrings(a.client.os_version ?? "", b.client.os_version ?? "");
@@ -453,7 +465,7 @@ export function ClientsExplorer({
             return 0;
         }
       });
-  }, [scored, activeRanks, connection, wsFilter, query, sort]);
+  }, [scored, activeRanks, connection, wsFilter, query, sort, productNames]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -727,12 +739,12 @@ export function ClientsExplorer({
                     {t("table.updaterVersion")}
                   </SortableHead>
                   <SortableHead
-                    column="emlyVersion"
+                    column="products"
                     sort={sort}
                     onSort={toggleSort}
                     className="hidden lg:table-cell"
                   >
-                    {t("table.emlyVersion")}
+                    {t("table.products")}
                   </SortableHead>
                   <SortableHead
                     column="createdAt"
@@ -939,40 +951,29 @@ export function ClientsExplorer({
                           />
                         </div>
                       </TableCell>
-                      {/* Same gap coloring as the updater column, but keyed off
-                          appGap - the two builds move independently. */}
-                      <TableCell
-                        className={cn(
-                          "hidden font-mono text-sm lg:table-cell",
-                          assessment.appGap === "minor" || assessment.appGap === "major"
-                            ? RANK_STYLES.critical.text
-                            : assessment.appGap === "patch"
-                              ? RANK_STYLES.warning.text
-                              : "text-muted-foreground",
-                        )}
-                        title={
-                          assessment.appGap === "none" || assessment.appGap === "unknown"
-                            ? undefined
-                            : t("detail.latestIs", { version: latestAppVersion ?? "—" })
-                        }
-                      >
-                        {updaterTooOldForEmlyVersion(client.updater_version) ? (
-                          <HintedIcon
-                            icon={CircleQuestionMark}
-                            hint={t("iconHint.emlyVersionUnknown", {
-                              version: EMLY_VERSION_MIN_UPDATER_VERSION,
-                            })}
-                            className="text-red-600 dark:text-red-500"
-                          />
-                        ) : (
+                      {/* Icons only: the versions live in the side panel and
+                          on the client's own page. */}
+                      <TableCell className="hidden text-muted-foreground lg:table-cell">
+                        {client.products && client.products.length > 0 ? (
                           <div className="flex items-center gap-1.5">
-                            {client.emly_version ?? "—"}
-                            <VersionGapIcon
-                              gap={assessment.appGap}
-                              name="EMLy"
-                              latest={latestAppVersion}
-                            />
+                            {client.products.map((p) => (
+                              <Tooltip key={p.product}>
+                                <TooltipTrigger asChild>
+                                  <span
+                                    className="flex rounded-xs outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                    tabIndex={0}
+                                    role="img"
+                                    aria-label={productNames[p.product] ?? p.product}
+                                  >
+                                    <ProductIcon slug={p.product} />
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent>{productNames[p.product] ?? p.product}</TooltipContent>
+                              </Tooltip>
+                            ))}
                           </div>
+                        ) : (
+                          "—"
                         )}
                       </TableCell>
                       <TableCell
@@ -1072,6 +1073,7 @@ export function ClientsExplorer({
                   revealed={revealed}
                   latestUpdaterVersion={latestUpdaterVersion}
                   latestAppVersion={latestAppVersion}
+                  productNames={productNames}
                   onCollapse={() => setCollapsed(true)}
                   onClose={() => setSelectedId(null)}
                 />
@@ -1141,6 +1143,7 @@ interface DeviceDetailProps {
   revealed: boolean;
   latestUpdaterVersion: string | null;
   latestAppVersion: string | null;
+  productNames: Record<string, string>;
   /** Hides the panel but keeps the row selected. */
   onCollapse: () => void;
   /** Drops the selection entirely, returning the table to full width. */
@@ -1152,6 +1155,7 @@ function DeviceDetail({
   revealed,
   latestUpdaterVersion,
   latestAppVersion,
+  productNames,
   onCollapse,
   onClose,
 }: DeviceDetailProps) {
@@ -1262,25 +1266,61 @@ function DeviceDetail({
                   : undefined
             }
           />
-          {/* The EMLy build on the machine, not this updater's own - the two
-              move independently, so they sit as separate fields and the hint
-              names the release the app manifest is currently serving. */}
-          <Field
-            label={t("detail.appVersion")}
-            value={client.emly_version ?? "—"}
-            mono
-            hint={
-              !client.emly_version
-                ? latestAppVersion
-                  ? `${t("detail.notReported")} · ${t("detail.latestIs", { version: latestAppVersion })}`
-                  : t("detail.notReported")
-                : assessment.appGap === "none"
-                  ? t("detail.upToDate")
-                  : latestAppVersion
-                    ? t("detail.latestIs", { version: latestAppVersion })
-                    : undefined
-            }
-          />
+          {/* One line per installed product, each with its own version. An
+              API that predates the inventory leaves only emly_version, so
+              that keeps the old single EMLy field. */}
+          {client.products ? (
+            <div>
+              <dt className="text-xs font-medium text-muted-foreground">{t("detail.products")}</dt>
+              <dd className="mt-0.5">
+                {client.products.length === 0 ? (
+                  <span className="text-sm font-medium">—</span>
+                ) : (
+                  <ul className="space-y-1">
+                    {client.products.map((p) => (
+                      <li key={p.product} className="text-sm">
+                        <span className="flex items-center gap-1.5 font-medium">
+                          <ProductIcon slug={p.product} className="text-muted-foreground" />
+                          {productNames[p.product] ?? p.product}
+                          <span className="font-mono">{p.version}</span>
+                        </span>
+                        {/* The app manifest only knows EMLy's latest build. */}
+                        {p.product === EMLY_PRODUCT && (
+                          <span className="block text-xs font-normal text-muted-foreground">
+                            {assessment.appGap === "none"
+                              ? t("detail.upToDate")
+                              : latestAppVersion
+                                ? t("detail.latestIs", { version: latestAppVersion })
+                                : null}
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </dd>
+            </div>
+          ) : (
+            // The EMLy build on the machine, not this updater's own - the two
+            // move independently, so they sit as separate fields and the hint
+            // names the release the app manifest is currently serving.
+            <Field
+              label={t("detail.appVersion")}
+              value={client.emly_version ?? "—"}
+              mono
+              hint={
+                !client.emly_version
+                  ? latestAppVersion
+                    ? `${t("detail.notReported")} · ${t("detail.latestIs", { version: latestAppVersion })}`
+                    : t("detail.notReported")
+                  : assessment.appGap === "none"
+                    ? t("detail.upToDate")
+                    : latestAppVersion
+                      ? t("detail.latestIs", { version: latestAppVersion })
+                      : undefined
+              }
+            />
+          )}
           <Field
             label={t("detail.dc")}
             value={assessment.dcSites.length > 0 ? assessment.dcSites.join(", ") : "—"}

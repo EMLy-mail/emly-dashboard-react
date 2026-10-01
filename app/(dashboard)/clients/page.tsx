@@ -12,7 +12,7 @@ import {
 } from "@/lib/api";
 import { getCurrentUser } from "@/lib/auth";
 import { env } from "@/lib/env";
-import { defaultStatsProduct, userProductSlugs } from "@/lib/products";
+import { defaultStatsProduct, getUserProductOptions, userProductSlugs } from "@/lib/products";
 import { EMLY_PRODUCT } from "@/lib/product-rules";
 import { getPageStatsHub } from "@/lib/realtime/page-hub";
 import { readDcLookupMap, type DcLookupMap } from "@/lib/device-status";
@@ -72,7 +72,7 @@ export default async function ClientsPage() {
   // worth 500-ing the page over: a machine list with an unknown target
   // version is still useful, a blank page is not. Each failure degrades one
   // rule instead of the whole view.
-  const [t, summary, clients, bans, updaterManifest, appManifest, dcLookupMap] = await Promise.all([
+  const [t, summary, clients, bans, updaterManifest, appManifest, dcLookupMap, productOptions] = await Promise.all([
     getTranslations("clients"),
     cachedSummary ?? getStatsSummary({ product: statsProduct }).catch(() => null),
     cachedClients ?? getAllStatsClients().catch(() => null),
@@ -81,6 +81,7 @@ export default async function ClientsPage() {
     // The target EMLy build the ranking compares `emly_version` against.
     getUpdateManifest(EMLY_PRODUCT).catch(() => null),
     loadDcLookupMap().catch(() => null),
+    getUserProductOptions(),
   ]);
 
   const windowMinutes = summary?.window_minutes ?? 15;
@@ -111,6 +112,7 @@ export default async function ClientsPage() {
           latestAppVersion={latestAppVersion}
           dcLookupMap={dcLookupMap}
           windowMinutes={windowMinutes}
+          productNames={Object.fromEntries(productOptions.map((p) => [p.slug, p.name]))}
         />
       </div>
     </StatsStreamProvider>
