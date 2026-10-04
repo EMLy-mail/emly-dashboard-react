@@ -89,6 +89,22 @@ export default async function ClientsPage() {
   const latestUpdaterVersion = updaterManifest?.version?.trim() || null;
   const latestAppVersion = appManifest?.stableVersion?.trim() || null;
 
+  // Latest stable build of every product the user can see, so the products
+  // column can flag a machine running an older one. EMLy's manifest is
+  // already in hand; a product whose manifest fails is simply not checked.
+  const latestProductVersions: Record<string, string> = Object.fromEntries(
+    (
+      await Promise.all(
+        productOptions.map(async (p) => {
+          const manifest =
+            p.slug === EMLY_PRODUCT ? appManifest : await getUpdateManifest(p.slug).catch(() => null);
+          const version = manifest?.stableVersion?.trim();
+          return version ? [[p.slug, version] as const] : [];
+        }),
+      )
+    ).flat(),
+  );
+
   return (
     <StatsStreamProvider
       initialSummary={summary}
@@ -113,6 +129,7 @@ export default async function ClientsPage() {
           dcLookupMap={dcLookupMap}
           windowMinutes={windowMinutes}
           productNames={Object.fromEntries(productOptions.map((p) => [p.slug, p.name]))}
+          latestProductVersions={latestProductVersions}
         />
       </div>
     </StatsStreamProvider>

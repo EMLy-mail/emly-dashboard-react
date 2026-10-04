@@ -299,6 +299,8 @@ interface ClientsExplorerProps {
   windowMinutes: number;
   /** Display names by slug; a product missing here shows by slug. */
   productNames: Record<string, string>;
+  /** Latest stable version by slug; a product missing here is never flagged. */
+  latestProductVersions: Record<string, string>;
 }
 
 interface ScoredClient {
@@ -314,6 +316,7 @@ export function ClientsExplorer({
   dcLookupMap,
   windowMinutes,
   productNames,
+  latestProductVersions,
 }: ClientsExplorerProps) {
   const t = useTranslations("clients");
   const locale = useLocale();
@@ -955,22 +958,33 @@ export function ClientsExplorer({
                           on the client's own page. */}
                       <TableCell className="hidden text-muted-foreground lg:table-cell">
                         {client.products && client.products.length > 0 ? (
-                          <div className="flex items-center gap-1.5">
-                            {client.products.map((p) => (
-                              <Tooltip key={p.product}>
-                                <TooltipTrigger asChild>
-                                  <span
-                                    className="flex rounded-xs outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                    tabIndex={0}
-                                    role="img"
-                                    aria-label={productNames[p.product] ?? p.product}
-                                  >
-                                    <ProductIcon slug={p.product} />
-                                  </span>
-                                </TooltipTrigger>
-                                <TooltipContent>{productNames[p.product] ?? p.product}</TooltipContent>
-                              </Tooltip>
-                            ))}
+                          <div className="flex items-center gap-2.5">
+                            {client.products.map((p) => {
+                              const name = productNames[p.product] ?? p.product;
+                              const latest = latestProductVersions[p.product];
+                              const outdated = !!latest && compareVersions(p.version, latest) === -1;
+                              const hint = outdated
+                                ? `${name} ${p.version} · ${t("iconHint.versionOutdatedWarning", { name })} · ${t("detail.latestIs", { version: latest })}`
+                                : name;
+                              return (
+                                <Tooltip key={p.product}>
+                                  <TooltipTrigger asChild>
+                                    <span
+                                      className="flex items-center gap-1.5 rounded-xs outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                      tabIndex={0}
+                                      role="img"
+                                      aria-label={hint}
+                                    >
+                                      <ProductIcon slug={p.product} />
+                                      {outdated && (
+                                        <TriangleAlert className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                      )}
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent>{hint}</TooltipContent>
+                                </Tooltip>
+                              );
+                            })}
                           </div>
                         ) : (
                           "—"
