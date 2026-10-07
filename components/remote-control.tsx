@@ -1,16 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
-  Activity,
   Download,
   Info,
   Loader2,
   Package,
   Power,
-  RefreshCw,
   RotateCw,
   Search,
   ShieldCheck,
@@ -19,14 +17,14 @@ import type {
   ClientCommandName,
   ClientCommandRecord,
   ClientCommandStatus,
-  ClientEventRecord,
   UpdaterClient,
 } from "@/lib/api";
 import {
   issueCommandAction,
-  listEventsAction,
   pollCommandAction,
 } from "@/lib/actions/client-commands";
+import { ClientWsEvents } from "@/components/client-ws-events";
+import { PayloadViewer } from "@/components/payload-viewer";
 import { useLiveStatsClients } from "@/hooks/use-stats-stream";
 import { MIN_COMMAND_UPDATER_VERSION, supportsRemoteCommands } from "@/lib/device-status";
 import { formatDateTime } from "@/lib/format-date";
@@ -56,7 +54,6 @@ import {
 } from "@/components/ui/select";
 
 const POLL_MS = 2000;
-const EVENTS_POLL_MS = 10000;
 const MAX_HISTORY = 30;
 
 // next-intl reads dots in a key as nesting, so the wire names ("machine.info")
@@ -104,15 +101,13 @@ function errorLine(c: ClientCommandRecord): string | null {
   return e.message ? `${e.code}: ${e.message}` : e.code;
 }
 
-export function RemoteControl() {
+export function RemoteControl({ lockDangerous = false }: { lockDangerous?: boolean }) {
   const t = useTranslations("remote");
   const { clients } = useLiveStatsClients();
 
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [search, setSearch] = useState("");
   const [history, setHistory] = useState<ClientCommandRecord[]>([]);
-  const [events, setEvents] = useState<{ clientId: number; list: ClientEventRecord[] } | null>(null);
-  const [eventsError, setEventsError] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<"service.restart" | "machine.reboot" | null>(null);
   const [delay, setDelay] = useState("60");
   const [whenActive, setWhenActive] = useState<"warn" | "skip">("warn");
@@ -184,38 +179,6 @@ export function RemoteControl() {
     };
   }, [pendingKey]);
 
-  // ── Events of the selected machine ───────────────────────────────────────
-  const loadEvents = useCallback(async (clientId: number) => {
-    const r = await listEventsAction(clientId);
-    if (r.ok) {
-      setEvents({ clientId, list: r.events });
-      setEventsError(null);
-    } else {
-      setEventsError(r.error);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (selectedId === null) return;
-    let cancelled = false;
-    const run = async () => {
-      const r = await listEventsAction(selectedId);
-      if (cancelled) return;
-      if (r.ok) {
-        setEvents({ clientId: selectedId, list: r.events });
-        setEventsError(null);
-      } else {
-        setEventsError(r.error);
-      }
-    };
-    void run();
-    const timer = setInterval(() => void run(), EVENTS_POLL_MS);
-    return () => {
-      cancelled = true;
-      clearInterval(timer);
-    };
-  }, [selectedId]);
-
   // ── Sending ──────────────────────────────────────────────────────────────
   function send(name: ClientCommandName, args?: { delaySeconds?: number; whenUserActive?: "warn" | "skip" }) {
     if (!selected) return;
@@ -248,7 +211,6 @@ export function RemoteControl() {
   }
 
   const selectedHistory = history.filter((c) => c.client_id === selectedId);
-  const selectedEvents = events && events.clientId === selectedId ? events.list : null;
 
   return (
     <div className="grid gap-4 lg:grid-cols-[20rem_1fr]">
@@ -394,50 +356,7 @@ export function RemoteControl() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Activity className="h-4 w-4" />
-                  {t("events.title")}
-                </CardTitle>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label={t("events.refresh")}
-                  onClick={() => selectedId !== null && void loadEvents(selectedId)}
-                >
-                  <RefreshCw className="h-4 w-4" />
-                </Button>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <p className="text-xs text-muted-foreground">{t("events.hint")}</p>
-                {eventsError && (
-                  <Alert variant="destructive">
-                    <AlertDescription>{eventsError}</AlertDescription>
-                  </Alert>
-                )}
-                {selectedEvents?.length === 0 && (
-                  <p className="text-sm text-muted-foreground">{t("events.empty")}</p>
-                )}
-                {selectedEvents
-                  ?.slice()
-                  .reverse()
-                  .map((e, i) => (
-                    <details key={e.id ?? i} className="rounded-md border px-3 py-2 text-sm">
-                      <summary className="flex cursor-pointer flex-wrap items-center gap-2">
-                        <span className="font-mono">{e.name}</span>
-                        <span className="text-xs text-muted-foreground">{formatDateTime(e.received_at)}</span>
-                        {e.truncated && <Badge variant="outline">{t("events.truncated")}</Badge>}
-                      </summary>
-                      {e.payload !== undefined && (
-                        <pre className="mt-2 max-h-64 overflow-auto rounded bg-muted p-2 text-xs">
-                          {JSON.stringify(e.payload, null, 2)}
-                        </pre>
-                      )}
-                    </details>
-                  ))}
-              </CardContent>
-            </Card>
+            <ClientWsEvents clientId={selected.id} />
           </>
         )}
       </div>
@@ -516,9 +435,7 @@ function CommandRow({ record }: { record: ClientCommandRecord }) {
             {t("history.result")}
             {record.result?.truncated ? ` (${t("events.truncated")})` : ""}
           </summary>
-          <pre className="mt-1 max-h-72 overflow-auto rounded bg-muted p-2 text-xs">
-            {JSON.stringify(payload, null, 2)}
-          </pre>
+          <PayloadViewer data={payload} rootName="result" className="mt-1" />
         </details>
       )}
     </div>
