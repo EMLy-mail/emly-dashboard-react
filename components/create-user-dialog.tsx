@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useActionState, useEffect } from "react";
+import { useState, useActionState } from "react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { createUserAction, type CreateUserActionState } from "@/lib/actions/users";
@@ -36,21 +36,26 @@ export function CreateUserDialog({ assignableProducts }: { assignableProducts: A
   const [open, setOpen] = useState(false);
   const [role, setRole] = useState("user");
   const [products, setProducts] = useState<string[]>([]);
-  const [state, formAction, isPending] = useActionState(createUserAction, initialState);
   const t = useTranslations("users");
-  const [lastHandledState, setLastHandledState] = useState(state);
-
-  if (state !== lastHandledState) {
-    setLastHandledState(state);
-    if (state.success) {
-      setOpen(false);
-      setProducts([]);
-      toast.success(t("createDialog.success"));
-      if (state.productsError) {
-        toast.error(t("createDialog.productsFailed", { error: state.productsError }));
+  // The outcome is handled inside the action, which runs once per submission,
+  // not during render: React may replay a render several times before
+  // committing it (while the action is pending and the page revalidates), and
+  // every replay used to fire another toast.
+  const [state, formAction, isPending] = useActionState(
+    async (prev: CreateUserActionState, formData: FormData) => {
+      const result = await createUserAction(prev, formData);
+      if (result.success) {
+        setOpen(false);
+        setProducts([]);
+        toast.success(t("createDialog.success"));
+        if (result.productsError) {
+          toast.error(t("createDialog.productsFailed", { error: result.productsError }));
+        }
       }
-    }
-  }
+      return result;
+    },
+    initialState,
+  );
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
