@@ -58,5 +58,5 @@ export async function GET(request: NextRequest) {
   }
   // redirect() throws, so it stays outside the try/catch.
   if (failure) redirect(`/login?error=${failure}`);
-  redirect("/bug-reports");
+  redirect("/clients");
 }

@@ -62,11 +62,11 @@ export function EditReleaseDialog({ release, product, productName, open, onOpenC
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+      <DialogContent className="max-h-[90vh] overflow-x-hidden overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{t("editDialog.title", { version: release.version })}</DialogTitle>
         </DialogHeader>
-        <form action={formAction} className="space-y-4">
+        <form action={formAction} className="min-w-0 space-y-4">
           <input type="hidden" name="is_stable" value={isStable ? "true" : "false"} />
           <input type="hidden" name="is_beta" value={isBeta ? "true" : "false"} />
           <input type="hidden" name="severity_type" value={severityType} />

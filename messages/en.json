@@ -44,7 +44,7 @@
   },
   "login": {
     "title": "Aryx Console",
-    "description": "Sign in to manage bug reports",
+    "description": "Sign in to manage products, clients and updates",
     "username": "Username",
     "password": "Password",
     "signIn": "Sign in",

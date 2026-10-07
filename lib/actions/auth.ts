@@ -35,7 +35,7 @@ export async function loginAction(
     return { error: e instanceof Error ? e.message : "An unexpected error occurred" };
   }
 
-  redirect("/bug-reports");
+  redirect("/clients");
 }
 
 export async function logoutAction(): Promise<void> {

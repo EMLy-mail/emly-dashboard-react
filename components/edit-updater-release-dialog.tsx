@@ -61,11 +61,11 @@ export function EditUpdaterReleaseDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+      <DialogContent className="max-h-[90vh] overflow-x-hidden overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{t("editDialog.title", { version: release.version })}</DialogTitle>
         </DialogHeader>
-        <form action={formAction} className="space-y-4">
+        <form action={formAction} className="min-w-0 space-y-4">
           <input type="hidden" name="is_current" value={isCurrent ? "true" : "false"} />
           {state.error && (
             <Alert variant="destructive">
@@ -74,16 +74,20 @@ export function EditUpdaterReleaseDialog({
           )}
           <div className="space-y-1 rounded-md border bg-muted/40 p-3 text-xs">
             <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">{t("editDialog.file")}</span>
-              <span className="truncate font-mono">{release.download_filename}</span>
+              <span className="shrink-0 text-muted-foreground">{t("editDialog.file")}</span>
+              <span className="min-w-0 truncate font-mono" title={release.download_filename}>
+                {release.download_filename}
+              </span>
             </div>
             <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">{t("editDialog.size")}</span>
+              <span className="shrink-0 text-muted-foreground">{t("editDialog.size")}</span>
               <span className="font-mono">{formatBytes(release.file_size)}</span>
             </div>
             <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">{t("editDialog.checksum")}</span>
-              <span className="truncate font-mono">{release.sha256_checksum}</span>
+              <span className="shrink-0 text-muted-foreground">{t("editDialog.checksum")}</span>
+              <span className="min-w-0 break-all text-right font-mono">
+                {release.sha256_checksum}
+              </span>
             </div>
           </div>
           <div className="space-y-2">

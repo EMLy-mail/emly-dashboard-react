@@ -44,7 +44,7 @@
   },
   "login": {
     "title": "Aryx Console",
-    "description": "Accedi per gestire le segnalazioni bug",
+    "description": "Accedi per gestire prodotti, client e aggiornamenti",
     "username": "Nome utente",
     "password": "Password",
     "signIn": "Accedi",
