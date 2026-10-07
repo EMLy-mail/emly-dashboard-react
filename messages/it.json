@@ -356,6 +356,31 @@
     "description": "Stato di salute della flotta: dominio, versioni, rete e ban per ogni dispositivo.",
     "selectStates": "Seleziona stati:",
     "searchPlaceholder": "Cerca per nome, utente, IP, seriale...",
+    "columnFilter": {
+      "open": "Filtra {column}",
+      "sortAsc": "Ordina dalla A alla Z",
+      "sortDesc": "Ordina dalla Z alla A",
+      "clear": "Cancella filtro da \"{column}\"",
+      "search": "Cerca",
+      "selectAll": "(Seleziona tutto)",
+      "selectAllResults": "(Seleziona tutti i risultati della ricerca)",
+      "noMatches": "Nessun valore corrisponde.",
+      "blank": "(Vuote)",
+      "ok": "OK",
+      "cancel": "Annulla",
+      "age": {
+        "hour": "Ultima ora",
+        "day": "Ultime 24 ore",
+        "week": "Ultimi 7 giorni",
+        "month": "Ultimi 30 giorni",
+        "older": "Più di 30 giorni fa"
+      },
+      "connection": {
+        "internal": "Online dalla rete interna",
+        "public": "Online da IP pubblico",
+        "offline": "Offline"
+      }
+    },
     "filters": {
       "allStates": "Tutti gli stati",
       "customStates": "Selezione personalizzata",

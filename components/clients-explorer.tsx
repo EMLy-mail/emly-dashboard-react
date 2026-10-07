@@ -62,6 +62,7 @@ import { BrandMark } from "@/components/brand-mark";
 import { ProductIcon } from "@/components/product-icon";
 import { EMLY_PRODUCT } from "@/lib/product-rules";
 import { shortOsLabel } from "@/lib/os-label";
+import { ColumnFilter, type ColumnFilterOption } from "@/components/column-filter";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -250,6 +251,105 @@ function VersionGapIcon({
 
 type SortState = { column: SortColumn; direction: "asc" | "desc" };
 
+// ── Excel-style column filters ─────────────────────────────────────────────
+
+// Status has no menu: the rank chips above the table already are its filter.
+type FilterColumn = Exclude<SortColumn, "rank">;
+const FILTER_COLUMNS: FilterColumn[] = [
+  "hostname",
+  "lastSeen",
+  "connected",
+  "loggedUser",
+  "lastIp",
+  "os",
+  "updaterVersion",
+  "products",
+  "createdAt",
+];
+/** Raw values each column lets through; a missing column is unfiltered. */
+type ColumnFilters = Partial<Record<FilterColumn, Set<string>>>;
+
+// Dates filter by age bracket, not by instant: a list of every timestamp
+// would have one line per machine and nothing to tick in bulk.
+const AGE_BUCKETS = ["hour", "day", "week", "month", "older"];
+const CONNECTION_KEYS = ["internal", "public", "offline"];
+
+function ageBucket(iso: string, now: number): string {
+  const then = new Date(iso).getTime();
+  if (!Number.isFinite(then)) return "";
+  const elapsed = now - then;
+  if (elapsed < HOUR_MS) return "hour";
+  if (elapsed < DAY_MS) return "day";
+  if (elapsed < WEEK_MS) return "week";
+  if (elapsed < ABSOLUTE_AFTER_MS) return "month";
+  return "older";
+}
+
+/**
+ * The values a row holds in a column, as the filter matches them. An empty
+ * string is the column's "(blank)" entry. Products is the one column with
+ * several values per row; the row passes if any of them is ticked.
+ */
+function columnKeys(column: FilterColumn, { client, assessment }: ScoredClient, now: number): string[] {
+  switch (column) {
+    case "hostname":
+      return [client.hostname];
+    case "lastSeen":
+      return [ageBucket(client.last_seen_at, now)];
+    case "createdAt":
+      return [ageBucket(client.first_seen_at, now)];
+    case "connected":
+      // Same three states the Connesso column draws.
+      if (!assessment.online) return ["offline"];
+      return [client.last_ip && !assessment.internalIp ? "public" : "internal"];
+    case "loggedUser":
+      return [client.logged_user?.trim() ?? ""];
+    case "lastIp":
+      return [client.last_ip ?? ""];
+    case "os":
+      return [shortOsLabel(client.os_version) ?? ""];
+    case "updaterVersion":
+      return [client.updater_version ?? ""];
+    case "products": {
+      const products = client.products ?? [];
+      return products.length > 0 ? products.map((p) => p.product) : [""];
+    }
+  }
+}
+
+function passesColumnFilters(
+  entry: ScoredClient,
+  filters: ColumnFilters,
+  now: number,
+  skip?: FilterColumn,
+): boolean {
+  for (const column of FILTER_COLUMNS) {
+    const allowed = filters[column];
+    if (!allowed || column === skip) continue;
+    if (!columnKeys(column, entry, now).some((key) => allowed.has(key))) return false;
+  }
+  return true;
+}
+
+/** Order of the value list in a column's menu; "(blank)" always comes last. */
+function compareOptionKeys(column: FilterColumn, a: string, b: string): number {
+  if (!a || !b) return compareStrings(a, b);
+  switch (column) {
+    case "lastSeen":
+    case "createdAt":
+      return AGE_BUCKETS.indexOf(a) - AGE_BUCKETS.indexOf(b);
+    case "connected":
+      return CONNECTION_KEYS.indexOf(a) - CONNECTION_KEYS.indexOf(b);
+    case "lastIp":
+      return compareIps(a, b);
+    case "updaterVersion":
+      // Newest first: the build you most often want to single out.
+      return compareVersions(b, a) ?? compareStrings(a, b);
+    default:
+      return compareStrings(a, b);
+  }
+}
+
 /** Empty values sort last whichever way the column is pointing. */
 function compareStrings(a: string, b: string) {
   if (!a && !b) return 0;
@@ -327,6 +427,7 @@ export function ClientsExplorer({
   const [activeRanks, setActiveRanks] = useState<DeviceRank[]>([...RANKS]);
   const [connection, setConnection] = useState<ConnectionFilter>(ANY);
   const [wsFilter, setWsFilter] = useState<WsFilter>(ANY);
+  const [columnFilters, setColumnFilters] = useState<ColumnFilters>({});
   // Most recently seen first by default; the header arrow reflects it.
   const [sort, setSort] = useState<SortState | null>({ column: "lastSeen", direction: "desc" });
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -371,7 +472,9 @@ export function ClientsExplorer({
     return tally;
   }, [scored]);
 
-  const filtered = useMemo(() => {
+  // Everything but the column menus. Kept apart because each menu lists the
+  // values left by this plus the *other* columns' filters, as Excel does.
+  const base = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return scored
       .filter(({ assessment }) => activeRanks.includes(assessment.rank))
@@ -399,7 +502,59 @@ export function ClientsExplorer({
           client.os_version,
           ...(client.products ?? []).flatMap((p) => [p.product, productNames[p.product]]),
         ].some((field) => (field ?? "").toLowerCase().includes(needle));
-      })
+      });
+  }, [scored, activeRanks, connection, wsFilter, query, productNames]);
+
+  const columnOptions = useMemo(() => {
+    function label(column: FilterColumn, key: string): string {
+      if (key === "") return t("columnFilter.blank");
+      switch (column) {
+        case "lastSeen":
+        case "createdAt":
+          return t(`columnFilter.age.${key}`);
+        case "connected":
+          return t(`columnFilter.connection.${key}`);
+        // Masked like the cells, so the menu does not leak what the table hides.
+        case "loggedUser":
+          return revealed ? key : maskUser(key);
+        case "lastIp":
+          return revealed ? key : maskIp(key);
+        case "products":
+          return productNames[key] ?? key;
+        default:
+          return key;
+      }
+    }
+
+    const result = {} as Record<FilterColumn, ColumnFilterOption[]>;
+    for (const column of FILTER_COLUMNS) {
+      const counts = new Map<string, number>();
+      for (const entry of base) {
+        if (!passesColumnFilters(entry, columnFilters, now, column)) continue;
+        for (const key of new Set(columnKeys(column, entry, now))) {
+          counts.set(key, (counts.get(key) ?? 0) + 1);
+        }
+      }
+      // Values that render alike (masked IPs, mostly) share one line.
+      const lines = new Map<string, ColumnFilterOption>();
+      for (const key of [...counts.keys()].sort((a, b) => compareOptionKeys(column, a, b))) {
+        const text = label(column, key);
+        const line = lines.get(text);
+        if (line) {
+          line.keys.push(key);
+          line.count += counts.get(key)!;
+        } else {
+          lines.set(text, { label: text, keys: [key], count: counts.get(key)! });
+        }
+      }
+      result[column] = [...lines.values()];
+    }
+    return result;
+  }, [base, columnFilters, now, revealed, productNames, t]);
+
+  const filtered = useMemo(() => {
+    return base
+      .filter((entry) => passesColumnFilters(entry, columnFilters, now))
       .sort((a, b) => {
         // No explicit sort means worst first: the point of the page is to
         // surface what needs work, so that is the useful default.
@@ -468,7 +623,7 @@ export function ClientsExplorer({
             return 0;
         }
       });
-  }, [scored, activeRanks, connection, wsFilter, query, sort, productNames]);
+  }, [base, columnFilters, now, sort]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -556,14 +711,48 @@ export function ClientsExplorer({
     setPage(1);
   }
 
+  function applyColumnFilter(column: FilterColumn, allowed: Set<string> | null) {
+    setColumnFilters((prev) => {
+      const next = { ...prev };
+      if (allowed) next[column] = allowed;
+      else delete next[column];
+      return next;
+    });
+    setPage(1);
+  }
+
+  function sortBy(column: SortColumn, direction: "asc" | "desc") {
+    setSort({ column, direction });
+    setPage(1);
+  }
+
+  /** The header menu for one column, ready to drop into its SortableHead. */
+  function filterMenu(column: FilterColumn, name: string) {
+    return (
+      <ColumnFilter
+        column={name}
+        options={columnOptions[column]}
+        selected={columnFilters[column] ?? null}
+        onApply={(allowed) => applyColumnFilter(column, allowed)}
+        sortDirection={sort?.column === column ? sort.direction : null}
+        onSort={(direction) => sortBy(column, direction)}
+      />
+    );
+  }
+
   const isFiltered =
-    query !== "" || connection !== ANY || wsFilter !== ANY || activeRanks.length !== RANKS.length;
+    query !== "" ||
+    connection !== ANY ||
+    wsFilter !== ANY ||
+    activeRanks.length !== RANKS.length ||
+    Object.keys(columnFilters).length > 0;
 
   function resetFilters() {
     setQuery("");
     setConnection(ANY);
     setWsFilter(ANY);
     setActiveRanks([...RANKS]);
+    setColumnFilters({});
     setPage(1);
   }
 
@@ -700,19 +889,19 @@ export function ClientsExplorer({
                   <SortableHead column="rank" sort={sort} onSort={toggleSort} className="w-10">
                     <span className="sr-only">{t("table.status")}</span>
                   </SortableHead>
-                  <SortableHead column="hostname" sort={sort} onSort={toggleSort}>
+                  <SortableHead column="hostname" sort={sort} onSort={toggleSort} filter={filterMenu("hostname", t("table.hostname"))}>
                     {t("table.hostname")}
                   </SortableHead>
-                  <SortableHead column="lastSeen" sort={sort} onSort={toggleSort}>
+                  <SortableHead column="lastSeen" sort={sort} onSort={toggleSort} filter={filterMenu("lastSeen", t("table.lastSeen"))}>
                     {t("table.lastSeen")}
                   </SortableHead>
-                  <SortableHead column="connected" sort={sort} onSort={toggleSort}>
+                  <SortableHead column="connected" sort={sort} onSort={toggleSort} filter={filterMenu("connected", t("table.connected"))}>
                     {t("table.connected")}
                   </SortableHead>
                   <SortableHead
                     column="loggedUser"
                     sort={sort}
-                    onSort={toggleSort}
+                    onSort={toggleSort} filter={filterMenu("loggedUser", t("table.loggedUser"))}
                     className="hidden md:table-cell"
                   >
                     {t("table.loggedUser")}
@@ -720,7 +909,7 @@ export function ClientsExplorer({
                   <SortableHead
                     column="lastIp"
                     sort={sort}
-                    onSort={toggleSort}
+                    onSort={toggleSort} filter={filterMenu("lastIp", t("table.lastIp"))}
                     className="hidden lg:table-cell"
                   >
                     {t("table.lastIp")}
@@ -728,7 +917,7 @@ export function ClientsExplorer({
                   <SortableHead
                     column="os"
                     sort={sort}
-                    onSort={toggleSort}
+                    onSort={toggleSort} filter={filterMenu("os", t("table.os"))}
                     className="hidden xl:table-cell"
                   >
                     {t("table.os")}
@@ -736,7 +925,7 @@ export function ClientsExplorer({
                   <SortableHead
                     column="updaterVersion"
                     sort={sort}
-                    onSort={toggleSort}
+                    onSort={toggleSort} filter={filterMenu("updaterVersion", t("table.updaterVersion"))}
                     className="hidden lg:table-cell"
                   >
                     {t("table.updaterVersion")}
@@ -744,7 +933,7 @@ export function ClientsExplorer({
                   <SortableHead
                     column="products"
                     sort={sort}
-                    onSort={toggleSort}
+                    onSort={toggleSort} filter={filterMenu("products", t("table.products"))}
                     className="hidden lg:table-cell"
                   >
                     {t("table.products")}
@@ -752,7 +941,7 @@ export function ClientsExplorer({
                   <SortableHead
                     column="createdAt"
                     sort={sort}
-                    onSort={toggleSort}
+                    onSort={toggleSort} filter={filterMenu("createdAt", t("table.createdAt"))}
                     className="hidden xl:table-cell"
                   >
                     {t("table.createdAt")}
@@ -1122,12 +1311,15 @@ function SortableHead({
   sort,
   onSort,
   className,
+  filter,
   children,
 }: {
   column: SortColumn;
   sort: SortState | null;
   onSort: (column: SortColumn) => void;
   className?: string;
+  /** The column's filter menu, shown after the sort button. */
+  filter?: ReactNode;
   children: ReactNode;
 }) {
   const active = sort?.column === column;
@@ -1135,17 +1327,20 @@ function SortableHead({
 
   return (
     <TableHead className={className} aria-sort={active ? (sort.direction === "asc" ? "ascending" : "descending") : "none"}>
-      <button
-        type="button"
-        onClick={() => onSort(column)}
-        className={cn(
-          "flex items-center gap-1 hover:text-foreground",
-          active ? "text-foreground" : "text-muted-foreground",
-        )}
-      >
-        {children}
-        <Icon className="h-3.5 w-3.5 shrink-0" />
-      </button>
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          onClick={() => onSort(column)}
+          className={cn(
+            "flex items-center gap-1 hover:text-foreground",
+            active ? "text-foreground" : "text-muted-foreground",
+          )}
+        >
+          {children}
+          <Icon className="h-3.5 w-3.5 shrink-0" />
+        </button>
+        {filter}
+      </div>
     </TableHead>
   );
 }

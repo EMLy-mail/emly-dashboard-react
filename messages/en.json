@@ -356,6 +356,31 @@
     "description": "Fleet health at a glance: domain, versions, network and bans for every device.",
     "selectStates": "Select states:",
     "searchPlaceholder": "Search by name, user, IP, serial...",
+    "columnFilter": {
+      "open": "Filter {column}",
+      "sortAsc": "Sort A to Z",
+      "sortDesc": "Sort Z to A",
+      "clear": "Clear filter from \"{column}\"",
+      "search": "Search",
+      "selectAll": "(Select all)",
+      "selectAllResults": "(Select all search results)",
+      "noMatches": "No values match.",
+      "blank": "(Blanks)",
+      "ok": "OK",
+      "cancel": "Cancel",
+      "age": {
+        "hour": "Last hour",
+        "day": "Last 24 hours",
+        "week": "Last 7 days",
+        "month": "Last 30 days",
+        "older": "More than 30 days ago"
+      },
+      "connection": {
+        "internal": "Online from the internal network",
+        "public": "Online from a public IP",
+        "offline": "Offline"
+      }
+    },
     "filters": {
       "allStates": "All states",
       "customStates": "Custom selection",
