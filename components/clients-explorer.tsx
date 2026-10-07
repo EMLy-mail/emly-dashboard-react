@@ -92,7 +92,6 @@ const ANY = "__any__";
 // Only ever shown, never chosen: it is how the select renders a chip
 // combination that is neither "all" nor a single rank.
 const CUSTOM = "__custom__";
-type ConnectionFilter = "__any__" | "online" | "offline";
 type WsFilter = "__any__" | "connected" | "disconnected";
 // The online/offline split is time-based, so a list left open would slowly
 // drift out of date even while the stream keeps the rows themselves fresh.
@@ -425,7 +424,6 @@ export function ClientsExplorer({
   const [now, setNow] = useState(renderedAt);
   const [query, setQuery] = useState("");
   const [activeRanks, setActiveRanks] = useState<DeviceRank[]>([...RANKS]);
-  const [connection, setConnection] = useState<ConnectionFilter>(ANY);
   const [wsFilter, setWsFilter] = useState<WsFilter>(ANY);
   const [columnFilters, setColumnFilters] = useState<ColumnFilters>({});
   // Most recently seen first by default; the header arrow reflects it.
@@ -479,10 +477,6 @@ export function ClientsExplorer({
     return scored
       .filter(({ assessment }) => activeRanks.includes(assessment.rank))
       .filter(({ assessment }) => {
-        if (connection === ANY) return true;
-        return connection === "online" ? assessment.online : !assessment.online;
-      })
-      .filter(({ assessment }) => {
         if (wsFilter === ANY) return true;
         // "live" is the presence WebSocket being up right now; "estimated"
         // and "offline" both mean no WS connection.
@@ -503,7 +497,7 @@ export function ClientsExplorer({
           ...(client.products ?? []).flatMap((p) => [p.product, productNames[p.product]]),
         ].some((field) => (field ?? "").toLowerCase().includes(needle));
       });
-  }, [scored, activeRanks, connection, wsFilter, query, productNames]);
+  }, [scored, activeRanks, wsFilter, query, productNames]);
 
   const columnOptions = useMemo(() => {
     function label(column: FilterColumn, key: string): string {
@@ -742,14 +736,12 @@ export function ClientsExplorer({
 
   const isFiltered =
     query !== "" ||
-    connection !== ANY ||
     wsFilter !== ANY ||
     activeRanks.length !== RANKS.length ||
     Object.keys(columnFilters).length > 0;
 
   function resetFilters() {
     setQuery("");
-    setConnection(ANY);
     setWsFilter(ANY);
     setActiveRanks([...RANKS]);
     setColumnFilters({});
@@ -820,23 +812,6 @@ export function ClientsExplorer({
                 {t("filters.customStates")}
               </SelectItem>
             )}
-          </SelectContent>
-        </Select>
-
-        <Select
-          value={connection}
-          onValueChange={(v) => {
-            setConnection(v as ConnectionFilter);
-            setPage(1);
-          }}
-        >
-          <SelectTrigger className="w-full sm:w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ANY}>{t("filters.allConnections")}</SelectItem>
-            <SelectItem value="online">{t("online")}</SelectItem>
-            <SelectItem value="offline">{t("offline")}</SelectItem>
           </SelectContent>
         </Select>
 
