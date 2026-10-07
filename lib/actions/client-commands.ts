@@ -12,6 +12,7 @@ import {
 } from "@/lib/api";
 import { getCurrentUser, getSessionToken } from "@/lib/auth";
 import { MIN_COMMAND_UPDATER_VERSION, supportsRemoteCommands } from "@/lib/device-status";
+import { env } from "@/lib/env";
 import { canUseRemoteControl } from "@/lib/roles";
 
 // Commands run on a user's machine (restart the service, reboot the PC), so
@@ -47,6 +48,10 @@ export async function issueCommandAction(
     const user = await requireAdmin();
     if (!Number.isInteger(clientId) || clientId <= 0) return { ok: false, error: "Invalid client" };
     if (!COMMANDS.includes(name)) return { ok: false, error: "Unknown command" };
+    // The page disables these buttons too, but the action is callable on its own.
+    if (env.lockDangerousRemoteControls && (name === "service.restart" || name === "machine.reboot")) {
+      return { ok: false, error: "Command disabled by configuration", status: 403 };
+    }
 
     // The page already hides machines below the minimum, but the action is
     // callable on its own: re-check against what the API knows.

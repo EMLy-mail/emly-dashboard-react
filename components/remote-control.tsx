@@ -357,7 +357,7 @@ export function RemoteControl() {
                     <Button
                       variant="outline"
                       size="sm"
-                      disabled={!selectedLive || sending}
+                      disabled={lockDangerous || !selectedLive || sending}
                       onClick={() => setConfirm("service.restart")}
                     >
                       <RotateCw className="mr-2 h-4 w-4" />
@@ -366,14 +366,16 @@ export function RemoteControl() {
                     <Button
                       variant="destructive"
                       size="sm"
-                      disabled={!selectedLive || sending}
+                      disabled={lockDangerous || !selectedLive || sending}
                       onClick={() => setConfirm("machine.reboot")}
                     >
                       <Power className="mr-2 h-4 w-4" />
                       {t("commands.machineReboot")}
                     </Button>
                   </div>
-                  <p className="mt-2 text-xs text-muted-foreground">{t("groups.destructiveHint")}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {t(lockDangerous ? "groups.destructiveLocked" : "groups.destructiveHint")}
+                  </p>
                 </div>
               </CardContent>
             </Card>

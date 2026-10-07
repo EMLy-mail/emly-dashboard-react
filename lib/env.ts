@@ -16,6 +16,8 @@ type Env = {
   statsRealtimeEnabled: boolean;
   /** Shows the "deprecated" banner above the Statistics clients table. Defaults to off. */
   statsClientsDeprecatedBanner: boolean;
+  /** Disables the service restart and machine reboot remote commands. Defaults to off. */
+  lockDangerousRemoteControls: boolean;
 };
 
 function buildEnv(): Env {
@@ -27,6 +29,7 @@ function buildEnv(): Env {
     facingUrl: requireEnv("FACING_URL") || requireEnv("API_BASE_URL").replace(/\/?$/, ""), // fallback to API_BASE_URL if FACING_URL is not set
     statsRealtimeEnabled: process.env.STATS_REALTIME_ENABLED !== "false",
     statsClientsDeprecatedBanner: process.env.STATS_CLIENTS_DEPRECATED_BANNER === "true",
+    lockDangerousRemoteControls: process.env.LOCK_DANGEROUS_REMOTE_CONTROLS === "true",
   };
 }
 

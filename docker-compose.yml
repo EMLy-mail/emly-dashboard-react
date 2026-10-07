@@ -11,6 +11,7 @@ services:
       - DASHBOARD_KEY=${DASHBOARD_KEY}
       - FACING_URL=${FACING_URL}
       - STATS_CLIENTS_DEPRECATED_BANNER=${STATS_CLIENTS_DEPRECATED_BANNER}
+      - LOCK_DANGEROUS_REMOTE_CONTROLS=${LOCK_DANGEROUS_REMOTE_CONTROLS:-false}
       # Single sign-on (optional): the button shows only when all three of
       # OIDC_ISSUER, OIDC_CLIENT_ID and PUBLIC_URL are set.
       - OIDC_ISSUER=${OIDC_ISSUER:-}

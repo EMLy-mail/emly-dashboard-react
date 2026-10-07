@@ -49,7 +49,7 @@ export default async function RemotePage() {
           <AlertTitle className="font-semibold">{t("beta.title")}</AlertTitle>
           <AlertDescription>{t("beta.description")}</AlertDescription>
         </Alert>
-        <RemoteControl />
+        <RemoteControl lockDangerous={env.lockDangerousRemoteControls} />
       </div>
     </StatsStreamProvider>
   );

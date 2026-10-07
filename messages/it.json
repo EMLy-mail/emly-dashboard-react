@@ -783,7 +783,8 @@
     "groups": {
       "read": "Sola lettura",
       "destructive": "Impattanti",
-      "destructiveHint": "Agiscono sulla macchina dell'utente. Il client li esegue solo se la sua configurazione remota lo consente, e solo su connessione sicura (wss)."
+      "destructiveHint": "Agiscono sulla macchina dell'utente. Il client li esegue solo se la sua configurazione remota lo consente, e solo su connessione sicura (wss).",
+      "destructiveLocked": "Il riavvio del servizio e del PC sono temporaneamente disabilitati."
     },
     "commands": {
       "machineInfo": "Info macchina",
@@ -811,7 +812,7 @@
       "result": "Risultato"
     },
     "events": {
-      "title": "Eventi recenti",
+      "title": "Eventi WebSocket",
       "hint": "Gli ultimi eventi inviati dalla macchina. Tenuti in memoria dall'API, persi al riavvio.",
       "empty": "Nessun evento.",
       "refresh": "Aggiorna eventi",

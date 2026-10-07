@@ -783,7 +783,8 @@
     "groups": {
       "read": "Read-only",
       "destructive": "Disruptive",
-      "destructiveHint": "These act on the user's machine. The client only runs them if its remote configuration allows it, and only over a secure (wss) connection."
+      "destructiveHint": "These act on the user's machine. The client only runs them if its remote configuration allows it, and only over a secure (wss) connection.",
+      "destructiveLocked": "Service restart and machine reboot are not currently enabled."
     },
     "commands": {
       "machineInfo": "Machine info",
@@ -811,7 +812,7 @@
       "result": "Result"
     },
     "events": {
-      "title": "Recent events",
+      "title": "WebSocket events",
       "hint": "The last events the machine pushed. Kept in memory by the API, lost when it restarts.",
       "empty": "No events.",
       "refresh": "Refresh events",
