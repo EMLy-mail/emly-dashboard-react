@@ -426,7 +426,10 @@
       "offline": "Attualmente offline: nessun contatto nella finestra di rilevazione. Non influisce sullo stato.",
       "publicIp": "Ultimo contatto da un indirizzo IP pubblico.",
       "appVersionUnknown": "Versione EMLy App non riportata dall'API: la regola sulla versione app non viene applicata.",
-      "updaterVersionUnknown": "Versione AryxD Agent non riportata: la regola sulla versione updater non viene applicata."
+      "updaterVersionUnknown": "Versione AryxD Agent non riportata: la regola sulla versione updater non viene applicata.",
+      "wsNotConnected": "Online, ma non connesso al WS da più controlli.",
+      "noProducts": "Nessun prodotto installato rilevato dall'agent.",
+      "emlyMissing": "EMLy non è installato: la macchina ha solo altri prodotti."
     },
     "banType": {
       "ip": "IP",

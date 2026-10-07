@@ -1003,13 +1003,22 @@ export function ClientsExplorer({
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Link
-                          href={`/clients/${client.id}`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="font-medium hover:underline"
-                        >
-                          {client.hostname}
-                        </Link>
+                        <span className="inline-flex items-center gap-1.5">
+                          <Link
+                            href={`/clients/${client.id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="font-medium hover:underline"
+                          >
+                            {client.hostname}
+                          </Link>
+                          {assessment.hostIssues.length > 0 && (
+                            <HintedIcon
+                              icon={TriangleAlert}
+                              hint={assessment.hostIssues.map((issue) => t(`reason.${issue}`)).join(" · ")}
+                              className="text-amber-600 dark:text-amber-400"
+                            />
+                          )}
+                        </span>
                       </TableCell>
                       {/* title carries the exact timestamp the relative label
                           rounds away. */}

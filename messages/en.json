@@ -426,7 +426,10 @@
       "offline": "Currently offline: no contact within the detection window. Does not affect the status.",
       "publicIp": "Last contact came from a public IP address.",
       "appVersionUnknown": "EMLy App version is not reported by the API, so the app-version rule is not applied.",
-      "updaterVersionUnknown": "AryxD Agent version is not reported, so the updater-version rule is not applied."
+      "updaterVersionUnknown": "AryxD Agent version is not reported, so the updater-version rule is not applied.",
+      "wsNotConnected": "Online, but not connected to the WS for several checks.",
+      "noProducts": "The agent reports no installed products.",
+      "emlyMissing": "EMLy is not installed: the machine only has other products."
     },
     "banType": {
       "ip": "IP",

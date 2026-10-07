@@ -751,6 +751,18 @@ export interface UpdaterClient {
    * whether a machine is reachable.
    */
   online: boolean;
+  /**
+   * The client's manifest_check events over the API's recent window (50
+   * minutes): how many, and the first and last. One poll can log several
+   * checks (one per product), so read the first-to-last span, not only the
+   * count. Absent on an API that predates it.
+   */
+  recent_manifest_checks?: {
+    window_minutes: number;
+    count: number;
+    first_at?: string;
+    last_at?: string;
+  };
 }
 
 // ── Bans ───────────────────────────────────────────────────────────────────

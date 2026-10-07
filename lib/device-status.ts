@@ -8,6 +8,7 @@
  */
 
 import type { Ban, UpdaterClient } from "@/lib/api";
+import { EMLY_PRODUCT } from "@/lib/product-rules";
 
 // ── Versions ───────────────────────────────────────────────────────────────
 
@@ -216,7 +217,56 @@ export type DeviceReason =
   | "offline"
   | "publicIp"
   | "appVersionUnknown"
-  | "updaterVersionUnknown";
+  | "updaterVersionUnknown"
+  | "wsNotConnected"
+  | "noProducts"
+  | "emlyMissing";
+
+/** The reasons that also put a warning triangle next to the hostname. */
+export type HostIssue = Extract<DeviceReason, "wsNotConnected" | "noProducts" | "emlyMissing">;
+
+/**
+ * A machine counts as "polling for a while" after more than this many
+ * manifest checks spread over at least LONG_POLLING_MIN_SPAN_MINUTES - two
+ * 15-minute intervals, minus slack for jitter. The span matters as much as
+ * the count: one poll logs a check per product, so three checks can land in
+ * the same minute.
+ */
+export const LONG_POLLING_MIN_CHECKS = 2;
+export const LONG_POLLING_MIN_SPAN_MINUTES = 28;
+
+/**
+ * Whether the client has been polling long enough that a missing presence
+ * WebSocket is a fault rather than the reconnect lag after an API restart or
+ * a machine that just booted.
+ */
+export function pollingForAWhile(client: Pick<UpdaterClient, "recent_manifest_checks">): boolean {
+  const checks = client.recent_manifest_checks;
+  if (!checks?.first_at || !checks.last_at || checks.count <= LONG_POLLING_MIN_CHECKS) return false;
+  const spanMs = new Date(checks.last_at).getTime() - new Date(checks.first_at).getTime();
+  return spanMs >= LONG_POLLING_MIN_SPAN_MINUTES * 60_000;
+}
+
+/**
+ * Problems worth flagging on the row itself. Independent of the rank, so a
+ * critical machine still shows them next to its hostname.
+ *
+ * - wsNotConnected: online by poll for half an hour and more, yet no
+ *   presence WebSocket - it cannot take remote commands.
+ * - noProducts: the agent reports nothing installed.
+ * - emlyMissing: products installed, but not EMLy (say, RocketChat alone).
+ *
+ * An absent `products` counts as none: the API tags the field `omitempty`,
+ * so an empty inventory arrives as no field at all.
+ */
+export function hostIssues(client: UpdaterClient, presence: PresenceState): HostIssue[] {
+  const issues: HostIssue[] = [];
+  if (presence === "estimated" && pollingForAWhile(client)) issues.push("wsNotConnected");
+  const products = client.products ?? [];
+  if (products.length === 0) issues.push("noProducts");
+  else if (!products.some((p) => p.product === EMLY_PRODUCT)) issues.push("emlyMissing");
+  return issues;
+}
 
 export interface DeviceAssessment {
   rank: DeviceRank;
@@ -229,6 +279,8 @@ export interface DeviceAssessment {
   internalIp: boolean;
   dcSites: string[];
   bans: Ban[];
+  /** Shown as a triangle next to the hostname, whatever the rank. */
+  hostIssues: HostIssue[];
   updaterGap: VersionGap;
   appGap: VersionGap;
 }
@@ -298,7 +350,8 @@ export function presenceState(
  * Critical: out of domain, banned, or an updater a whole minor release behind
  *   — each of these means the machine is not reachable by normal fleet policy.
  * Warning: in domain and unbanned, but drifting — a patch behind, an app
- *   behind, or answering from a public address.
+ *   behind, answering from a public address, polling for half an hour without
+ *   a presence WebSocket, or missing EMLy (or every product).
  * OK: domain-joined, internal, unbanned, both builds current.
  *
  * Reachability is reported but never scored — see the note on `offline` below.
@@ -314,6 +367,7 @@ export function assessDevice(input: AssessInput): DeviceAssessment {
   const matchedBans = matchBans(client, bans);
   const updaterGap = versionGap(client.updater_version, input.latestUpdaterVersion);
   const appGap = versionGap(input.appVersion, input.latestAppVersion);
+  const issues = hostIssues(client, presence);
 
   const reasons: DeviceReason[] = [];
 
@@ -329,6 +383,8 @@ export function assessDevice(input: AssessInput): DeviceAssessment {
     // Only meaningful once we have an address at all; a client that has never
     // reported one is unknown, not externally connected.
     if (client.last_ip && !internalIp) reasons.push("publicIp");
+    // No WS after half an hour online, nothing installed, or no EMLy.
+    reasons.push(...issues);
   }
 
   const rank: DeviceRank = critical ? "critical" : reasons.length > 0 ? "warning" : "ok";
@@ -346,7 +402,19 @@ export function assessDevice(input: AssessInput): DeviceAssessment {
   if (updaterGap === "unknown") reasons.push("updaterVersionUnknown");
   if (appGap === "unknown") reasons.push("appVersionUnknown");
 
-  return { rank, reasons, online, presence, domainJoined, internalIp, dcSites, bans: matchedBans, updaterGap, appGap };
+  return {
+    rank,
+    reasons,
+    online,
+    presence,
+    domainJoined,
+    internalIp,
+    dcSites,
+    bans: matchedBans,
+    hostIssues: issues,
+    updaterGap,
+    appGap,
+  };
 }
 
 // ── Masking ────────────────────────────────────────────────────────────────
