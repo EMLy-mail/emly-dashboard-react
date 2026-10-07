@@ -179,3 +179,34 @@
 .animate-page-enter {
   animation: page-enter 0.2s ease-out both;
 }
+/* Design tokens the Arc components (components/arc, from uiarc.dev) expect,
+   mapped onto this app's shadcn palette. Scoped to .arc-theme rather than
+   :root because Arc's --accent (a text color for numbers) would otherwise
+   override shadcn's --accent (a background). */
+.arc-theme {
+  --surface: var(--card);
+  --surface-muted: var(--muted);
+  --row-hover: color-mix(in oklab, var(--muted) 60%, transparent);
+  --border-subtle: color-mix(in oklab, var(--border) 60%, transparent);
+  --text-muted: var(--muted-foreground);
+  --text-secondary: color-mix(in oklab, var(--foreground) 75%, transparent);
+  --accent: oklch(0.546 0.245 262.881);
+  --success: oklch(0.527 0.154 150.069);
+  --warning: oklch(0.666 0.179 58.318);
+  --danger: var(--destructive);
+  --radius-panel: var(--radius);
+  --font-body: inherit;
+  --tracking-body: normal;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --duration-fast: 160ms;
+  --duration-spring: 260ms;
+  --ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.36, 0.64, 1);
+}
+
+.dark .arc-theme {
+  --accent: oklch(0.707 0.165 254.624);
+  --success: oklch(0.792 0.209 151.711);
+  --warning: oklch(0.828 0.189 84.429);
+}
