@@ -39,7 +39,9 @@ import {
   ChevronsLeft,
   ChevronLeft,
   ChevronRight,
-  ChevronsRight
+  ChevronsRight,
+  Download,
+  Loader2,
 } from "lucide-react";
 import type { Ban, UpdaterClient } from "@/lib/api";
 import {
@@ -84,6 +86,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { EXPORT_FORMATS, exportTable, type ExportFormat, type ExportTable } from "@/lib/table-export";
+import { toast } from "sonner";
 
 const PAGE_SIZE = 25;
 const RANKS: DeviceRank[] = ["critical", "warning", "ok"];
@@ -623,6 +635,69 @@ export function ClientsExplorer({
   const currentPage = Math.min(page, totalPages);
   const visible = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
+  // ── Export ──────────────────────────────────────────────────────────────
+  // What the table shows, every page of it: the current filters and sort
+  // apply, and so does the sensitive-data toggle - with it off, user, IP and
+  // serial are written masked exactly as they are on screen.
+  const [exporting, setExporting] = useState(false);
+
+  function buildExportTable(): ExportTable {
+    const mask = <T,>(value: T, masked: string) => (revealed ? value : masked);
+    const columns = [
+      { key: "status", label: t("table.status") },
+      { key: "reasons", label: t("export.reasons") },
+      { key: "hostname", label: t("table.hostname") },
+      { key: "ad_domain", label: t("detail.adDomain") },
+      { key: "online", label: t("table.connected") },
+      { key: "ws_connected", label: t("export.ws") },
+      { key: "last_seen_at", label: t("table.lastSeen") },
+      { key: "logged_user", label: t("table.loggedUser") },
+      { key: "last_ip", label: t("table.lastIp") },
+      { key: "os_version", label: t("table.os") },
+      { key: "updater_version", label: t("table.updaterVersion") },
+      { key: "emly_version", label: t("detail.appVersion") },
+      { key: "products", label: t("table.products") },
+      { key: "serial", label: t("detail.serial") },
+      { key: "first_seen_at", label: t("table.createdAt") },
+    ];
+    const rows = filtered.map(({ client, assessment }) => [
+      t(`rank.${assessment.rank}`),
+      assessment.reasons.map((r) => t(`reason.${r}`)).join("; "),
+      client.hostname,
+      client.ad_domain || null,
+      assessment.online,
+      assessment.presence === "live",
+      new Date(client.last_seen_at),
+      client.logged_user ? mask(client.logged_user, maskUser(client.logged_user)) : null,
+      client.last_ip ? mask(client.last_ip, maskIp(client.last_ip)) : null,
+      client.os_version ?? null,
+      client.updater_version ?? null,
+      client.emly_version ?? null,
+      (client.products ?? []).map((p) => `${productNames[p.product] ?? p.product} ${p.version}`).join(", ") || null,
+      client.serial ? mask(client.serial, maskSerial(client.serial)) : null,
+      new Date(client.first_seen_at),
+    ]);
+    return { columns, rows };
+  }
+
+  async function handleExport(format: ExportFormat) {
+    setExporting(true);
+    try {
+      // Let the spinner paint first: CSV/JSON/HTML are built synchronously
+      // and would otherwise finish before React renders the busy state.
+      await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
+      await exportTable(buildExportTable(), format, {
+        basename: "clients",
+        title: t("title"),
+        formatDate: (d) => d.toLocaleString(locale),
+      });
+    } catch {
+      toast.error(t("export.failed"));
+    } finally {
+      setExporting(false);
+    }
+  }
+
   const selected = useMemo(
     () => scored.find((entry) => entry.client.id === selectedId) ?? null,
     [scored, selectedId],
@@ -842,10 +917,29 @@ export function ClientsExplorer({
         <p className="text-sm text-muted-foreground">
           {t("count", { shown: filtered.length, total: scored.length })}
         </p>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="ml-auto" disabled={exporting || filtered.length === 0}>
+              {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              {exporting ? t("export.exporting") : t("export.button")}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-64">
+            <DropdownMenuLabel className="font-normal text-muted-foreground">
+              {t(isFiltered ? "export.scopeFiltered" : "export.scopeAll", { count: filtered.length })}
+              {!revealed && <span className="mt-1 block text-xs">{t("export.masked")}</span>}
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {EXPORT_FORMATS.map((format) => (
+              <DropdownMenuItem key={format} onSelect={() => void handleExport(format)}>
+                {t(`export.format.${format}`)}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
         <Button
           variant="outline"
           size="sm"
-          className="ml-auto"
           onClick={() => setRevealed((prev) => !prev)}
         >
           {revealed ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}

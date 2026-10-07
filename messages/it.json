@@ -393,6 +393,22 @@
     "count": "{shown} di {total} dispositivi",
     "showSensitive": "Mostra dati sensibili",
     "hideSensitive": "Nascondi dati sensibili",
+    "export": {
+      "button": "Esporta",
+      "exporting": "Esportazione…",
+      "scopeAll": "Tutti i {count} dispositivi",
+      "scopeFiltered": "{count} dispositivi (filtri e ordinamento applicati)",
+      "masked": "Utente, IP e seriale verranno esportati mascherati, come a schermo.",
+      "format": {
+        "csv": "CSV",
+        "json": "JSON",
+        "html": "HTML",
+        "xlsx": "Excel (XLSX)"
+      },
+      "reasons": "Motivi",
+      "ws": "Connesso al WS",
+      "failed": "Esportazione non riuscita."
+    },
     "online": "Online",
     "offline": "Offline",
     "iconHint": {

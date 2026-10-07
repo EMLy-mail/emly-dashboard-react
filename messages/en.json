@@ -393,6 +393,22 @@
     "count": "{shown} of {total} devices",
     "showSensitive": "Show sensitive data",
     "hideSensitive": "Hide sensitive data",
+    "export": {
+      "button": "Export",
+      "exporting": "Exporting…",
+      "scopeAll": "All {count} devices",
+      "scopeFiltered": "{count} devices (filters and sort applied)",
+      "masked": "User, IP and serial will be exported masked, as on screen.",
+      "format": {
+        "csv": "CSV",
+        "json": "JSON",
+        "html": "HTML",
+        "xlsx": "Excel (XLSX)"
+      },
+      "reasons": "Reasons",
+      "ws": "Connected to WS",
+      "failed": "Export failed."
+    },
     "online": "Online",
     "offline": "Offline",
     "iconHint": {

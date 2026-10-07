@@ -139,7 +139,9 @@ function AlertDialogDescription({
     <AlertDialogPrimitive.Description
       data-slot="alert-dialog-description"
       className={cn(
-        "text-sm text-balance text-muted-foreground md:text-pretty *:[a]:underline *:[a]:underline-offset-3 *:[a]:hover:text-foreground",
+        // wrap-anywhere: a HWID or hash has no break points and would
+        // otherwise run past the dialog's edge.
+        "text-sm text-balance text-muted-foreground md:text-pretty wrap-anywhere *:[a]:underline *:[a]:underline-offset-3 *:[a]:hover:text-foreground",
         className
       )}
       {...props}
