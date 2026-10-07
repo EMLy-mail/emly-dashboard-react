@@ -39,7 +39,7 @@ import {
   FileIcon,
 } from "lucide-react";
 import { formatDateTime } from "@/lib/format-date";
-import JsonViewer from "@/components/8starlabs-ui/json-viewer";
+import { PayloadViewer } from "@/components/payload-viewer";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -263,7 +263,7 @@ export function BugReportDetail({ report, files, reportId, isAdmin }: Props) {
             <CardTitle>{t("detail.systemInfo")}</CardTitle>
           </CardHeader>
           <CardContent>
-            <JsonViewer data={report.system_info} />
+            <PayloadViewer data={report.system_info} rootName="system_info" maxHeight={480} />
           </CardContent>
         </Card>
       )}
