@@ -555,7 +555,7 @@
         "loggedUserAsOf": "as of {date}",
         "serial": "Serial Number",
         "product": "Product Number",
-        "version": "Version",
+        "version": "AryxD Agent version",
         "emlyVersion": "EMLy App version",
         "osVersion": "Operating system",
         "contact": "Contact",
@@ -573,7 +573,9 @@
           "ip": "IP Address",
           "date": "Date",
           "noData": "No events recorded for this client."
-        }
+        },
+        "showMore": "Show {count} more",
+        "showLess": "Show less"
       },
       "delete": {
         "button": "Delete client",

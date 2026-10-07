@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, History } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { getStatsClientDetail, getBans, ApiError, type Ban } from "@/lib/api";
 import { getCurrentUser } from "@/lib/auth";
 import { getUserProductOptions } from "@/lib/products";
-import { isAdminRole } from "@/lib/roles";
+import { canUseRemoteControl, isAdminRole } from "@/lib/roles";
+import { ClientWsEvents } from "@/components/client-ws-events";
 import { CreateBanDialog } from "@/components/create-ban-dialog";
 import { DeleteClientButton } from "@/components/delete-client-button";
 import { LoggedUserName } from "@/components/logged-user-name";
@@ -13,16 +14,12 @@ import { isSessionDisconnected } from "@/lib/device-status";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Ban as BanIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { formatDateTime } from "@/lib/format-date";
+
+// Events shown before the "show more" toggle.
+const EVENTS_PREVIEW = 10;
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -51,6 +48,7 @@ export default async function StatsClientDetailPage({ params }: PageProps) {
     getUserProductOptions(),
   ]);
   const isAdmin = isAdminRole(currentUser?.role);
+  const canSeeWsEvents = canUseRemoteControl(currentUser?.role);
   const { client, events } = detail;
   const installedProducts = detail.products ?? [];
   const productNames = new Map(productOptions.map((p) => [p.slug, p.name]));
@@ -75,6 +73,19 @@ export default async function StatsClientDetailPage({ params }: PageProps) {
 
   function eventLabel(type: string) {
     return type === "manifest_check" || type === "download" ? tEvents(type) : type;
+  }
+
+  function renderEvent(event: (typeof events)[number]) {
+    return (
+      <div key={event.id} className="flex flex-wrap items-center gap-2 rounded-md border px-3 py-2 text-sm">
+        <span className="font-mono">{eventLabel(event.event_type)}</span>
+        <span className="text-xs text-muted-foreground">{formatDateTime(event.created_at)}</span>
+        {event.version && <Badge variant="outline" className="font-mono">{event.version}</Badge>}
+        {event.ip_address && (
+          <span className="ml-auto font-mono text-xs text-muted-foreground">{event.ip_address}</span>
+        )}
+      </div>
+    );
   }
 
   return (
@@ -228,42 +239,39 @@ export default async function StatsClientDetailPage({ params }: PageProps) {
         </CardContent>
       </Card>
 
+      {/* Same look as the WebSocket events card below it. */}
       <Card>
         <CardHeader>
-          <CardTitle>{t("events.title")}</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <History className="h-4 w-4" />
+            {t("events.title")}
+          </CardTitle>
         </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t("events.table.type")}</TableHead>
-                <TableHead>{t("events.table.version")}</TableHead>
-                <TableHead>{t("events.table.ip")}</TableHead>
-                <TableHead>{t("events.table.date")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {events.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
-                    {t("events.table.noData")}
-                  </TableCell>
-                </TableRow>
-              )}
-              {events.map((event) => (
-                <TableRow key={event.id}>
-                  <TableCell>{eventLabel(event.event_type)}</TableCell>
-                  <TableCell className="font-mono text-sm">{event.version ?? "—"}</TableCell>
-                  <TableCell className="font-mono text-sm">{event.ip_address ?? "—"}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {formatDateTime(event.created_at)}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        <CardContent className="space-y-2">
+          {events.length === 0 && (
+            <p className="text-sm text-muted-foreground">{t("events.table.noData")}</p>
+          )}
+          {events.slice(0, EVENTS_PREVIEW).map(renderEvent)}
+          {/* Native <details>: the page stays a server component. The summary
+              swaps its label on open through the group-open variant. */}
+          {events.length > EVENTS_PREVIEW && (
+            <details className="group space-y-2">
+              <summary className="cursor-pointer list-none text-sm text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden">
+                <span className="group-open:hidden">
+                  {t("events.showMore", { count: events.length - EVENTS_PREVIEW })}
+                </span>
+                <span className="hidden group-open:inline">{t("events.showLess")}</span>
+              </summary>
+              <div className="space-y-2">{events.slice(EVENTS_PREVIEW).map(renderEvent)}</div>
+            </details>
+          )}
         </CardContent>
       </Card>
+
+      {/* What the machine pushed over its WebSocket (session changes, ...),
+          the same list the remote control page shows. Admin-only, like the
+          endpoint behind it. */}
+      {canSeeWsEvents && <ClientWsEvents clientId={client.id} />}
     </div>
   );
 }
