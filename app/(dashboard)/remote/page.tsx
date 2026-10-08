@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Info } from "lucide-react";
 import { getAllStatsClients, getStatsSummary } from "@/lib/api";
 import { getCurrentUser } from "@/lib/auth";
 import { env } from "@/lib/env";
@@ -43,12 +43,22 @@ export default async function RemotePage() {
           </div>
           <StatsLiveBadge />
         </div>
-        {/* Commands act on users' real machines and the feature is still in beta. */}
-        <Alert variant="warning">
-          <AlertTriangle />
-          <AlertTitle className="font-semibold">{t("beta.title")}</AlertTitle>
-          <AlertDescription>{t("beta.description")}</AlertDescription>
-        </Alert>
+        <div className="space-y-2">
+          {/* Commands act on users' real machines and the feature is still in beta. */}
+          <Alert variant="warning">
+            <AlertTriangle />
+            <AlertTitle className="font-semibold">{t("beta.title")}</AlertTitle>
+            <AlertDescription>{t("beta.description")}</AlertDescription>
+          </Alert>
+          {/* Only true while the disruptive commands are locked by configuration. */}
+          {env.lockDangerousRemoteControls && (
+            <Alert>
+              <Info />
+              <AlertTitle className="font-semibold">{t("readOnly.title")}</AlertTitle>
+              <AlertDescription>{t("readOnly.description")}</AlertDescription>
+            </Alert>
+          )}
+        </div>
         <RemoteControl lockDangerous={env.lockDangerousRemoteControls} />
       </div>
     </StatsStreamProvider>

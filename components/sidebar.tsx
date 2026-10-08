@@ -16,6 +16,7 @@ import { ChangePasswordDialog } from "@/components/change-password-dialog";
 import type { AuthUser } from "@/lib/api";
 import { EMLY_PRODUCT } from "@/lib/product-rules";
 import { productIcon } from "@/lib/product-icons";
+import { SIDEBAR_COLLAPSED_COOKIE } from "@/lib/sidebar";
 import { canManageDownloadQueue, canSeeBeta, canUseRemoteControl, isBetaPath } from "@/lib/roles";
 
 interface NavGroup {
@@ -32,16 +33,25 @@ interface NavGroup {
 export function Sidebar({
   user,
   products,
+  defaultCollapsed = false,
 }: {
   user: AuthUser;
   /** The user's products (validate.user.products), one sidebar group each. */
   products: { slug: string; name: string }[];
+  /** Desktop only: start hidden, as the user last left it. */
+  defaultCollapsed?: boolean;
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { theme, setTheme } = useTheme();
   const t = useTranslations("sidebar");
   const [open, setOpen] = useState(false);
+  const [sidebarHidden, setSidebarHidden] = useState(defaultCollapsed);
+  const toggleSidebarHidden = () => {
+    const next = !sidebarHidden;
+    setSidebarHidden(next);
+    document.cookie = `${SIDEBAR_COLLAPSED_COOKIE}=${next ? "1" : "0"}; path=/; max-age=31536000; SameSite=Lax`;
+  };
   const [passwordOpen, setPasswordOpen] = useState(false);
   const closePasswordDialog = useCallback(() => setPasswordOpen(false), []);
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
@@ -173,119 +183,137 @@ export function Sidebar({
         />
       )}
 
-      {/* Drawer on mobile, static column on md+ */}
+      {/* Drawer on mobile, collapsible column on md+ */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r bg-background transition-transform duration-200 ease-in-out md:static md:z-auto md:w-60 md:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 w-64 shrink-0 border-r bg-background transition-[transform,width] duration-200 ease-in-out md:relative md:z-auto md:translate-x-0 ${
           open ? "translate-x-0" : "-translate-x-full"
-        }`}
+        } ${sidebarHidden ? "md:w-0" : "md:w-60"}`}
       >
-        <div className="flex items-center justify-between p-4">
-          <div className="flex items-center gap-2.5">
-            <Image src="/aryx-logo.png" alt="" width={32} height={32} className="h-8 w-8 dark:invert" />
-            <h2 className="text-lg font-semibold tracking-tight">{t("title")}</h2>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden"
-            onClick={() => setOpen(false)}
-            aria-label={t("closeMenu")}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-        <Separator />
-        <nav className="flex-1 space-y-4 overflow-y-auto p-3">
-          {navGroups.map((group) => {
-            const collapsed = group.label !== null && !!collapsedGroups[group.key];
-            const GroupIcon = group.icon ?? Package;
-            return (
-              <div key={group.key} className="space-y-1">
-                {group.label && (
-                  <button
-                    type="button"
-                    onClick={() => toggleGroup(group.key)}
-                    aria-expanded={!collapsed}
-                    className="flex w-full items-center justify-between rounded-md px-3 pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 transition-colors hover:text-foreground"
-                  >
-                    <span className="flex min-w-0 items-center gap-1.5">
-                      {group.logo ? (
-                        <Image src={group.logo} alt="" width={16} height={16} className="h-4 w-4 dark:invert" />
-                      ) : (
-                        <GroupIcon className="h-4 w-4 shrink-0" />
-                      )}
-                      <span className="truncate">{group.label}</span>
-                    </span>
-                    <ChevronDown
-                      className={`h-3.5 w-3.5 transition-transform ${collapsed ? "-rotate-90" : ""}`}
-                    />
-                  </button>
-                )}
-                {!collapsed &&
-                  group.items.map(({ href, label, icon: Icon }) => {
-                    const active = isActive(href);
-                    return (
-                      <Link
-                        key={href}
-                        href={href}
-                        className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                          active
-                            ? "bg-primary text-primary-foreground"
-                            : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                        }`}
-                      >
-                        <Icon className="h-4 w-4" />
-                        {label}
-                      </Link>
-                    );
-                  })}
-              </div>
-            );
-          })}
-        </nav>
-        <Separator />
-        <div className="p-4 space-y-3">
-          <div className="flex items-center gap-3">
-            <Avatar className="h-8 w-8">
-              <AvatarFallback className="text-xs">{initials}</AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">
-                {user.displayname || user.username}
-              </p>
-              <p className="text-xs text-muted-foreground capitalize">{user.role}</p>
+        {/* Rail on the right edge: click it to hide or show the sidebar. It sits
+            outside the clipped content, so it stays reachable while hidden. */}
+        <button
+          type="button"
+          onClick={toggleSidebarHidden}
+          aria-label={t(sidebarHidden ? "expand" : "collapse")}
+          aria-expanded={!sidebarHidden}
+          title={t(sidebarHidden ? "expand" : "collapse")}
+          className="group absolute inset-y-0 -right-2 z-20 hidden w-4 cursor-ew-resize md:block"
+        >
+          <span className="absolute inset-y-0 left-1/2 w-0.5 -translate-x-1/2 transition-colors group-hover:bg-border group-focus-visible:bg-ring" />
+        </button>
+        <div
+          className={`flex h-full w-full flex-col overflow-hidden transition-[visibility] duration-200 ${
+            sidebarHidden ? "md:invisible" : ""
+          }`}
+        >
+          <div className="flex min-w-60 items-center justify-between p-4">
+            <div className="flex items-center gap-2.5">
+              <Image src="/aryx-logo.png" alt="" width={32} height={32} className="h-8 w-8 dark:invert" />
+              <h2 className="text-lg font-semibold tracking-tight">{t("title")}</h2>
             </div>
-            {user.auth_provider !== "oidc" && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 shrink-0"
-                onClick={() => setPasswordOpen(true)}
-                aria-label={t("changePassword")}
-                title={t("changePassword")}
-              >
-                <KeyRound className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-          <div className="flex gap-2">
             <Button
-              variant="outline"
-              size="sm"
-              className="relative shrink-0 px-2"
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              aria-label={t("toggleTheme")}
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              onClick={() => setOpen(false)}
+              aria-label={t("closeMenu")}
             >
-              <Sun className="h-4 w-4 rotate-0 scale-100 transition-transform dark:-rotate-90 dark:scale-0" />
-              <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-transform dark:rotate-0 dark:scale-100" />
+              <X className="h-4 w-4" />
             </Button>
-            <LanguageSwitcher />
-            <form action={logoutAction} className="flex-1">
-              <Button variant="outline" size="sm" className="w-full" type="submit">
-                <LogOut className="mr-2 h-4 w-4" />
-                {t("signOut")}
+          </div>
+          <Separator />
+          <nav className="min-w-60 flex-1 space-y-4 overflow-y-auto p-3">
+            {navGroups.map((group) => {
+              const collapsed = group.label !== null && !!collapsedGroups[group.key];
+              const GroupIcon = group.icon ?? Package;
+              return (
+                <div key={group.key} className="space-y-1">
+                  {group.label && (
+                    <button
+                      type="button"
+                      onClick={() => toggleGroup(group.key)}
+                      aria-expanded={!collapsed}
+                      className="flex w-full items-center justify-between rounded-md px-3 pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 transition-colors hover:text-foreground"
+                    >
+                      <span className="flex min-w-0 items-center gap-1.5">
+                        {group.logo ? (
+                          <Image src={group.logo} alt="" width={16} height={16} className="h-4 w-4 dark:invert" />
+                        ) : (
+                          <GroupIcon className="h-4 w-4 shrink-0" />
+                        )}
+                        <span className="truncate">{group.label}</span>
+                      </span>
+                      <ChevronDown
+                        className={`h-3.5 w-3.5 transition-transform ${collapsed ? "-rotate-90" : ""}`}
+                      />
+                    </button>
+                  )}
+                  {!collapsed &&
+                    group.items.map(({ href, label, icon: Icon }) => {
+                      const active = isActive(href);
+                      return (
+                        <Link
+                          key={href}
+                          href={href}
+                          className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                            active
+                              ? "bg-primary text-primary-foreground"
+                              : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                          }`}
+                        >
+                          <Icon className="h-4 w-4" />
+                          {label}
+                        </Link>
+                      );
+                    })}
+                </div>
+              );
+            })}
+          </nav>
+          <Separator />
+          <div className="min-w-60 p-4 space-y-3">
+            <div className="flex items-center gap-3">
+              <Avatar className="h-8 w-8">
+                <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">
+                  {user.displayname || user.username}
+                </p>
+                <p className="text-xs text-muted-foreground capitalize">{user.role}</p>
+              </div>
+              {user.auth_provider !== "oidc" && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  onClick={() => setPasswordOpen(true)}
+                  aria-label={t("changePassword")}
+                  title={t("changePassword")}
+                >
+                  <KeyRound className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="relative shrink-0 px-2"
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                aria-label={t("toggleTheme")}
+              >
+                <Sun className="h-4 w-4 rotate-0 scale-100 transition-transform dark:-rotate-90 dark:scale-0" />
+                <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-transform dark:rotate-0 dark:scale-100" />
               </Button>
-            </form>
+              <LanguageSwitcher />
+              <form action={logoutAction} className="flex-1">
+                <Button variant="outline" size="sm" className="w-full" type="submit">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  {t("signOut")}
+                </Button>
+              </form>
+            </div>
           </div>
         </div>
       </div>

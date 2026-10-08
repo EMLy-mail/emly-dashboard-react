@@ -1,5 +1,7 @@
 {
   "sidebar": {
+    "collapse": "Nascondi sidebar",
+    "expand": "Mostra sidebar",
     "title": "Aryx Console",
     "groups": {
       "emly": "EMLy"
@@ -791,7 +793,11 @@
     "description": "Invia comandi alle macchine connesse in questo momento sul canale client.",
     "beta": {
       "title": "Funzionalità in beta",
-      "description": "Il controllo remoto è ancora in beta. I comandi vengono eseguiti sulle macchine reali degli utenti: usalo con cautela."
+      "description": "Il controllo remoto è ancora in fase sperimentale. Procedere con cautela."
+    },
+    "readOnly": {
+      "title": "Solo comandi in lettura",
+      "description": "Al momento sono disponibili solo i comandi in sola lettura, come l'elenco degli update delle app e le info macchina."
     },
     "machines": {
       "title": "Macchine connesse",

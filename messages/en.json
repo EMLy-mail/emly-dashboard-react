@@ -1,5 +1,7 @@
 {
   "sidebar": {
+    "collapse": "Hide sidebar",
+    "expand": "Show sidebar",
     "title": "Aryx Console",
     "groups": {
       "emly": "EMLy"
@@ -792,6 +794,10 @@
     "beta": {
       "title": "Beta feature",
       "description": "Remote control is still in beta. Commands run on users' real machines: use it with caution."
+    },
+    "readOnly": {
+      "title": "Read-only commands",
+      "description": "Only read-only commands are available right now, such as listing app updates and machine info."
     },
     "machines": {
       "title": "Connected machines",
