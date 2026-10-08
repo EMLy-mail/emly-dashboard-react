@@ -652,6 +652,7 @@ export function ClientsExplorer({
       { key: "ws_connected", label: t("export.ws") },
       { key: "last_seen_at", label: t("table.lastSeen") },
       { key: "logged_user", label: t("table.loggedUser") },
+      { key: "logged_user_state", label: t("export.loggedUserState") },
       { key: "last_ip", label: t("table.lastIp") },
       { key: "os_version", label: t("table.os") },
       { key: "updater_version", label: t("table.updaterVersion") },
@@ -669,6 +670,7 @@ export function ClientsExplorer({
       assessment.presence === "live",
       new Date(client.last_seen_at),
       client.logged_user ? mask(client.logged_user, maskUser(client.logged_user)) : null,
+      loggedUserState(client, assessment.online),
       client.last_ip ? mask(client.last_ip, maskIp(client.last_ip)) : null,
       client.os_version ?? null,
       client.updater_version ?? null,
@@ -678,6 +680,20 @@ export function ClientsExplorer({
       new Date(client.first_seen_at),
     ]);
     return { columns, rows };
+  }
+
+  // The same states the logged-user cell tells apart with its icon, written
+  // out as the text of that icon's tooltip.
+  function loggedUserState(client: UpdaterClient, online: boolean): string {
+    if (client.logged_user?.trim()) {
+      if (!online) return t("iconHint.loggedUserPcOffline");
+      return isSessionDisconnected(client)
+        ? disconnectedSessionHint(client, t, locale)
+        : t("export.sessionActive");
+    }
+    return updaterTooOldForLoggedUser(client.updater_version)
+      ? t("iconHint.loggedUserUnknown", { version: LOGGED_USER_MIN_UPDATER_VERSION })
+      : t("iconHint.noLoggedUser");
   }
 
   async function handleExport(format: ExportFormat) {

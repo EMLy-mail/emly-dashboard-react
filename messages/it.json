@@ -407,6 +407,8 @@
       },
       "reasons": "Motivi",
       "ws": "Connesso al WS",
+      "loggedUserState": "Stato utente",
+      "sessionActive": "Utente collegato, sessione attiva",
       "failed": "Esportazione non riuscita."
     },
     "online": "Online",

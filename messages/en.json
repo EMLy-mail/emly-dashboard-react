@@ -407,6 +407,8 @@
       },
       "reasons": "Reasons",
       "ws": "Connected to WS",
+      "loggedUserState": "User state",
+      "sessionActive": "User signed in, session active",
       "failed": "Export failed."
     },
     "online": "Online",
