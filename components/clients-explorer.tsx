@@ -49,16 +49,21 @@ import {
   compareIps,
   compareVersions,
   isSessionDisconnected,
+  LOGGED_USER_MIN_UPDATER_VERSION,
+  sessionState,
+  updaterTooOldForLoggedUser,
   maskIp,
   maskSerial,
   maskUser,
   type DcLookupMap,
   type DeviceAssessment,
   type DeviceRank,
+  type SessionState,
 } from "@/lib/device-status";
 import { useLiveStatsClients } from "@/hooks/use-stats-stream";
 import { LoggedUserName } from "@/components/logged-user-name";
 import { PresenceDot } from "@/components/presence-dot";
+import type { ClientsUrlFilters } from "@/lib/clients-filters";
 import { OsIcon } from "@/components/os-icon";
 import { BrandMark } from "@/components/brand-mark";
 import { ProductIcon } from "@/components/product-icon";
@@ -108,10 +113,6 @@ type WsFilter = "__any__" | "connected" | "disconnected";
 // The online/offline split is time-based, so a list left open would slowly
 // drift out of date even while the stream keeps the rows themselves fresh.
 const CLOCK_REFRESH_MS = 30_000;
-// First updater build that reports the signed-in account. Anything older
-// simply never sends the field, so its blank logged-user cell says nothing
-// about the machine and has to be read as "unknown", not "nobody".
-const LOGGED_USER_MIN_UPDATER_VERSION = "1.6.1";
 // First agent release shipped under the Aryx brand; older ones are still EMLy Updater.
 const ARYX_BRAND_MIN_UPDATER_VERSION = "1.7.2";
 const EMLY_VERSION_MIN_UPDATER_VERSION = "1.6.3";
@@ -203,16 +204,6 @@ function HintedIcon({
       <TooltipContent>{hint}</TooltipContent>
     </Tooltip>
   );
-}
-
-/**
- * True only for a build we can read *and* that sits below the floor. A
- * version the API never reported, or one that will not parse, is unknown
- * rather than too old, so it falls through to the plain "no user" icon.
- */
-function updaterTooOldForLoggedUser(version: string | null | undefined): boolean {
-  if (!version) return false;
-  return compareVersions(version, LOGGED_USER_MIN_UPDATER_VERSION) === -1;
 }
 
 function updaterTooOldForEmlyVersion(version: string | null | undefined): boolean {
@@ -412,6 +403,8 @@ interface ClientsExplorerProps {
   productNames: Record<string, string>;
   /** Latest stable version by slug; a product missing here is never flagged. */
   latestProductVersions: Record<string, string>;
+  /** Filters to start from, read off the URL - see lib/clients-filters.ts. */
+  initialFilters?: ClientsUrlFilters;
 }
 
 interface ScoredClient {
@@ -428,6 +421,7 @@ export function ClientsExplorer({
   windowMinutes,
   productNames,
   latestProductVersions,
+  initialFilters = {},
 }: ClientsExplorerProps) {
   const t = useTranslations("clients");
   const locale = useLocale();
@@ -436,8 +430,25 @@ export function ClientsExplorer({
   const [now, setNow] = useState(renderedAt);
   const [query, setQuery] = useState("");
   const [activeRanks, setActiveRanks] = useState<DeviceRank[]>([...RANKS]);
-  const [wsFilter, setWsFilter] = useState<WsFilter>(ANY);
-  const [columnFilters, setColumnFilters] = useState<ColumnFilters>({});
+  const [wsFilter, setWsFilter] = useState<WsFilter>(initialFilters.ws ?? ANY);
+  const [columnFilters, setColumnFilters] = useState<ColumnFilters>(() => {
+    const filters: ColumnFilters = {};
+    for (const column of ["connected", "lastSeen", "updaterVersion", "os"] as const) {
+      const values = initialFilters[column];
+      if (values) filters[column] = new Set(values);
+    }
+    return filters;
+  });
+  // EMLy build has no column of its own, so a linked-in filter on it lives
+  // here and shows as a chip next to the other controls.
+  const [emlyVersions, setEmlyVersions] = useState<Set<string> | null>(() =>
+    initialFilters.emlyVersion ? new Set(initialFilters.emlyVersion) : null,
+  );
+  // Same story for the logged-user state: the column filters on the account
+  // name, so a linked-in filter on the session state gets a chip of its own.
+  const [sessionStates, setSessionStates] = useState<Set<SessionState> | null>(() =>
+    initialFilters.session ? new Set(initialFilters.session) : null,
+  );
   // Most recently seen first by default; the header arrow reflects it.
   const [sort, setSort] = useState<SortState | null>({ column: "lastSeen", direction: "desc" });
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -488,6 +499,10 @@ export function ClientsExplorer({
     const needle = query.trim().toLowerCase();
     return scored
       .filter(({ assessment }) => activeRanks.includes(assessment.rank))
+      .filter(({ client }) => !emlyVersions || emlyVersions.has(client.emly_version ?? ""))
+      .filter(
+        ({ client, assessment }) => !sessionStates || sessionStates.has(sessionState(client, assessment.online)),
+      )
       .filter(({ assessment }) => {
         if (wsFilter === ANY) return true;
         // "live" is the presence WebSocket being up right now; "estimated"
@@ -509,7 +524,7 @@ export function ClientsExplorer({
           ...(client.products ?? []).flatMap((p) => [p.product, productNames[p.product]]),
         ].some((field) => (field ?? "").toLowerCase().includes(needle));
       });
-  }, [scored, activeRanks, wsFilter, query, productNames]);
+  }, [scored, activeRanks, wsFilter, query, productNames, emlyVersions, sessionStates]);
 
   const columnOptions = useMemo(() => {
     function label(column: FilterColumn, key: string): string {
@@ -829,13 +844,17 @@ export function ClientsExplorer({
     query !== "" ||
     wsFilter !== ANY ||
     activeRanks.length !== RANKS.length ||
-    Object.keys(columnFilters).length > 0;
+    Object.keys(columnFilters).length > 0 ||
+    emlyVersions !== null ||
+    sessionStates !== null;
 
   function resetFilters() {
     setQuery("");
     setWsFilter(ANY);
     setActiveRanks([...RANKS]);
     setColumnFilters({});
+    setEmlyVersions(null);
+    setSessionStates(null);
     setPage(1);
   }
 
@@ -922,6 +941,40 @@ export function ClientsExplorer({
             <SelectItem value="disconnected">{t("filters.wsDisconnected")}</SelectItem>
           </SelectContent>
         </Select>
+
+        {emlyVersions && (
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => {
+              setEmlyVersions(null);
+              setPage(1);
+            }}
+            aria-label={t("filters.clearEmlyVersion")}
+          >
+            {t("filters.emlyVersion", {
+              versions: [...emlyVersions].map((v) => v || t("columnFilter.blank")).join(", "),
+            })}
+            <X className="h-4 w-4" />
+          </Button>
+        )}
+
+        {sessionStates && (
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => {
+              setSessionStates(null);
+              setPage(1);
+            }}
+            aria-label={t("filters.clearSession")}
+          >
+            {t("filters.session", {
+              states: [...sessionStates].map((state) => t(`sessionState.${state}`)).join(", "),
+            })}
+            <X className="h-4 w-4" />
+          </Button>
+        )}
 
         {isFiltered && (
           <Button variant="ghost" size="sm" onClick={resetFilters}>

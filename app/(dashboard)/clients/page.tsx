@@ -16,6 +16,7 @@ import { defaultStatsProduct, getUserProductOptions, userProductSlugs } from "@/
 import { EMLY_PRODUCT } from "@/lib/product-rules";
 import { getPageStatsHub } from "@/lib/realtime/page-hub";
 import { readDcLookupMap, type DcLookupMap } from "@/lib/device-status";
+import { parseClientsFilters } from "@/lib/clients-filters";
 import { StatsStreamProvider } from "@/components/stats-stream-provider";
 import { StatsLiveBadge } from "@/components/stats-live-badge";
 import { ClientsExplorer } from "@/components/clients-explorer";
@@ -43,7 +44,12 @@ async function loadDcLookupMap(): Promise<DcLookupMap | null> {
   return readDcLookupMap(revision.document);
 }
 
-export default async function ClientsPage() {
+interface PageProps {
+  /** Pre-applied filters, see lib/clients-filters.ts. */
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+export default async function ClientsPage({ searchParams }: PageProps) {
   const user = await getCurrentUser();
   // The API shows a user only the machines running one of their products.
   if (userProductSlugs(user).length === 0) {
@@ -130,6 +136,7 @@ export default async function ClientsPage() {
           windowMinutes={windowMinutes}
           productNames={Object.fromEntries(productOptions.map((p) => [p.slug, p.name]))}
           latestProductVersions={latestProductVersions}
+          initialFilters={parseClientsFilters(await searchParams)}
         />
       </div>
     </StatsStreamProvider>

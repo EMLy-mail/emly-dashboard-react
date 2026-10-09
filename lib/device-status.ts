@@ -188,6 +188,47 @@ export function isSessionDisconnected(client: Pick<UpdaterClient, "logged_user_s
   return client.logged_user_state === "disconnected";
 }
 
+/**
+ * First updater build that reports the signed-in account. Anything older
+ * simply never sends the field, so its blank logged-user cell says nothing
+ * about the machine and has to be read as "unknown", not "nobody".
+ */
+export const LOGGED_USER_MIN_UPDATER_VERSION = "1.6.1";
+
+/**
+ * True only for a build we can read *and* that sits below the floor. A
+ * version the API never reported, or one that will not parse, is unknown
+ * rather than too old, so it falls through to the plain "no user" state.
+ */
+export function updaterTooOldForLoggedUser(version: string | null | undefined): boolean {
+  if (!version) return false;
+  return compareVersions(version, LOGGED_USER_MIN_UPDATER_VERSION) === -1;
+}
+
+/**
+ * The five cases the clients table's logged-user cell tells apart:
+ * - active: someone is signed in and the session has a client attached;
+ * - disconnected: signed in, but no client attached (RDP closed, not signed out);
+ * - pcOffline: a user was last reported, but the machine is not reachable now,
+ *   so whether they are still there is anyone's guess;
+ * - none: the updater reports nobody signed in;
+ * - unknown: the updater is too old to report the user at all.
+ */
+export type SessionState = "active" | "disconnected" | "pcOffline" | "none" | "unknown";
+export const SESSION_STATES: SessionState[] = ["active", "disconnected", "pcOffline", "none", "unknown"];
+
+/** `online` is the presence call (`presenceState(...) !== "offline"`). */
+export function sessionState(
+  client: Pick<UpdaterClient, "logged_user" | "logged_user_state" | "updater_version">,
+  online: boolean,
+): SessionState {
+  if (client.logged_user?.trim()) {
+    if (!online) return "pcOffline";
+    return isSessionDisconnected(client) ? "disconnected" : "active";
+  }
+  return updaterTooOldForLoggedUser(client.updater_version) ? "unknown" : "none";
+}
+
 // ── Bans ───────────────────────────────────────────────────────────────────
 
 /**

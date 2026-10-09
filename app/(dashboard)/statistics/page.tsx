@@ -1,5 +1,13 @@
+import { cache } from "react";
 import { getTranslations } from "next-intl/server";
-import { getStatsSummary, getStatsEvents, type StatsEventBucket } from "@/lib/api";
+import {
+  getAllStatsClients,
+  getStatsSummary,
+  getStatsEvents,
+  getUpdateManifest,
+  getUpdaterManifest,
+  type StatsEventBucket,
+} from "@/lib/api";
 import { getCurrentUser } from "@/lib/auth";
 import { env } from "@/lib/env";
 import {
@@ -8,13 +16,22 @@ import {
   statsProductFilters,
   userProductSlugs,
 } from "@/lib/products";
+import { EMLY_PRODUCT } from "@/lib/product-rules";
 import { getPageStatsHub } from "@/lib/realtime/page-hub";
 import { StatsStreamProvider } from "@/components/stats-stream-provider";
 import { StatsSummaryCardsLive } from "@/components/stats-summary-cards-live";
 import { StatsEventsChartLive } from "@/components/stats-events-chart-live";
+import { StatsFleetCharts } from "@/components/stats-fleet-charts";
 import { StatsLiveBadge } from "@/components/stats-live-badge";
 import { StatsProductFilter } from "@/components/stats-product-filter";
 import { NoProductsNotice } from "@/components/no-products-notice";
+
+/**
+ * One clock reading per request, for the same reason as on /clients: the
+ * fleet charts bucket machines by how long ago they were seen, so the
+ * browser must start from the instant the server rendered at.
+ */
+const getRenderedAt = cache(() => Date.now());
 
 interface PageProps {
   searchParams: Promise<{ bucket?: string; event_type?: string; product?: string }>;
@@ -66,13 +83,23 @@ export default async function StatisticsPage({ searchParams }: PageProps) {
   const hub = await getPageStatsHub(product);
   const cachedSummary = hub?.getSummarySnapshot();
   const cachedEvents = hub?.getEventsSnapshot();
+  const cachedClients = hub?.getClientsSnapshot();
 
-  const [summaryResult, eventsResult] = await Promise.all([
+  // The manifests only set the "latest" marker on the version charts, so a
+  // failed one hides that marker rather than the page.
+  const [summaryResult, eventsResult, clients, updaterManifest, appManifest] = await Promise.all([
     cachedSummary ?? getStatsSummary({ product }).catch(() => null),
     cachedEvents?.bucket === bucket
       ? cachedEvents
       : getStatsEvents({ product, bucket }).catch(() => null),
+    cachedClients ?? getAllStatsClients().catch(() => null),
+    getUpdaterManifest().catch(() => null),
+    getUpdateManifest(EMLY_PRODUCT).catch(() => null),
   ]);
+
+  // An empty `version` is the updater kill-switch, not a release to chase.
+  const latestUpdaterVersion = updaterManifest?.version?.trim() || null;
+  const latestAppVersion = appManifest?.stableVersion?.trim() || null;
 
   return (
     // Keyed by product: switching filter must drop the previous product's
@@ -80,7 +107,7 @@ export default async function StatisticsPage({ searchParams }: PageProps) {
     <StatsStreamProvider
       key={product}
       initialSummary={summaryResult}
-      initialClients={[]}
+      initialClients={clients ?? []}
       product={product}
       enabled={env.statsRealtimeEnabled}
     >
@@ -98,6 +125,13 @@ export default async function StatisticsPage({ searchParams }: PageProps) {
           initial={eventsResult?.data ?? []}
           bucket={bucket}
           eventType={event_type ?? "all"}
+        />
+
+        <StatsFleetCharts
+          renderedAt={getRenderedAt()}
+          windowMinutes={summaryResult?.window_minutes ?? 15}
+          latestUpdaterVersion={latestUpdaterVersion}
+          latestAppVersion={latestAppVersion}
         />
       </div>
     </StatsStreamProvider>

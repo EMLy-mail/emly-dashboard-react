@@ -390,7 +390,11 @@
       "allWs": "WS connessi e non",
       "wsConnected": "Connessi al WS",
       "wsDisconnected": "Non connessi al WS",
-      "reset": "Azzera"
+      "reset": "Azzera",
+      "emlyVersion": "EMLy: {versions}",
+      "clearEmlyVersion": "Rimuovi filtro versione EMLy",
+      "session": "Sessione: {states}",
+      "clearSession": "Rimuovi filtro sessione utente"
     },
     "count": "{shown} di {total} dispositivi",
     "showSensitive": "Mostra dati sensibili",
@@ -502,6 +506,13 @@
       "latestIs": "Ultima disponibile: {version}.",
       "notReported": "Non ancora riportato da questo client.",
       "openFull": "Apri scheda completa"
+    },
+    "sessionState": {
+      "active": "Utente collegato, sessione attiva",
+      "disconnected": "Sessione aperta, utente disconnesso",
+      "pcOffline": "Utente collegato, PC non raggiungibile",
+      "none": "Nessun utente collegato",
+      "unknown": "Sconosciuto (AryxD Agent troppo vecchio)"
     }
   },
   "statistics": {
@@ -624,6 +635,59 @@
       "label": "Prodotto",
       "updater": "AryxD Agent (self-update)",
       "all": "Tutti i miei prodotti"
+    },
+    "fleet": {
+      "presence": {
+        "title": "Stato connessione",
+        "description": "Quante macchine sono raggiungibili in questo momento.",
+        "online": "online ({online} su {total})",
+        "live": "In tempo reale",
+        "estimated": "Stimato",
+        "offline": "Offline",
+        "noData": "Nessun client."
+      },
+      "lastSeen": {
+        "title": "Ultimo contatto",
+        "description": "Da quanto tempo ogni macchina non si fa sentire.",
+        "clients": "Client",
+        "bucket": {
+          "hour": "< 1 ora",
+          "day": "< 24 ore",
+          "week": "< 7 giorni",
+          "month": "< 30 giorni",
+          "older": "> 30 giorni"
+        },
+        "noData": "Nessun client."
+      },
+      "versions": {
+        "emlyTitle": "Versioni EMLy",
+        "updaterTitle": "Versioni AryxD Agent",
+        "latest": "Ultima stable: {version}",
+        "latestUnknown": "Ultima versione non disponibile",
+        "latestTag": "ultima",
+        "upToDate": "aggiornati ({current} su {total})",
+        "other": "Altre versioni",
+        "emlyUnknown": "Non installato o sconosciuta",
+        "updaterUnknown": "Sconosciuta",
+        "noData": "Nessun client."
+      },
+      "os": {
+        "title": "Sistemi operativi",
+        "description": "Raggruppati per release ed edizione, come nella pagina Client.",
+        "other": "Altri",
+        "unknown": "Non riportato",
+        "noData": "Nessun client."
+      },
+      "sessions": {
+        "title": "Sessioni utente",
+        "description": "Chi risulta collegato alle macchine, come nella pagina Client.",
+        "active": "Utente collegato, sessione attiva",
+        "disconnected": "Sessione aperta, utente disconnesso",
+        "pcOffline": "Utente collegato, PC non raggiungibile",
+        "none": "Nessun utente collegato",
+        "unknown": "Sconosciuto (AryxD Agent troppo vecchio)",
+        "noData": "Nessun client."
+      }
     }
   },
   "bans": {

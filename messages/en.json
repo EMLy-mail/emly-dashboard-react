@@ -390,7 +390,11 @@
       "allWs": "WS connected and not",
       "wsConnected": "WS connected",
       "wsDisconnected": "WS not connected",
-      "reset": "Reset"
+      "reset": "Reset",
+      "emlyVersion": "EMLy: {versions}",
+      "clearEmlyVersion": "Remove EMLy version filter",
+      "session": "Session: {states}",
+      "clearSession": "Remove user session filter"
     },
     "count": "{shown} of {total} devices",
     "showSensitive": "Show sensitive data",
@@ -502,6 +506,13 @@
       "latestIs": "Latest available: {version}.",
       "notReported": "Not reported by this client yet.",
       "openFull": "Open full record"
+    },
+    "sessionState": {
+      "active": "User signed in, session active",
+      "disconnected": "Session open, user disconnected",
+      "pcOffline": "User signed in, PC unreachable",
+      "none": "No user signed in",
+      "unknown": "Unknown (AryxD Agent too old)"
     }
   },
   "statistics": {
@@ -624,6 +635,59 @@
       "label": "Product",
       "updater": "AryxD Agent (self-update)",
       "all": "All my products"
+    },
+    "fleet": {
+      "presence": {
+        "title": "Connection status",
+        "description": "How many machines are reachable right now.",
+        "online": "online ({online} of {total})",
+        "live": "Live",
+        "estimated": "Estimated",
+        "offline": "Offline",
+        "noData": "No clients."
+      },
+      "lastSeen": {
+        "title": "Last seen",
+        "description": "How long since each machine last checked in.",
+        "clients": "Clients",
+        "bucket": {
+          "hour": "< 1 hour",
+          "day": "< 24 hours",
+          "week": "< 7 days",
+          "month": "< 30 days",
+          "older": "> 30 days"
+        },
+        "noData": "No clients."
+      },
+      "versions": {
+        "emlyTitle": "EMLy versions",
+        "updaterTitle": "AryxD Agent versions",
+        "latest": "Latest stable: {version}",
+        "latestUnknown": "Latest version unavailable",
+        "latestTag": "latest",
+        "upToDate": "up to date ({current} of {total})",
+        "other": "Other versions",
+        "emlyUnknown": "Not installed or unknown",
+        "updaterUnknown": "Unknown",
+        "noData": "No clients."
+      },
+      "os": {
+        "title": "Operating systems",
+        "description": "Grouped by release and edition, as on the Clients page.",
+        "other": "Other",
+        "unknown": "Not reported",
+        "noData": "No clients."
+      },
+      "sessions": {
+        "title": "User sessions",
+        "description": "Who is signed in on each machine, as on the Clients page.",
+        "active": "User signed in, session active",
+        "disconnected": "Session open, user disconnected",
+        "pcOffline": "User signed in, PC unreachable",
+        "none": "No user signed in",
+        "unknown": "Unknown (AryxD Agent too old)",
+        "noData": "No clients."
+      }
     }
   },
   "bans": {
