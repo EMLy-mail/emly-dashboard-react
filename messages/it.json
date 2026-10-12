@@ -381,15 +381,14 @@
         "internal": "Online dalla rete interna",
         "public": "Online da IP pubblico",
         "offline": "Offline"
+      },
+      "presence": {
+        "live": "Connesso al WS",
+        "estimated": "Online stimato, senza WS",
+        "offline": "Offline"
       }
     },
     "filters": {
-      "allStates": "Tutti gli stati",
-      "customStates": "Selezione personalizzata",
-      "allConnections": "Online e offline",
-      "allWs": "WS connessi e non",
-      "wsConnected": "Connessi al WS",
-      "wsDisconnected": "Non connessi al WS",
       "reset": "Azzera",
       "emlyVersion": "EMLy: {versions}",
       "clearEmlyVersion": "Rimuovi filtro versione EMLy",
@@ -462,7 +461,8 @@
     },
     "table": {
       "status": "Stato",
-      "hostname": "Nome dispositivo",
+      "ws": "WS",
+      "hostname": "Nome PC",
       "loggedUser": "Utente loggato",
       "lastIp": "IP",
       "updaterVersion": "Aryx Agent",
