@@ -74,13 +74,6 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -104,12 +97,6 @@ import { toast } from "sonner";
 
 const PAGE_SIZE = 25;
 const RANKS: DeviceRank[] = ["critical", "warning", "ok"];
-// Radix reserves "" as an item value, so the "no filter" options need sentinels.
-const ANY = "__any__";
-// Only ever shown, never chosen: it is how the select renders a chip
-// combination that is neither "all" nor a single rank.
-const CUSTOM = "__custom__";
-type WsFilter = "__any__" | "connected" | "disconnected";
 // The online/offline split is time-based, so a list left open would slowly
 // drift out of date even while the stream keeps the rows themselves fresh.
 const CLOCK_REFRESH_MS = 30_000;
@@ -124,6 +111,7 @@ const DEFAULT_PANEL_WIDTH = 400;
 
 type SortColumn =
   | "rank"
+  | "ws"
   | "hostname"
   | "lastSeen"
   | "connected"
@@ -258,6 +246,7 @@ type SortState = { column: SortColumn; direction: "asc" | "desc" };
 // Status has no menu: the rank chips above the table already are its filter.
 type FilterColumn = Exclude<SortColumn, "rank">;
 const FILTER_COLUMNS: FilterColumn[] = [
+  "ws",
   "hostname",
   "lastSeen",
   "connected",
@@ -275,6 +264,7 @@ type ColumnFilters = Partial<Record<FilterColumn, Set<string>>>;
 // would have one line per machine and nothing to tick in bulk.
 const AGE_BUCKETS = ["hour", "day", "week", "month", "older"];
 const CONNECTION_KEYS = ["internal", "public", "offline"];
+const PRESENCE_KEYS = ["live", "estimated", "offline"];
 
 function ageBucket(iso: string, now: number): string {
   const then = new Date(iso).getTime();
@@ -294,6 +284,8 @@ function ageBucket(iso: string, now: number): string {
  */
 function columnKeys(column: FilterColumn, { client, assessment }: ScoredClient, now: number): string[] {
   switch (column) {
+    case "ws":
+      return [assessment.presence];
     case "hostname":
       return [client.hostname];
     case "lastSeen":
@@ -342,6 +334,8 @@ function compareOptionKeys(column: FilterColumn, a: string, b: string): number {
       return AGE_BUCKETS.indexOf(a) - AGE_BUCKETS.indexOf(b);
     case "connected":
       return CONNECTION_KEYS.indexOf(a) - CONNECTION_KEYS.indexOf(b);
+    case "ws":
+      return PRESENCE_KEYS.indexOf(a) - PRESENCE_KEYS.indexOf(b);
     case "lastIp":
       return compareIps(a, b);
     case "updaterVersion":
@@ -384,6 +378,14 @@ const RANK_STYLES: Record<DeviceRank, { dot: string; text: string; bar: string; 
     bar: "border-l-red-500",
     icon: ShieldAlert,
   },
+};
+
+// The status chips get their own glyphs: a circle reads better than the
+// shield at chip size, and it pairs with the round OK check beside it.
+const RANK_CHIP_ICONS: Record<DeviceRank, typeof CheckCircle2> = {
+  ok: CheckCircle2,
+  warning: TriangleAlert,
+  critical: CircleAlert,
 };
 
 interface ClientsExplorerProps {
@@ -430,12 +432,16 @@ export function ClientsExplorer({
   const [now, setNow] = useState(renderedAt);
   const [query, setQuery] = useState("");
   const [activeRanks, setActiveRanks] = useState<DeviceRank[]>([...RANKS]);
-  const [wsFilter, setWsFilter] = useState<WsFilter>(initialFilters.ws ?? ANY);
   const [columnFilters, setColumnFilters] = useState<ColumnFilters>(() => {
     const filters: ColumnFilters = {};
     for (const column of ["connected", "lastSeen", "updaterVersion", "os"] as const) {
       const values = initialFilters[column];
       if (values) filters[column] = new Set(values);
+    }
+    // A linked-in ?ws= lands on the WS column's menu: "disconnected" is
+    // every state but a live connection, offline machines included.
+    if (initialFilters.ws) {
+      filters.ws = new Set(initialFilters.ws === "connected" ? ["live"] : ["estimated", "offline"]);
     }
     return filters;
   });
@@ -454,7 +460,7 @@ export function ClientsExplorer({
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [collapsed, setCollapsed] = useState(false);
   const [panelWidth, setPanelWidth] = useState(DEFAULT_PANEL_WIDTH);
-  const [revealed, setRevealed] = useState(false);
+  const [revealed, setRevealed] = useState(true);
   const [page, setPage] = useState(1);
 
   useEffect(() => {
@@ -503,12 +509,6 @@ export function ClientsExplorer({
       .filter(
         ({ client, assessment }) => !sessionStates || sessionStates.has(sessionState(client, assessment.online)),
       )
-      .filter(({ assessment }) => {
-        if (wsFilter === ANY) return true;
-        // "live" is the presence WebSocket being up right now; "estimated"
-        // and "offline" both mean no WS connection.
-        return wsFilter === "connected" ? assessment.presence === "live" : assessment.presence !== "live";
-      })
       .filter(({ client }) => {
         if (!needle) return true;
         return [
@@ -524,7 +524,7 @@ export function ClientsExplorer({
           ...(client.products ?? []).flatMap((p) => [p.product, productNames[p.product]]),
         ].some((field) => (field ?? "").toLowerCase().includes(needle));
       });
-  }, [scored, activeRanks, wsFilter, query, productNames, emlyVersions, sessionStates]);
+  }, [scored, activeRanks, query, productNames, emlyVersions, sessionStates]);
 
   const columnOptions = useMemo(() => {
     function label(column: FilterColumn, key: string): string {
@@ -535,6 +535,8 @@ export function ClientsExplorer({
           return t(`columnFilter.age.${key}`);
         case "connected":
           return t(`columnFilter.connection.${key}`);
+        case "ws":
+          return t(`columnFilter.presence.${key}`);
         // Masked like the cells, so the menu does not leak what the table hides.
         case "loggedUser":
           return revealed ? key : maskUser(key);
@@ -591,6 +593,12 @@ export function ClientsExplorer({
             // Ascending walks critical -> warning -> ok, matching how the
             // status chips read left to right.
             return dir * (RANKS.indexOf(a.assessment.rank) - RANKS.indexOf(b.assessment.rank));
+          // Ascending puts live connections first, like the filter menu.
+          case "ws":
+            return (
+              dir *
+              (PRESENCE_KEYS.indexOf(a.assessment.presence) - PRESENCE_KEYS.indexOf(b.assessment.presence))
+            );
           case "hostname":
             return dir * compareStrings(a.client.hostname, b.client.hostname);
           case "loggedUser":
@@ -799,18 +807,6 @@ export function ClientsExplorer({
     setPage(1);
   }
 
-  // The chips and the select are two controls over one piece of state, so the
-  // select reads back whatever the chips left behind rather than tracking its
-  // own copy - that is what keeps the two from ever disagreeing on screen.
-  const rankSelectValue =
-    activeRanks.length === RANKS.length ? ANY : activeRanks.length === 1 ? activeRanks[0] : CUSTOM;
-
-  function selectRank(value: string) {
-    if (value === CUSTOM) return;
-    setActiveRanks(value === ANY ? [...RANKS] : [value as DeviceRank]);
-    setPage(1);
-  }
-
   function applyColumnFilter(column: FilterColumn, allowed: Set<string> | null) {
     setColumnFilters((prev) => {
       const next = { ...prev };
@@ -842,7 +838,6 @@ export function ClientsExplorer({
 
   const isFiltered =
     query !== "" ||
-    wsFilter !== ANY ||
     activeRanks.length !== RANKS.length ||
     Object.keys(columnFilters).length > 0 ||
     emlyVersions !== null ||
@@ -850,7 +845,6 @@ export function ClientsExplorer({
 
   function resetFilters() {
     setQuery("");
-    setWsFilter(ANY);
     setActiveRanks([...RANKS]);
     setColumnFilters({});
     setEmlyVersions(null);
@@ -867,6 +861,7 @@ export function ClientsExplorer({
         {RANKS.map((rank) => {
           const active = activeRanks.includes(rank);
           const style = RANK_STYLES[rank];
+          const ChipIcon = RANK_CHIP_ICONS[rank];
           return (
             <button
               key={rank}
@@ -881,7 +876,7 @@ export function ClientsExplorer({
               {/* Always rendered so toggling a chip never shifts the row;
                   checked state reads off the icon's colour and the dimming
                   applied to the whole chip, plus aria-pressed for AT. */}
-              <CheckCircle2
+              <ChipIcon
                 className={cn("h-5 w-5 shrink-0", active ? style.text : "text-muted-foreground")}
                 strokeWidth={2.5}
               />
@@ -906,42 +901,6 @@ export function ClientsExplorer({
             }}
           />
         </div>
-        <Select value={rankSelectValue} onValueChange={selectRank}>
-          <SelectTrigger className="w-full sm:w-44">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ANY}>{t("filters.allStates")}</SelectItem>
-            {RANKS.map((rank) => (
-              <SelectItem key={rank} value={rank}>
-                {t(`rank.${rank}`)}
-              </SelectItem>
-            ))}
-            {rankSelectValue === CUSTOM && (
-              <SelectItem value={CUSTOM} disabled>
-                {t("filters.customStates")}
-              </SelectItem>
-            )}
-          </SelectContent>
-        </Select>
-
-        <Select
-          value={wsFilter}
-          onValueChange={(v) => {
-            setWsFilter(v as WsFilter);
-            setPage(1);
-          }}
-        >
-          <SelectTrigger className="w-full sm:w-48">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ANY}>{t("filters.allWs")}</SelectItem>
-            <SelectItem value="connected">{t("filters.wsConnected")}</SelectItem>
-            <SelectItem value="disconnected">{t("filters.wsDisconnected")}</SelectItem>
-          </SelectContent>
-        </Select>
-
         {emlyVersions && (
           <Button
             variant="secondary"
@@ -1027,6 +986,9 @@ export function ClientsExplorer({
                   <SortableHead column="rank" sort={sort} onSort={toggleSort} className="w-10">
                     <span className="sr-only">{t("table.status")}</span>
                   </SortableHead>
+                  <SortableHead column="ws" sort={sort} onSort={toggleSort} filter={filterMenu("ws", t("table.ws"))} className="w-16">
+                    {t("table.ws")}
+                  </SortableHead>
                   <SortableHead column="hostname" sort={sort} onSort={toggleSort} filter={filterMenu("hostname", t("table.hostname"))}>
                     {t("table.hostname")}
                   </SortableHead>
@@ -1090,7 +1052,7 @@ export function ClientsExplorer({
               <TableBody>
                 {visible.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={10} className="py-8 text-center text-muted-foreground">
+                    <TableCell colSpan={11} className="py-8 text-center text-muted-foreground">
                       {t("table.noData")}
                     </TableCell>
                   </TableRow>
@@ -1120,14 +1082,16 @@ export function ClientsExplorer({
                           would wipe a row-level border-l and leave the bottom
                           row of every page unmarked. */}
                       <TableCell className={cn("border-l-2", style.bar)}>
-                        <div className="flex items-center gap-1.5">
-                          <ConnectionIcon
-                            className={cn("h-4 w-4", style.text)}
-                            role="img"
-                            aria-label={`${t(`rank.${assessment.rank}`)} · ${
-                              assessment.online ? t("online") : t("offline")
-                            }`}
-                          />
+                        <ConnectionIcon
+                          className={cn("h-4 w-4", style.text)}
+                          role="img"
+                          aria-label={`${t(`rank.${assessment.rank}`)} · ${
+                            assessment.online ? t("online") : t("offline")
+                          }`}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center">
                           <PresenceDot
                             state={assessment.presence}
                             hintOkWS={
