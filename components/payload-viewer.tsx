@@ -16,7 +16,7 @@ export function PayloadViewer({
 }: {
   data: unknown;
   rootName?: string;
-  maxHeight?: number;
+  maxHeight?: number | string;
   className?: string;
 }) {
   return (
