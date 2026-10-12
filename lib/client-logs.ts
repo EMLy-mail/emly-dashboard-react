@@ -33,9 +33,26 @@ export interface LogLine {
   text: string;
   /** null for a line that is not slog's `level=...` (a panic trace, say). */
   level: LogLevel | null;
+  /**
+   * The slog fields, when the line is a whole `time=... level=... msg=...`
+   * record; null for anything else (a trace line), which is shown as is.
+   */
+  record: { time: string; msg: string; attrs: string } | null;
 }
 
 const LEVEL_RE = /\blevel=(DEBUG|INFO|WARN|ERROR)\b/;
+const RECORD_RE = /^time=(\S+)\s+level=(?:DEBUG|INFO|WARN|ERROR)\s+msg=("(?:[^"\\]|\\.)*"|\S*)\s*(.*)$/;
+
+// slog quotes msg with strconv.Quote, which JSON reads for everything a log
+// message holds in practice; anything it cannot read is shown quoted.
+function unquote(v: string): string {
+  if (!v.startsWith('"')) return v;
+  try {
+    return JSON.parse(v) as string;
+  } catch {
+    return v;
+  }
+}
 
 /**
  * Splits the agent's log (slog text handler: `time=... level=INFO msg=...`)
@@ -50,6 +67,12 @@ export function parseLogLines(text: string): LogLine[] {
   return raw.map((line, i) => {
     const m = LEVEL_RE.exec(line);
     if (m) current = m[1] as LogLevel;
-    return { n: i + 1, text: line, level: m ? (m[1] as LogLevel) : current };
+    const r = m ? RECORD_RE.exec(line) : null;
+    return {
+      n: i + 1,
+      text: line,
+      level: m ? (m[1] as LogLevel) : current,
+      record: r ? { time: r[1], msg: unquote(r[2]), attrs: r[3] } : null,
+    };
   });
 }

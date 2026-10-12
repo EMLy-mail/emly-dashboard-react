@@ -51,6 +51,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -112,6 +113,12 @@ function statusVariant(s: ClientCommandStatus): "default" | "secondary" | "destr
   }
 }
 
+// The log file of a finished `log.send_latest`, or null for anything else.
+function logPayloadOf(c: ClientCommandRecord): ClientLogFilePayload | null {
+  const p = c.result?.payload;
+  return c.name === "log.send_latest" && c.status === "done" && isLogFilePayload(p) ? p : null;
+}
+
 function errorLine(c: ClientCommandRecord): string | null {
   const e = c.error ?? c.result?.error;
   if (!e) return null;
@@ -129,6 +136,7 @@ export function RemoteControl({ lockDangerous = false }: { lockDangerous?: boole
   const [delay, setDelay] = useState("60");
   const [whenActive, setWhenActive] = useState<"warn" | "skip">("warn");
   const [sending, startSending] = useTransition();
+  const [openLogId, setOpenLogId] = useState<string | null>(null);
 
   // A machine can take a command only if it holds the presence WebSocket open
   // right now (an "estimated" presence - recent poll, no socket - cannot) and
@@ -177,6 +185,9 @@ export function RemoteControl({ lockDangerous = false }: { lockDangerous?: boole
     const tick = async () => {
       const results = await Promise.all(ids.map((id) => pollCommandAction(id)));
       if (cancelled) return;
+      // A log that just arrived opens on its own: that is what was asked for.
+      const arrived = results.find((r) => r.ok && logPayloadOf(r.command) !== null);
+      if (arrived?.ok) setOpenLogId(arrived.command.id);
       setHistory((prev) =>
         prev.map((c) => {
           const i = ids.indexOf(c.id);
@@ -208,6 +219,7 @@ export function RemoteControl({ lockDangerous = false }: { lockDangerous?: boole
       }
       toast.success(t("sent"));
       setHistory((prev) => [r.command, ...prev].slice(0, MAX_HISTORY));
+      if (logPayloadOf(r.command)) setOpenLogId(r.command.id);
     });
   }
 
@@ -228,6 +240,8 @@ export function RemoteControl({ lockDangerous = false }: { lockDangerous?: boole
   }
 
   const selectedHistory = history.filter((c) => c.client_id === selectedId);
+  const openLog = selectedHistory.find((c) => c.id === openLogId);
+  const openLogPayload = openLog ? logPayloadOf(openLog) : null;
 
   return (
     <div className="grid gap-4 lg:grid-cols-[20rem_1fr]">
@@ -372,7 +386,11 @@ export function RemoteControl({ lockDangerous = false }: { lockDangerous?: boole
                   <p className="text-sm text-muted-foreground">{t("history.empty")}</p>
                 )}
                 {selectedHistory.map((c) => (
-                  <CommandRow key={c.id} record={c} hostname={selected.hostname} />
+                  <CommandRow
+                    key={c.id}
+                    record={c}
+                    onViewLog={() => setOpenLogId(c.id)}
+                  />
                 ))}
               </CardContent>
             </Card>
@@ -381,6 +399,25 @@ export function RemoteControl({ lockDangerous = false }: { lockDangerous?: boole
           </>
         )}
       </div>
+
+      {/* The log needs more room than the command column has: it opens over
+          the page, 70% of its width. */}
+      <Dialog open={openLog !== undefined && openLogPayload !== null} onOpenChange={(o) => !o && setOpenLogId(null)}>
+        <DialogContent className="flex max-h-[90vh] w-full flex-col overflow-hidden sm:max-w-[70vw]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              {t("log.title")} · {selected?.hostname}
+            </DialogTitle>
+          </DialogHeader>
+          {selected && openLog && openLogPayload && (
+            <ClientLogViewer
+              source={{ kind: "payload", logId: openLog.id, hostname: selected.hostname, payload: openLogPayload }}
+              fill
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={confirm !== null} onOpenChange={(o) => !o && setConfirm(null)}>
         <AlertDialogContent>
@@ -431,14 +468,19 @@ export function RemoteControl({ lockDangerous = false }: { lockDangerous?: boole
   );
 }
 
-function CommandRow({ record, hostname }: { record: ClientCommandRecord; hostname: string }) {
+function CommandRow({
+  record,
+  onViewLog,
+}: {
+  record: ClientCommandRecord;
+  onViewLog: () => void;
+}) {
   const t = useTranslations("remote");
   const err = errorLine(record);
   const final = isClientCommandFinal(record.status);
   const payload = record.result?.payload;
   const errorCode = record.error?.code ?? record.result?.error?.code;
-  const logPayload =
-    record.name === "log.send_latest" && record.status === "done" && isLogFilePayload(payload) ? payload : null;
+  const logPayload = logPayloadOf(record);
   return (
     <div className="rounded-md border px-3 py-2 text-sm">
       <div className="flex flex-wrap items-center gap-2">
@@ -457,12 +499,10 @@ function CommandRow({ record, hostname }: { record: ClientCommandRecord; hostnam
         <p className="mt-1 text-xs text-muted-foreground">{t("disabledByPolicyHint", { command: record.name })}</p>
       )}
       {logPayload ? (
-        <details className="mt-2" open>
-          <summary className="cursor-pointer text-xs text-muted-foreground">{t("log.title")}</summary>
-          <div className="mt-2">
-            <ClientLogViewer source={{ kind: "payload", logId: record.id, hostname, payload: logPayload }} />
-          </div>
-        </details>
+        <Button variant="outline" size="sm" className="mt-2" onClick={onViewLog}>
+          <FileText className="mr-2 h-4 w-4" />
+          {t("log.view")}
+        </Button>
       ) : payload !== undefined && (
         <details className="mt-2">
           <summary className="cursor-pointer text-xs text-muted-foreground">

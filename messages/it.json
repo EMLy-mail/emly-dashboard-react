@@ -931,6 +931,7 @@
     "disabledByPolicyHint": "La configurazione remota della macchina non consente {command}: aggiungilo a clientWs.commands nel documento di configurazione.",
     "log": {
       "title": "Log dell'agent",
+      "view": "Visualizza log",
       "storedTitle": "Log dell'agent",
       "storedHint": "Log recuperati da questa macchina con \"Recupera log agent\" dalla pagina <link>Controllo remoto</link>. L'API tiene gli ultimi 20 per 30 giorni.",
       "storedEmpty": "Nessun log ancora recuperato da questa macchina.",

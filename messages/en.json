@@ -931,6 +931,7 @@
     "disabledByPolicyHint": "The machine's remote configuration does not allow {command}: add it to clientWs.commands in the configuration document.",
     "log": {
       "title": "Agent log",
+      "view": "View log",
       "storedTitle": "Agent logs",
       "storedHint": "Logs fetched from this machine with \"Fetch agent log\" on the <link>Remote control</link> page. The API keeps the last 20 for 30 days.",
       "storedEmpty": "No log fetched from this machine yet.",

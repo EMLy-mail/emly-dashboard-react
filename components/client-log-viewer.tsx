@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { AlertTriangle, Copy, Download, FileArchive, Loader2, Search } from "lucide-react";
 import type { ClientLogFilePayload, ClientLogRecord } from "@/lib/api";
 import { decodeGzipBase64, LOG_LEVELS, parseLogLines, type LogLevel } from "@/lib/client-logs";
-import { formatDateTime } from "@/lib/format-date";
+import { formatDateTime, formatShortDateTime } from "@/lib/format-date";
 import { cn, formatBytes } from "@/lib/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -62,14 +62,44 @@ function metaOf(source: ClientLogSource): Meta {
   };
 }
 
-const LEVEL_CLASS: Record<LogLevel, string> = {
-  DEBUG: "text-muted-foreground",
-  INFO: "",
-  WARN: "text-amber-600 dark:text-amber-400",
-  ERROR: "text-destructive",
+// bar: the stripe at the start of the row; pill: the level badge; row: a tint
+// only on what needs attention; text: the message colour.
+const LEVEL_STYLE: Record<LogLevel, { bar: string; pill: string; row?: string; text: string }> = {
+  DEBUG: {
+    bar: "bg-muted-foreground/40",
+    pill: "border-muted-foreground/30 bg-muted-foreground/10 text-muted-foreground",
+    text: "text-muted-foreground",
+  },
+  INFO: {
+    bar: "bg-blue-500",
+    pill: "border-blue-500/40 bg-blue-500/10 text-blue-600 dark:text-blue-400",
+    text: "",
+  },
+  WARN: {
+    bar: "bg-amber-500",
+    pill: "border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400",
+    row: "bg-amber-500/10",
+    text: "text-amber-700 dark:text-amber-300",
+  },
+  ERROR: {
+    bar: "bg-red-500",
+    pill: "border-red-500/40 bg-red-500/10 text-red-600 dark:text-red-400",
+    row: "bg-red-500/10",
+    text: "text-red-700 dark:text-red-300",
+  },
 };
 
-export function ClientLogViewer({ source }: { source: ClientLogSource }) {
+// The agent writes RFC 3339 with its offset; anything else is shown as written.
+function logTime(raw: string): string {
+  const d = new Date(raw);
+  return Number.isNaN(d.getTime()) ? raw : formatShortDateTime(d);
+}
+
+/**
+ * `fill`: the viewer takes the height its parent (a flex column) gives it and
+ * only the lines scroll, instead of capping the lines at a fixed height.
+ */
+export function ClientLogViewer({ source, fill = false }: { source: ClientLogSource; fill?: boolean }) {
   const t = useTranslations("remote.log");
   const meta = useMemo(() => metaOf(source), [source]);
 
@@ -150,7 +180,7 @@ export function ClientLogViewer({ source }: { source: ClientLogSource }) {
   }
 
   return (
-    <div className="space-y-3">
+    <div className={cn(fill ? "flex min-h-0 min-w-0 flex-1 flex-col gap-3" : "space-y-3")}>
       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
         <span className="font-mono text-foreground">{meta.fileName}</span>
         <span>{t("included", { included: formatBytes(meta.includedBytes), size: formatBytes(meta.sizeBytes) })}</span>
@@ -180,7 +210,7 @@ export function ClientLogViewer({ source }: { source: ClientLogSource }) {
             type="button"
             size="sm"
             variant={levels.has(level) ? "secondary" : "ghost"}
-            className={cn("h-7 px-2 font-mono text-xs", levels.has(level) && LEVEL_CLASS[level])}
+            className={cn("h-7 px-2 font-mono text-xs", levels.has(level) && LEVEL_STYLE[level].text)}
             aria-pressed={levels.has(level)}
             onClick={() => toggleLevel(level)}
           >
@@ -230,14 +260,48 @@ export function ClientLogViewer({ source }: { source: ClientLogSource }) {
           </p>
           <pre
             ref={preRef}
-            className="max-h-[32rem] overflow-auto rounded-md bg-muted p-2 font-mono text-xs leading-relaxed"
+            className={cn(
+              "overflow-auto rounded-md bg-muted p-1.5 font-mono text-xs leading-relaxed",
+              fill ? "min-h-0 flex-1" : "max-h-[32rem]",
+            )}
           >
-            {visible.map((l) => (
-              <div key={l.n} className={cn("whitespace-pre", l.level && LEVEL_CLASS[l.level])}>
-                <span className="mr-3 inline-block w-12 select-none text-right text-muted-foreground/60">{l.n}</span>
-                {l.text}
-              </div>
-            ))}
+            <div className="w-max min-w-full space-y-px">
+              {visible.map((l) => {
+                const style = l.level ? LEVEL_STYLE[l.level] : null;
+                return (
+                  <div
+                    key={l.n}
+                    className={cn("flex items-center gap-3 rounded-sm px-2 py-0.5 whitespace-pre", style?.row)}
+                  >
+                    <span
+                      className={cn("h-4 w-1 shrink-0 rounded-full", style?.bar ?? "bg-muted-foreground/20")}
+                      aria-hidden
+                    />
+                    {l.record ? (
+                      <>
+                        <span className="w-32 shrink-0 text-muted-foreground">{logTime(l.record.time)}</span>
+                        <span
+                          className={cn(
+                            "w-16 shrink-0 rounded-full border text-center text-[11px] lowercase",
+                            style?.pill,
+                          )}
+                        >
+                          {l.level}
+                        </span>
+                        <span className={style?.text}>
+                          {l.record.msg}
+                          {l.record.attrs && <span className="ml-3 text-muted-foreground">{l.record.attrs}</span>}
+                        </span>
+                      </>
+                    ) : (
+                      // A trace line under a record: indented past the time
+                      // and level columns, so it reads as part of it.
+                      <span className={cn("pl-[13.5rem]", style?.text)}>{l.text}</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </pre>
         </>
       )}
