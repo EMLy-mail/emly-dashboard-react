@@ -2,16 +2,25 @@
 
 import {
   ApiError,
+  deleteClientLog,
   getClientCommand,
   getClientEvents,
   getStatsClientDetail,
   issueClientCommand,
+  listClientLogs,
   type ClientCommandName,
   type ClientCommandRecord,
   type ClientEventRecord,
+  type ClientLogRecord,
 } from "@/lib/api";
 import { getCurrentUser, getSessionToken } from "@/lib/auth";
-import { MIN_COMMAND_UPDATER_VERSION, supportsRemoteCommands } from "@/lib/device-status";
+import {
+  MIN_COMMAND_UPDATER_VERSION,
+  MIN_LOG_UPDATER_VERSION,
+  supportsLogSend,
+  supportsRemoteCommands,
+} from "@/lib/device-status";
+import { isClientLogId } from "@/lib/client-logs";
 import { env } from "@/lib/env";
 import { canUseRemoteControl } from "@/lib/roles";
 
@@ -35,6 +44,7 @@ const COMMANDS: ClientCommandName[] = [
   "apps.list_upgradable",
   "service.restart",
   "machine.reboot",
+  "log.send_latest",
 ];
 
 const MAX_REBOOT_DELAY_SECONDS = 3600;
@@ -60,6 +70,13 @@ export async function issueCommandAction(
       return {
         ok: false,
         error: `Updater ${MIN_COMMAND_UPDATER_VERSION} or newer required`,
+        status: 422,
+      };
+    }
+    if (name === "log.send_latest" && !supportsLogSend(client.updater_version)) {
+      return {
+        ok: false,
+        error: `Updater ${MIN_LOG_UPDATER_VERSION} or newer required`,
         status: 422,
       };
     }
@@ -117,5 +134,34 @@ export async function listEventsAction(clientId: number): Promise<EventsActionRe
   } catch (e) {
     if (e instanceof ApiError) return { ok: false, error: e.message };
     return { ok: false, error: "Failed to read events" };
+  }
+}
+
+export type ClientLogsActionResult =
+  | { ok: true; logs: ClientLogRecord[] }
+  | { ok: false; error: string };
+
+/** The logs the API kept for one machine (log.send_latest), newest first. */
+export async function listClientLogsAction(clientId: number): Promise<ClientLogsActionResult> {
+  try {
+    await requireAdmin();
+    if (!Number.isInteger(clientId) || clientId <= 0) return { ok: false, error: "Invalid client" };
+    const { logs } = await listClientLogs(clientId, await getSessionToken());
+    return { ok: true, logs };
+  } catch (e) {
+    if (e instanceof ApiError) return { ok: false, error: e.message };
+    return { ok: false, error: "Failed to read logs" };
+  }
+}
+
+export async function deleteClientLogAction(logId: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    await requireAdmin();
+    if (!isClientLogId(logId)) return { ok: false, error: "Invalid log" };
+    await deleteClientLog(logId, await getSessionToken());
+    return { ok: true };
+  } catch (e) {
+    if (e instanceof ApiError) return { ok: false, error: e.message };
+    return { ok: false, error: "Failed to delete log" };
   }
 }

@@ -885,7 +885,8 @@
       "updaterManifest": "Controlla update Updater",
       "appsUpgradable": "Elenca update app",
       "serviceRestart": "Riavvia servizio",
-      "machineReboot": "Riavvia PC"
+      "machineReboot": "Riavvia PC",
+      "logSendLatest": "Recupera log agent"
     },
     "status": {
       "sent": "Inviato",
@@ -925,7 +926,40 @@
       "invalidDelay": "Il ritardo deve essere un intero da 0 a 3600."
     },
     "cancel": "Annulla",
-    "confirm": "Conferma"
+    "confirm": "Conferma",
+    "needsVersion": "Richiede AryxD Agent {version} o superiore",
+    "disabledByPolicyHint": "La configurazione remota della macchina non consente {command}: aggiungilo a clientWs.commands nel documento di configurazione.",
+    "log": {
+      "title": "Log dell'agent",
+      "storedTitle": "Log dell'agent",
+      "storedHint": "Log recuperati da questa macchina con \"Recupera log agent\" dalla pagina <link>Controllo remoto</link>. L'API tiene gli ultimi 20 per 30 giorni.",
+      "storedEmpty": "Nessun log ancora recuperato da questa macchina.",
+      "loading": "Caricamento del log...",
+      "refresh": "Aggiorna log",
+      "included": "{included} di {size}",
+      "collectedAt": "letto il {date}",
+      "level": "livello {level}",
+      "truncated": "Mostrati gli ultimi {included} di {size}: le righe più vecchie non ci stavano e restano sul PC, in %ProgramData%\\EMLyUpdater\\logs.",
+      "truncatedBadge": "parziale",
+      "mismatch": "Il contenuto salvato non corrisponde alla dimensione dichiarata dalla macchina. Mostrato così come ricevuto.",
+      "search": "Cerca nel log...",
+      "copy": "Copia",
+      "copied": "Righe visibili copiate",
+      "downloadText": ".log",
+      "downloadGz": ".log.gz",
+      "lines": "{shown} di {total} righe",
+      "delete": "Elimina",
+      "deleted": "Log eliminato",
+      "deleteTitle": "Eliminare questo log?",
+      "deleteDescription": "Il log letto il {date} verrà rimosso dall'API. Il file sul PC non viene toccato.",
+      "cancel": "Annulla",
+      "errors": {
+        "notFound": "L'API non ha questo log (non salvato, o già eliminato dalla pulizia).",
+        "unavailable": "L'archivio dei log non è raggiungibile in questo momento.",
+        "decode": "Impossibile decodificare il log.",
+        "copy": "Impossibile copiare negli appunti."
+      }
+    }
   },
   "downloadQueue": {
     "title": "Coda download",

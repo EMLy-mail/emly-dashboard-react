@@ -6,6 +6,7 @@ import { getStatsClientDetail, getBans, ApiError, type Ban } from "@/lib/api";
 import { getCurrentUser } from "@/lib/auth";
 import { getUserProductOptions } from "@/lib/products";
 import { canUseRemoteControl, isAdminRole } from "@/lib/roles";
+import { ClientLogsCard } from "@/components/client-logs-card";
 import { ClientWsEvents } from "@/components/client-ws-events";
 import { CreateBanDialog } from "@/components/create-ban-dialog";
 import { DeleteClientButton } from "@/components/delete-client-button";
@@ -49,6 +50,7 @@ export default async function StatsClientDetailPage({ params }: PageProps) {
   ]);
   const isAdmin = isAdminRole(currentUser?.role);
   const canSeeWsEvents = canUseRemoteControl(currentUser?.role);
+  const canSeeLogs = canSeeWsEvents;
   const { client, events } = detail;
   const installedProducts = detail.products ?? [];
   const productNames = new Map(productOptions.map((p) => [p.slug, p.name]));
@@ -272,6 +274,11 @@ export default async function StatsClientDetailPage({ params }: PageProps) {
           the same list the remote control page shows. Admin-only, like the
           endpoint behind it. */}
       {canSeeWsEvents && <ClientWsEvents clientId={client.id} />}
+
+      {/* Logs fetched from the machine with log.send_latest. They carry what
+          the agent writes - users, IPs, server URLs - so they are behind the
+          same bar as the remote control that fetches them. */}
+      {canSeeLogs && <ClientLogsCard clientId={client.id} />}
     </div>
   );
 }

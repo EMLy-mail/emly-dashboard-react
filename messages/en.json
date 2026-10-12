@@ -885,7 +885,8 @@
       "updaterManifest": "Check Updater update",
       "appsUpgradable": "List app updates",
       "serviceRestart": "Restart service",
-      "machineReboot": "Reboot PC"
+      "machineReboot": "Reboot PC",
+      "logSendLatest": "Fetch agent log"
     },
     "status": {
       "sent": "Sent",
@@ -925,7 +926,40 @@
       "invalidDelay": "Delay must be a whole number from 0 to 3600."
     },
     "cancel": "Cancel",
-    "confirm": "Confirm"
+    "confirm": "Confirm",
+    "needsVersion": "Needs AryxD Agent {version} or newer",
+    "disabledByPolicyHint": "The machine's remote configuration does not allow {command}: add it to clientWs.commands in the configuration document.",
+    "log": {
+      "title": "Agent log",
+      "storedTitle": "Agent logs",
+      "storedHint": "Logs fetched from this machine with \"Fetch agent log\" on the <link>Remote control</link> page. The API keeps the last 20 for 30 days.",
+      "storedEmpty": "No log fetched from this machine yet.",
+      "loading": "Loading log...",
+      "refresh": "Refresh logs",
+      "included": "{included} of {size}",
+      "collectedAt": "read {date}",
+      "level": "level {level}",
+      "truncated": "Showing the last {included} of {size}: older lines did not fit and are still on the PC, in %ProgramData%\\EMLyUpdater\\logs.",
+      "truncatedBadge": "partial",
+      "mismatch": "The stored content does not match the size the machine declared. Shown as received.",
+      "search": "Search the log...",
+      "copy": "Copy",
+      "copied": "Visible lines copied",
+      "downloadText": ".log",
+      "downloadGz": ".log.gz",
+      "lines": "{shown} of {total} lines",
+      "delete": "Delete",
+      "deleted": "Log deleted",
+      "deleteTitle": "Delete this log?",
+      "deleteDescription": "The log read on {date} will be removed from the API. The file on the PC is not touched.",
+      "cancel": "Cancel",
+      "errors": {
+        "notFound": "The API has no such log (not saved, or already pruned).",
+        "unavailable": "The log storage is not reachable right now.",
+        "decode": "The log could not be decoded.",
+        "copy": "Could not copy to the clipboard."
+      }
+    }
   },
   "downloadQueue": {
     "title": "Download queue",

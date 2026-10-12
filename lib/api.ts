@@ -152,6 +152,9 @@ async function apiFetch<T>(
     throw new ApiError(res.status, body.error ?? "Unknown error", body.problems);
   }
 
+  // A DELETE answered 204 has no body to parse.
+  if (res.status === 204) return undefined as T;
+
   return res.json() as Promise<T>;
 }
 
@@ -1186,7 +1189,8 @@ export type ClientCommandName =
   | "updater.manifest.check"
   | "apps.list_upgradable"
   | "service.restart"
-  | "machine.reboot";
+  | "machine.reboot"
+  | "log.send_latest";
 
 /** Lifecycle of a command on the API: sent -> acked -> done/failed, or rejected/timeout. */
 export type ClientCommandStatus =
@@ -1264,6 +1268,72 @@ export async function getClientCommand(commandId: string, sessionToken?: string)
 
 export async function getClientEvents(clientId: number, sessionToken?: string) {
   return apiFetch<{ events: ClientEventRecord[] }>(`/${clientId}/events`, {}, clientOpts(sessionToken));
+}
+
+/**
+ * Result payload of `log.send_latest` (CLIENT_WS_PROTOCOL.md §6.6): the tail
+ * of the agent's updater.log. `offset > 0` means the oldest lines did not fit
+ * one frame; the cut is always at a line start.
+ */
+export interface ClientLogFilePayload {
+  name: string;
+  size_bytes: number;
+  modified_at?: string;
+  offset: number;
+  included_bytes: number;
+  level?: string;
+  /** Always "gzip+base64". */
+  encoding: string;
+  content: string;
+  collected_at: string;
+}
+
+/**
+ * A log the API kept (`internal/clientlogs`). `id` is the id of the command
+ * that fetched it, so a finished `log.send_latest` links straight to it.
+ */
+export interface ClientLogRecord {
+  id: string;
+  client_id: number;
+  issued_by?: string;
+  file_name: string;
+  size_bytes: number;
+  offset: number;
+  included_bytes: number;
+  truncated: boolean;
+  /** The content inflated to a length other than `included_bytes`. Kept anyway. */
+  mismatch: boolean;
+  level?: string;
+  modified_at?: string;
+  collected_at?: string;
+  received_at: string;
+  gzip_bytes: number;
+  updater_version?: string;
+  hostname?: string;
+}
+
+export async function listClientLogs(clientId: number, sessionToken?: string) {
+  return apiFetch<{ logs: ClientLogRecord[] }>(`/${clientId}/logs`, {}, clientOpts(sessionToken));
+}
+
+export async function deleteClientLog(logId: string, sessionToken?: string) {
+  await apiFetch<void>(`/logs/${encodeURIComponent(logId)}`, { method: "DELETE" }, clientOpts(sessionToken));
+}
+
+/**
+ * The raw response of `GET /v2/client/logs/{id}/content`, for the download
+ * route to stream through untouched. Not `apiFetch`: the body is the log
+ * itself, not JSON. The caller has already checked who is asking.
+ */
+export async function fetchClientLogContent(logId: string, format: "text" | "gz", sessionToken?: string) {
+  const headers: Record<string, string> = {
+    "User-Agent": SERVER_USER_AGENT,
+    "X-Admin-Key": env.adminKey,
+  };
+  if (sessionToken) headers["X-Session-Token"] = sessionToken;
+  if (env.dashboardKey) headers["X-Dashboard-Key"] = env.dashboardKey;
+  const qs = format === "gz" ? "?format=gz" : "";
+  return fetch(`${clientBase()}/logs/${encodeURIComponent(logId)}/content${qs}`, { headers, cache: "no-store" });
 }
 
 // ── Download queue ─────────────────────────────────────────────────────────

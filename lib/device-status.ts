@@ -511,8 +511,23 @@ export const MIN_COMMAND_UPDATER_VERSION = "1.7.2";
  * An unreported or unparseable version is treated as too old.
  */
 export function supportsRemoteCommands(updaterVersion: string | null | undefined): boolean {
+  return hasFeatureSince(updaterVersion, MIN_COMMAND_UPDATER_VERSION);
+}
+
+/**
+ * First AryxD Agent release with the `log.send_latest` command. An older
+ * agent does not declare it, and the API answers 422 to anyone who tries.
+ */
+export const MIN_LOG_UPDATER_VERSION = "1.8.2";
+
+export function supportsLogSend(updaterVersion: string | null | undefined): boolean {
+  return hasFeatureSince(updaterVersion, MIN_LOG_UPDATER_VERSION);
+}
+
+/** Same reading of a version as `supportsRemoteCommands`, against any minimum. */
+function hasFeatureSince(updaterVersion: string | null | undefined, minimum: string): boolean {
   const m = updaterVersion?.trim().match(/^v?(\d+(?:\.\d+){0,2})/i);
   if (!m) return false;
-  const cmp = compareVersions(m[1], MIN_COMMAND_UPDATER_VERSION);
+  const cmp = compareVersions(m[1], minimum);
   return cmp !== null && cmp >= 0;
 }

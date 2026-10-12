@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
   Download,
+  FileText,
   Info,
   Loader2,
   Package,
@@ -17,6 +18,7 @@ import type {
   ClientCommandName,
   ClientCommandRecord,
   ClientCommandStatus,
+  ClientLogFilePayload,
   UpdaterClient,
 } from "@/lib/api";
 import {
@@ -26,7 +28,13 @@ import {
 import { ClientWsEvents } from "@/components/client-ws-events";
 import { PayloadViewer } from "@/components/payload-viewer";
 import { useLiveStatsClients } from "@/hooks/use-stats-stream";
-import { MIN_COMMAND_UPDATER_VERSION, supportsRemoteCommands } from "@/lib/device-status";
+import {
+  MIN_COMMAND_UPDATER_VERSION,
+  MIN_LOG_UPDATER_VERSION,
+  supportsLogSend,
+  supportsRemoteCommands,
+} from "@/lib/device-status";
+import { ClientLogViewer } from "@/components/client-log-viewer";
 import { formatDateTime } from "@/lib/format-date";
 import { cn } from "@/lib/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -65,6 +73,7 @@ const COMMAND_KEY: Record<ClientCommandName, string> = {
   "apps.list_upgradable": "appsUpgradable",
   "service.restart": "serviceRestart",
   "machine.reboot": "machineReboot",
+  "log.send_latest": "logSendLatest",
 };
 
 const SAFE_COMMANDS: { name: ClientCommandName; icon: typeof Info }[] = [
@@ -72,7 +81,15 @@ const SAFE_COMMANDS: { name: ClientCommandName; icon: typeof Info }[] = [
   { name: "emly.manifest.check", icon: ShieldCheck },
   { name: "updater.manifest.check", icon: Download },
   { name: "apps.list_upgradable", icon: Package },
+  { name: "log.send_latest", icon: FileText },
 ];
+
+// Commands newer than the remote-control minimum, and the agent release that
+// first has them: the button stays visible but disabled below it, saying why.
+function commandMissing(name: ClientCommandName, updaterVersion: string | null | undefined): string | null {
+  if (name === "log.send_latest" && !supportsLogSend(updaterVersion)) return MIN_LOG_UPDATER_VERSION;
+  return null;
+}
 
 // Defined here, not in lib/api.ts: that module is server-only, so a client
 // component may import types from it but never a value.
@@ -299,18 +316,22 @@ export function RemoteControl({ lockDangerous = false }: { lockDangerous?: boole
                 <div>
                   <h3 className="mb-2 text-sm font-medium">{t("groups.read")}</h3>
                   <div className="flex flex-wrap gap-2">
-                    {SAFE_COMMANDS.map(({ name, icon: Icon }) => (
-                      <Button
-                        key={name}
-                        variant="outline"
-                        size="sm"
-                        disabled={!selectedLive || sending}
-                        onClick={() => send(name)}
-                      >
-                        <Icon className="mr-2 h-4 w-4" />
-                        {t(`commands.${COMMAND_KEY[name]}`)}
-                      </Button>
-                    ))}
+                    {SAFE_COMMANDS.map(({ name, icon: Icon }) => {
+                      const needs = commandMissing(name, selected.updater_version);
+                      return (
+                        <Button
+                          key={name}
+                          variant="outline"
+                          size="sm"
+                          disabled={!selectedLive || sending || needs !== null}
+                          title={needs ? t("needsVersion", { version: needs }) : undefined}
+                          onClick={() => send(name)}
+                        >
+                          <Icon className="mr-2 h-4 w-4" />
+                          {t(`commands.${COMMAND_KEY[name]}`)}
+                        </Button>
+                      );
+                    })}
                   </div>
                 </div>
                 <div>
@@ -351,7 +372,7 @@ export function RemoteControl({ lockDangerous = false }: { lockDangerous?: boole
                   <p className="text-sm text-muted-foreground">{t("history.empty")}</p>
                 )}
                 {selectedHistory.map((c) => (
-                  <CommandRow key={c.id} record={c} />
+                  <CommandRow key={c.id} record={c} hostname={selected.hostname} />
                 ))}
               </CardContent>
             </Card>
@@ -410,11 +431,14 @@ export function RemoteControl({ lockDangerous = false }: { lockDangerous?: boole
   );
 }
 
-function CommandRow({ record }: { record: ClientCommandRecord }) {
+function CommandRow({ record, hostname }: { record: ClientCommandRecord; hostname: string }) {
   const t = useTranslations("remote");
   const err = errorLine(record);
   const final = isClientCommandFinal(record.status);
   const payload = record.result?.payload;
+  const errorCode = record.error?.code ?? record.result?.error?.code;
+  const logPayload =
+    record.name === "log.send_latest" && record.status === "done" && isLogFilePayload(payload) ? payload : null;
   return (
     <div className="rounded-md border px-3 py-2 text-sm">
       <div className="flex flex-wrap items-center gap-2">
@@ -429,7 +453,17 @@ function CommandRow({ record }: { record: ClientCommandRecord }) {
         )}
       </div>
       {err && <p className="mt-1 text-xs text-destructive">{err}</p>}
-      {payload !== undefined && (
+      {errorCode === "disabled_by_policy" && (
+        <p className="mt-1 text-xs text-muted-foreground">{t("disabledByPolicyHint", { command: record.name })}</p>
+      )}
+      {logPayload ? (
+        <details className="mt-2" open>
+          <summary className="cursor-pointer text-xs text-muted-foreground">{t("log.title")}</summary>
+          <div className="mt-2">
+            <ClientLogViewer source={{ kind: "payload", logId: record.id, hostname, payload: logPayload }} />
+          </div>
+        </details>
+      ) : payload !== undefined && (
         <details className="mt-2">
           <summary className="cursor-pointer text-xs text-muted-foreground">
             {t("history.result")}
@@ -439,5 +473,14 @@ function CommandRow({ record }: { record: ClientCommandRecord }) {
         </details>
       )}
     </div>
+  );
+}
+
+function isLogFilePayload(p: unknown): p is ClientLogFilePayload {
+  return (
+    typeof p === "object" &&
+    p !== null &&
+    typeof (p as ClientLogFilePayload).content === "string" &&
+    (p as ClientLogFilePayload).encoding === "gzip+base64"
   );
 }
